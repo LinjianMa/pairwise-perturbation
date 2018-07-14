@@ -185,9 +185,9 @@ bool alsTucker(Tensor<> & V,
 		// print the difference norm 
 		if ((iter%100==0 && iter!=0) || iter==maxiter) {
 			TTMc(core, V, W, -1, dw);
-			core_diff[seq] = core[seq];
-			core_diff[seq] -= core_prev[seq];
-			diffnorm = core_diff.norm2();
+			double diffnorm1 = core.norm2();
+			double diffnorm2 = core_prev.norm2();
+			diffnorm = abs(diffnorm1-diffnorm2);
 			if(dw.rank==0) cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [diffnorm]  "<< diffnorm << "  [tol]  " << tol <<  endl;
 			if ((diffnorm < tol) || MPI_Wtime()-st_time > timelimit) 
 				break;
@@ -235,7 +235,9 @@ bool alsTucker(Tensor<> & V,
 			Matrix<> M(Y_unfold);
 			Matrix<> U, VT;
 			Vector<> S;
-			M.svd(U, S, VT, core.lens[i]);
+			Matrix<> MTM(M.nrow,M.nrow);
+			MTM["ij"] = M["ik"]*M["jk"];
+			MTM.svd(U, S, VT, core.lens[i]);
 			double norm_U = U.norm2();
 			if (norm_U<0) U["ij"] = -U["ij"];
 			W[i] = U;

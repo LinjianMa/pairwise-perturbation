@@ -391,7 +391,7 @@ void TEST_alsTucker(int N,
 	if(dw.rank==0) printf("Test of Tucker Decomposition\n");
 	double st_time = MPI_Wtime();
 	Tensor<> V(N, V_lens, dw);
-	V.fill_random(0,10);
+	V.fill_random(0,1);
 	// Norm of V
 	double Vnorm = V.norm2();
 	if(dw.rank==0) printf("initial Norm of V =%lf\n", Vnorm); 
@@ -570,12 +570,12 @@ int main(int argc, char ** argv){
 		//TEST_laplacian_tensor(4, 8, 1, dw);  // sparse	
 		//TEST_gauss_seidel(4, 4, dw);
 
-		int T_lens[] = {20 ,20, 20, 20};
-		int ranks[] = {4, 4, 4, 4};
+		int T_lens[] = {10 ,10, 10};
+		int ranks[] = {4, 4, 4};
 		//TEST_hosvd(3, T_lens, ranks, dw);
-		//TEST_alsTucker(4, T_lens, ranks, dw);	
-		TEST_3d_poisson_Tucker(6, 15, 2, 0, dw);
-		//TEST_sparse_laplacian_alsTucker(3, 20, 4, 0, dw); 
+		//TEST_alsTucker(3, T_lens, ranks, dw);	
+		TEST_3d_poisson_Tucker(6, 8, 2, 0, dw);
+		//TEST_sparse_laplacian_alsTucker(4, 20, 6, 0, dw); 
 
 	}
 
