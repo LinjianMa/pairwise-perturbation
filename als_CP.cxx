@@ -309,6 +309,7 @@ bool alsCP_mod(Tensor<> & V,
 			// Khatri-Rao Product C[I,J,K]= A[I,K](op)B[J,K]
 			//KhatriRao_contract(M2, V, W, index, lens_H, dw);
 			char seq_M[V.order];
+			seq_M[V.order-1] = '\0';
 			strncpy(seq_M,seq,i);
 			strncpy(seq_M+i,seq+i+1,V.order-i-1);
 			//if(dw.rank==0) cout <<"seq_M= "<< seq_M << endl;
