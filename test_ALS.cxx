@@ -107,7 +107,61 @@ void TEST_sparse_laplacian_alsCP(int N,				// Dimension of the tensor
 	double norm = residule.norm2();
 	if(dw.rank==0) printf("Residule Norm=%lf\n", norm); 
 	if(dw.rank==0) printf ("TEST_sparse_laplacian_alstf took %lf seconds\n\n\n",MPI_Wtime()-st_time);
-} 
+}
+
+/**
+ * \brief CP decomposition of laplacian tensor using simple ALS
+ */
+void TEST_sparse_laplacian_alsCP_DT(int N,				// Dimension of the tensor
+									int s,				// size in each dimension
+									int K, 			// Decomposition rank
+									bool sparse_V,		// Whether V is set to be sparse or not
+									World & dw){
+	if(dw.rank==0) printf("Test of sparse laplacian CP decomposition with dimension tree\n");
+	double st_time = MPI_Wtime();
+	int * lens = new int[N];
+	for (int i=0; i<N; i++) lens[i]=s;
+	Tensor<>* V = new Tensor<>(N, sparse_V, lens, dw); 
+	laplacian_tensor(*V, N, s, sparse_V, dw);
+	Matrix<>* W = new Matrix<>[N];				// N matrices V will be decomposed into
+	Matrix<>* grad_W = new Matrix<>[N];			// gradients in N dimensions 
+	for (int i=0; i<N; i++) {
+		W[i] = Matrix<>(V->lens[i],K,dw);
+		grad_W[i] = Matrix<>(V->lens[i],K,dw);
+		W[i].fill_random(0,1); 
+		grad_W[i].fill_random(0,1);  
+	}
+	//construct F matrices (correction terms, F[]=0 initially)
+	Matrix<>* F = new Matrix<>[N];
+	for (int i=0; i<N; i++) {
+		F[i] = Matrix<>(V->lens[i],K,dw);
+		F[i]["ij"] = 0.;
+	}	
+	// Norm of V
+	double Vnorm = V->norm2();
+	if(dw.rank==0) printf("Norm of V %E \n",Vnorm);
+	bool finished = false;
+	// Run ALS
+	while (finished == false) {
+		finished = alsCP_DT(*V, W, grad_W, F, 1e-10*Vnorm, 20000, 20000, dw);
+			// Check for the residule of the CP. (Here V2 is hard coded for N=4)
+	Tensor<>* V2 = new Tensor<>(N, lens, dw); 
+	(*V2)["ijlm"] = W[0]["ik"]*W[1]["jk"]*W[2]["lk"]*W[3]["mk"];
+	Tensor<> residule(N, lens, dw);
+	residule["ijlk"] = (*V2)["ijlk"]-(*V)["ijlk"];
+	double norm = residule.norm2();
+	if(dw.rank==0) printf("Residule Norm=%lf\n", norm); 
+	}
+	// Check for the residule of the CP. (Here V2 is hard coded for N=4)
+	Tensor<>* V2 = new Tensor<>(N, lens, dw); 
+	(*V2)["ijlm"] = W[0]["ik"]*W[1]["jk"]*W[2]["lk"]*W[3]["mk"];
+	Tensor<> residule(N, lens, dw);
+	residule["ijlk"] = (*V2)["ijlk"]-(*V)["ijlk"];
+	double norm = residule.norm2();
+	if(dw.rank==0) printf("Residule Norm=%lf\n", norm); 
+	if(dw.rank==0) printf ("TEST_sparse_laplacian_alsCP_DT took %lf seconds\n\n\n",MPI_Wtime()-st_time);
+}
+
 /**
  * \brief CP decomposition of laplacian tensor using simple ALS
  */
@@ -655,7 +709,8 @@ int main(int argc, char ** argv){
 		int lens[2] = {8, 8};
 		//TEST_alsCP(2, lens, 8, dw);
 		//TEST_sparse_laplacian_alsCP(4, 20, 4, 0, dw); 
-		//TEST_sparse_laplacian_alsCP_mod(4, 20, 4, 0, dw); 
+		TEST_sparse_laplacian_alsCP_DT(6, 10, 4, 0, dw); 
+		//TEST_sparse_laplacian_alsCP_mod(6, 10, 4, 0, dw); 
 		//TEST_dense_uniform_alsCP(100, 5, dw);
 		//TEST_3d_poisson_CP(6, 3, 3, 0, dw);
 
@@ -664,11 +719,11 @@ int main(int argc, char ** argv){
 		//TEST_laplacian_tensor(4, 8, 1, dw);  // sparse	
 		//TEST_gauss_seidel(4, 4, dw);
 
-		int T_lens[] = {10 ,10, 10, 10, 10, 10};
-		int ranks[] = {4, 4, 4, 4, 4, 4};
+		//int T_lens[] = {10 ,10, 10, 10, 10, 10};
+		//int ranks[] = {4, 4, 4, 4, 4, 4};
 		//TEST_hosvd(3, T_lens, ranks, dw);
 		//TEST_alsTucker(6, T_lens, ranks, dw);	
-		TEST_alsTucker_mod(6, T_lens, ranks, dw);	
+		//TEST_alsTucker_mod(6, T_lens, ranks, dw);	
 		//TEST_3d_poisson_Tucker(6, 8, 2, 0, dw);
 		//TEST_sparse_laplacian_alsTucker(6, 10, 4, 0, dw); 
 

@@ -410,3 +410,13 @@ void gradient_CP(Tensor<> & V,
 		seq_V[i] = temp;
 	}
 }
+
+void char_string_copy(char* a, 
+				 int start_a,
+				 string& b,
+				 int start_b,
+				 int len) {
+	for (int i=0; i<len; i++) {
+		a[start_a+i] = b[start_b+i];
+	}
+}
