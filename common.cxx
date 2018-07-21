@@ -8,6 +8,40 @@
 using namespace CTF;
 //#define ERR_REPORT
 
+// /**
+//  * \brief Identity tensor: I x I x I x ...
+//  */
+// Tensor<> identitiy_tensor(int N, 
+// 						  int s, 
+// 						  World & dw) {
+// 	int d = N/2;
+// 	Matrix<> ident = Matrix<>(s,s,SP,dw);
+// 	ident["ii"] = 1.;
+
+// 	int *lens = new int[N];
+// 	for (int i=0; i<N; i++) lens[i]=s;		
+// 	Tensor<> I(N,true,lens,dw);
+
+// 	Tensor<> * I_temp = new Tensor<>;
+// 	(*I_temp) = ident;
+// 	for (int i=1; i<d; i++) {
+// 		Tensor<> I_temp2 = (*I_temp);
+// 		// lens
+// 		int *lens_temp = new int[2*i+2];
+// 		for (int jj=0; jj<2*i+2; jj++) lens_temp[jj]=s;
+// 		// I_temp		
+// 		I_temp = new Tensor<>(2*i+2,true,lens_temp,dw);
+// 		//build char
+// 		char seq_I2[2*i+1]; seq_I2[2*i] = '\0';
+// 		char seq_I1[2*i+3]; seq_I1[2*i+2] = '\0';
+// 		for (int jj=0; jj<(2*i+2); jj++) seq_I1[jj] = 'a'+jj;
+// 		for (int jj=2; jj<(2*i+2); jj++) seq_I2[jj-2] = 'a'+jj;
+// 		(*I_temp)[seq_I1] = I_temp2[seq_I2]*ident["ab"];
+// 	}
+// 	I = (*I_temp);
+//     return I;
+// }
+
 /**
  * \brief Identity tensor: I x I x I x ...
  */
@@ -18,27 +52,25 @@ Tensor<> identitiy_tensor(int N,
 	Matrix<> ident = Matrix<>(s,s,SP,dw);
 	ident["ii"] = 1.;
 
-	int *lens = new int[N];
+	int lens[N];
 	for (int i=0; i<N; i++) lens[i]=s;		
-	Tensor<> I(N,true,lens,dw);
-
-	Tensor<> * I_temp = new Tensor<>;
-	(*I_temp) = ident;
+	Tensor<> I(N,false,lens,dw);
+	Tensor<> I_temp = ident;
 	for (int i=1; i<d; i++) {
-		Tensor<> I_temp2 = (*I_temp);
+		Tensor<> I_temp2 = I_temp;
 		// lens
-		int *lens_temp = new int[2*i+2];
+		int lens_temp[2*i+2];
 		for (int jj=0; jj<2*i+2; jj++) lens_temp[jj]=s;
 		// I_temp		
-		I_temp = new Tensor<>(2*i+2,true,lens_temp,dw);
+		I_temp = Tensor<>(2*i+2,false,lens_temp,dw);
 		//build char
 		char seq_I2[2*i+1]; seq_I2[2*i] = '\0';
 		char seq_I1[2*i+3]; seq_I1[2*i+2] = '\0';
 		for (int jj=0; jj<(2*i+2); jj++) seq_I1[jj] = 'a'+jj;
 		for (int jj=2; jj<(2*i+2); jj++) seq_I2[jj-2] = 'a'+jj;
-		(*I_temp)[seq_I1] = I_temp2[seq_I2]*ident["ab"];
+		I_temp[seq_I1] = I_temp2[seq_I2]*ident["ab"];
 	}
-	I = (*I_temp);
+	I = (I_temp);
     return I;
 }
 

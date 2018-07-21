@@ -253,6 +253,210 @@ bool alsTucker(Tensor<> & V,
 	else return true;
 }
 
+void ttmc_map_DT(map<string,Tensor<>>& ttmc_map, 
+				 map<string,string>& parent, 
+				 map<string,string>& sibling, 
+				 Tensor<>& V, 
+				 Matrix<> * W, 
+				 string args,
+				 World& dw) {
+
+	if(ttmc_map.find(args)!=ttmc_map.end()) return;
+	char seq_w[3];
+	seq_w[2] = '\0'; seq_w[1] = '*'; 
+	// initialize the char
+	char seq[V.order+1];
+	char seq_Y[V.order+1];
+	seq[V.order] = '\0'; seq_Y[V.order] = '\0';
+	for (int jj=0; jj<V.order; jj++) {
+		seq[jj] = 'a'+jj;
+		seq_Y[jj] = 'a'+jj;
+	}
+	Tensor<> V_front;
+	Tensor<> V_parent;
+	if (args.length()==V.order/2 || args.length()==V.order/2+1) {
+		V_front = V;
+		V_parent = V;
+	} else {
+		if (ttmc_map.find(parent[args])==ttmc_map.end()) {
+			ttmc_map_DT(ttmc_map, parent, sibling, V, W, parent[args], dw);
+		}
+		V_front = ttmc_map[parent[args]];
+		V_parent = ttmc_map[parent[args]];
+	}
+	// build len for Y
+	int lens_Y[V_parent.order];
+	for (int m=0; m<V_parent.order; m++) {
+		lens_Y[m] = V_parent.lens[m];
+	}
+	Tensor<> V_temp; 
+	// int index_start = int(sibling[args][0]-parent[args][0]);
+	/* loops */
+	for (int j=0; j<sibling[args].length(); j++) {     // iterate on [ab]
+		// make seq_w
+		seq_w[0] = sibling[args][j];			
+		// build len for V_temp
+		lens_Y[int(seq_w[0]-'a')] = W[int(seq_w[0]-'a')].ncol;
+		V_temp = Tensor<>(V_parent.order, lens_Y, dw);
+		// contraction
+		seq_Y[int(seq_w[0]-'a')] = '*';
+		V_temp[seq_Y] = V_front[seq]*W[seq_w[0]-'a'][seq_w];	
+		seq_Y[int(seq_w[0]-'a')] = seq_w[0];			
+		V_front = V_temp;
+	}
+	ttmc_map[args] = V_front;
+	return;
+}
+
+/**
+ * \brief ALS method for Tucker decomposition with dimension tree
+ *  W: output matrices
+ *  core: output core tensor
+ *  V: input tensor
+ *  tol: tolerance for a relative stopping condition
+ *  timelimit, maxiter: limit of time and iterations
+ */
+bool alsTucker_DT(Tensor<> & V, 
+				  Tensor<> & core, 
+				  Matrix<> * W, 
+				  double tol, 
+				  double timelimit, 
+				  int maxiter, 
+				  World & dw) {
+
+	double st_time = MPI_Wtime();
+	int iter; 
+	Tensor<> core_prev(core);
+	double diffnorm;
+	// initialize the char
+	char seq[V.order+1];
+	char seq_Y[V.order+1];
+	seq[V.order] = '\0'; seq_Y[V.order] = '\0';
+	for (int jj=0; jj<V.order; jj++) {
+		seq[jj] = 'a'+jj;
+		seq_Y[jj] = 'a'+jj;
+	}
+	// maps 
+	map<string, Tensor<>> ttmc_map;
+	map<string, string> parent;
+	map<string, string> sibling;
+	Construct_Dimension_Tree(parent, sibling, 0, V.order-1);
+	// iterations
+	for (iter=0; iter<=maxiter; iter++)
+	{
+		// print the difference norm 
+		if ((iter%100==0 && iter!=0) || iter==maxiter) {
+			TTMc(core, V, W, -1, dw);
+			double diffnorm1 = core.norm2();
+			double diffnorm2 = core_prev.norm2();
+			diffnorm = abs(diffnorm1-diffnorm2);
+			if(dw.rank==0) cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [diffnorm]  "<< diffnorm << "  [tol]  " << tol <<  endl;
+			if ((diffnorm < tol) || MPI_Wtime()-st_time > timelimit) 
+				break;
+			core_prev[seq] = core[seq];
+		}
+		// clear the Hash Table
+		ttmc_map.clear();
+		// iteration on W[i]
+		for (int i=0; i<V.order; i++) { 
+			/* Compute the coarse level V 
+			*  Y["ijkd"] = V["abcd"]*R[0]["ai"]*R[1]["bj"]*R[2]["ck"]
+			*/
+			// Tensor<> Y;
+			// TTMc(Y, V, W, i, dw);
+			// build len for Y
+			int lens_Y[V.order];
+			for (int m=0; m<V.order; m++) {
+				lens_Y[m] = W[m].ncol;
+			}
+			lens_Y[i] = V.lens[i];
+			Tensor<> Y = Tensor<>(V.order, lens_Y, dw);	
+			// make args
+			char args[2];
+			args[1] = '\0';
+			args[0] = i+'a';
+			if (ttmc_map.find(parent[args])==ttmc_map.end()) {
+				ttmc_map_DT(ttmc_map, parent, sibling, V , W, parent[args], dw);
+			}
+			if (sibling[args].length()==1) {
+				char seq_A[3];
+				seq_A[2] = '\0'; seq_A[1] = '*'; 
+				if (args[0]==parent[args][0]) seq_A[0] = parent[args][1];
+				else seq_A[0] = parent[args][0];
+				seq_Y[int(seq_A[0]-'a')] = '*';
+				Y[seq_Y] = ttmc_map[parent[args]][seq]*W[int(seq_A[0]-'a')][seq_A];
+				seq_Y[int(seq_A[0]-'a')] = seq_A[0];				
+			} else {
+				char seq_A1[3],seq_A2[3];
+				seq_A1[2] = '\0'; seq_A2[2] = '\0';
+				seq_A1[1] = '*'; seq_A2[1] = '^';
+				if (parent[args][0]==args[0]) {
+					seq_A1[0] = parent[args][1];
+					seq_A2[0] = parent[args][2];
+				}
+				else {
+					seq_A1[0] = parent[args][0];
+					seq_A2[0] = parent[args][1];
+				}
+				seq_Y[int(seq_A1[0]-'a')] = '*';
+				seq_Y[int(seq_A2[0]-'a')] = '^';
+				Y[seq_Y] = ttmc_map[parent[args]][seq]*W[int(seq_A1[0]-'a')][seq_A1]*W[int(seq_A2[0]-'a')][seq_A2];	
+				seq_Y[int(seq_A1[0]-'a')] = seq_A1[0];
+				seq_Y[int(seq_A2[0]-'a')] = seq_A2[0];			
+			}
+			/* transpose Y
+			*/
+			// seq setup
+			char transformed_seq[Y.order+1];
+			strncpy(transformed_seq,seq, strlen(seq)+1);
+			transformed_seq[0] = seq[i];
+			strncpy(transformed_seq+1,seq, i);
+			// lens setup
+			int lens_transform_Y[Y.order];
+			for (int ii = 0; ii <Y.order; ii++) {
+				lens_transform_Y[ii] = Y.lens[ii];
+			}  
+			for (int jj = i; jj > 0; jj--) { 
+				lens_transform_Y[jj] = Y.lens[jj-1];
+			}
+			lens_transform_Y[0] = Y.lens[i];
+			// build transformed_Y
+			Tensor<> transformed_Y(Y.order, lens_transform_Y, dw);
+			transformed_Y[transformed_seq] = Y[seq];
+			/* unfold transformed_Y
+			*/
+			int unfold_lens[2];
+			unfold_lens[0] = Y.lens[i];
+			int unfold_ncol = 1;
+			for (int jj = 0; jj < Y.order; jj++) {  
+				if (jj != i) unfold_ncol *= Y.lens[jj];  
+			}
+			unfold_lens[1] = unfold_ncol;
+			Tensor<> Y_unfold(2, unfold_lens, dw);
+			fold_unfold(transformed_Y, Y_unfold);
+			/* get leading singular vectors
+			*/
+			Matrix<> M(Y_unfold);
+			Matrix<> U, VT;
+			Vector<> S;
+			Matrix<> MTM(M.nrow,M.nrow);
+			MTM["ij"] = M["ik"]*M["jk"];
+			MTM.svd(U, S, VT, core.lens[i]);
+			double norm_U = U.norm2();
+			if (norm_U<0) U["ij"] = -U["ij"];
+			W[i] = U;
+		}
+		// print .
+		if (iter%10==0 && dw.rank==0) printf(".");
+	}
+	if(dw.rank==0) {
+		printf ("\nIter = %d Final Diff norm %E \n", iter, diffnorm);
+		printf ("tf took %lf seconds\n",MPI_Wtime()-st_time);
+	}
+	if (iter == maxiter+1) return false;
+	else return true;
+}
+
 void Build_ttmc_map(map<string, Tensor<>> & ttmc_map, 
 					Tensor<> & V, 
 					Matrix<> * W,
@@ -331,7 +535,7 @@ bool alsTucker_mod(Tensor<> & V,
 	for (iter=0; iter<=maxiter; iter++)
 	{
 		// initialize the TTMc
-		if (iter%30==0) {
+		if (iter%35==0) {
 			for (int j=0; j<V.order; j++) {
 				W_init[j] = W[j];
 				dW[j] = Matrix<>(W[j].nrow,W[j].ncol);

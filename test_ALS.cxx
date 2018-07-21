@@ -481,11 +481,11 @@ void TEST_alsTucker(int N,
 /**
  * \brief test the Hosvd method
  */
-void TEST_alsTucker_mod(int N,
-						int * V_lens,
-						int * ranks,
-						World & dw){
-	if(dw.rank==0) printf("Test of Tucker Decomposition\n");
+void TEST_alsTucker_DT(int N,
+					   int * V_lens,
+					   int * ranks,
+					   World & dw){
+	if(dw.rank==0) printf("Test of Tucker Decomposition with dimension tree\n");
 	double st_time = MPI_Wtime();
 	Tensor<> V(N, V_lens, dw);
 	V.fill_random(0,1);
@@ -497,7 +497,50 @@ void TEST_alsTucker_mod(int N,
 	// using hosvd to initialize W and hosvd_core
 	hosvd(V, hosvd_core, W, ranks, dw);
 	// Tucker decomposition
-	alsTucker(V, hosvd_core, W, 1e-10*Vnorm, 100, 100, dw);
+	bool finished = false;
+	while (finished == false) {
+		finished = alsTucker_DT(V, hosvd_core, W, 1e-10*Vnorm, 40000, 40000, dw);
+		// check the residule
+		Matrix<>* W_T = new Matrix<>[N];
+		for (int i=0; i<N; i++) {
+			W_T[i] = Matrix<>(W[i].ncol,W[i].nrow,dw);
+			W_T[i]["ij"] = W[i]["ji"];
+		}
+		Tensor<> V_check(N, V_lens, dw);
+		Tensor<> V_diff(N, V_lens, dw);
+		TTMc(V_check, hosvd_core, W_T, -1, dw);
+		char seq[V.order+1];
+		seq[V.order] = '\0';
+		for (int jj=0; jj<V.order; jj++) {
+			seq[jj] = 'a'+jj;
+		}
+		V_diff[seq] = V_check[seq] - V[seq];
+		double diffnorm_V = V_diff.norm2();
+		if(dw.rank==0) printf("diff Norm of V =%lf\n", diffnorm_V); 
+	}
+	if(dw.rank==0) printf ("TEST_alsTucker_DT took %lf seconds\n\n\n",MPI_Wtime()-st_time);
+}
+
+/**
+ * \brief test the Hosvd method
+ */
+void TEST_alsTucker_mod(int N,
+						int * V_lens,
+						int * ranks,
+						World & dw){
+	if(dw.rank==0) printf("Test of modified Tucker Decomposition\n");
+	double st_time = MPI_Wtime();
+	Tensor<> V(N, V_lens, dw);
+	V.fill_random(0,1);
+	// Norm of V
+	double Vnorm = V.norm2();
+	if(dw.rank==0) printf("initial Norm of V =%lf\n", Vnorm); 
+	Matrix<>* W = new Matrix<>[N];
+	Tensor<> hosvd_core;
+	// using hosvd to initialize W and hosvd_core
+	hosvd(V, hosvd_core, W, ranks, dw);
+	// Tucker decomposition
+	alsTucker_DT(V, hosvd_core, W, 1e-10*Vnorm, 200, 200, dw);
 	bool finished = false;
 	while (finished == false) {
 		finished = alsTucker_mod(V, hosvd_core, W, 1e-10*Vnorm, 40000, 40000, dw);
@@ -519,7 +562,7 @@ void TEST_alsTucker_mod(int N,
 		double diffnorm_V = V_diff.norm2();
 		if(dw.rank==0) printf("diff Norm of V =%lf\n", diffnorm_V); 
 	}
-	if(dw.rank==0) printf ("TEST_alsTucker took %lf seconds\n\n\n",MPI_Wtime()-st_time);
+	if(dw.rank==0) printf ("TEST_alsTucker_mod took %lf seconds\n\n\n",MPI_Wtime()-st_time);
 }
 
 /**
@@ -708,7 +751,7 @@ int main(int argc, char ** argv){
 
 		int lens[2] = {8, 8};
 		//TEST_alsCP(2, lens, 8, dw);
-		TEST_sparse_laplacian_alsCP(6, 10, 4, 0, dw); 
+		TEST_sparse_laplacian_alsCP(6, 12, 4, 0, dw); 
 		//TEST_sparse_laplacian_alsCP_DT(6, 12, 4, 0, dw); 
 		//TEST_sparse_laplacian_alsCP_mod(6, 12, 4, 0, dw); 
 		//TEST_dense_uniform_alsCP(100, 5, dw);
@@ -719,10 +762,11 @@ int main(int argc, char ** argv){
 		//TEST_laplacian_tensor(4, 8, 1, dw);  // sparse	
 		//TEST_gauss_seidel(4, 4, dw);
 
-		//int T_lens[] = {10 ,10, 10, 10, 10, 10};
-		//int ranks[] = {4, 4, 4, 4, 4, 4};
+		int T_lens[] = {13 ,13, 13, 13, 13, 13};
+		int ranks[] = {4, 4, 4, 4, 4, 4};
 		//TEST_hosvd(3, T_lens, ranks, dw);
 		//TEST_alsTucker(6, T_lens, ranks, dw);	
+		//TEST_alsTucker_DT(6, T_lens, ranks, dw);	
 		//TEST_alsTucker_mod(6, T_lens, ranks, dw);	
 		//TEST_3d_poisson_Tucker(6, 8, 2, 0, dw);
 		//TEST_sparse_laplacian_alsTucker(6, 10, 4, 0, dw); 
