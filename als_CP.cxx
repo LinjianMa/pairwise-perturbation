@@ -191,26 +191,17 @@ void mttkrp_map_DT(map<string,Tensor<>>& mttkrp_map,
 		lens_V[V.order-1] = K;
 		V_temp = Tensor<>(V.order, lens_V, dw);
 		// contraction
-		if (dw.rank==0) cout <<"shere1" << endl;
-		if (dw.rank==0) cout <<seq_f << endl;
-		if (dw.rank==0) cout <<seq << endl;
-		if (dw.rank==0) cout <<seq_w << endl;
-		if (dw.rank==0)cout <<"index" << index_start << endl;
-
 		V_temp[seq_f] = V_front[seq]*W[index_start][seq_w];
-		if (dw.rank==0) cout <<"shere2" << endl;
 		V_front = V_temp;
 		/* loops
 		*/
 		for (int j=1; j<sibling[args].length(); j++) {     // iterate on [ab]
 			// make seq
-			// char seq[V_front.order+1];
 			seq[V_front.order] = '\0';
 			strncpy(seq,seq_f, strlen(seq_f));
 			// make seq_w
 			seq_w[0] = sibling[args][j];
 			// make seq_f
-			// char seq_f[V_front.order];
 			seq_f[V_front.order-1] = '\0';
 			seq_f[V_front.order-2] = '*';
 			char_string_copy(seq_f,0,parent[args],0,index_start);
@@ -226,14 +217,7 @@ void mttkrp_map_DT(map<string,Tensor<>>& mttkrp_map,
 			lens_V[V.order-j-1] = K;
 			V_temp = Tensor<>(V.order-j, lens_V, dw);
 			// contraction
-		if (dw.rank==0) cout <<"shere11" << endl;
-		if (dw.rank==0) cout <<seq_f << endl;
-		if (dw.rank==0) cout <<seq << endl;
-		if (dw.rank==0) cout <<seq_w << endl;
-		if (dw.rank==0)cout <<"index" << index_start+j << endl;
-
 			V_temp[seq_f] = V_front[seq]*W[index_start+j][seq_w];
-		if (dw.rank==0) cout <<"shere12" << endl;
 			V_front = V_temp;
 		}
 		mttkrp_map[args] = V_front;
@@ -265,9 +249,6 @@ void mttkrp_map_DT(map<string,Tensor<>>& mttkrp_map,
 		seq_f[V_front.order-1] = '\0';
 		seq_f[V_front.order-2] = '*';
 		char_string_copy(seq_f,0,parent[args],0,index_start);
-				if (dw.rank==0) cout <<seq_f << endl;
-				if (dw.rank==0) cout <<V_parent.order-index_start-j-1 << endl;
-
 		char_string_copy(seq_f,index_start,parent[args],index_start+j+1,V_parent.order-index_start-j-2);				
 		// build len for V_temp
 		int lens_V[V_parent.order-j-1];
@@ -280,39 +261,9 @@ void mttkrp_map_DT(map<string,Tensor<>>& mttkrp_map,
 		lens_V[V_parent.order-j-2] = K;
 		V_temp = Tensor<>(V_parent.order-j-1, lens_V, dw);
 		// contraction
-				if (dw.rank==0) cout <<"ddhere11" << endl;
-		if (dw.rank==0) cout <<seq_f << endl;
-		if (dw.rank==0) cout <<seq << endl;
-		if (dw.rank==0) cout <<seq_w << endl;
-		if (dw.rank==0)cout <<"index" << index_start+j << endl;
-		V_temp[seq_f] = V_front[seq]*W[seq_w[0]-'a'][seq_w];
-						if (dw.rank==0) cout <<"ddhere22" << endl;
-
-			// 	int lensT2[4] = {10,10,10,4};
-			// Tensor<>T2 = Tensor<>(4,lensT2,dw);
-			//  Tensor<>dT2 = Tensor<>(4,lensT2,dw);
-
-			//  T2["abc*"]= V["abcdef"]*W[3]["d*"]*W[4]["e*"]*W[5]["f*"];
-			//  dT2["abc*"] = T2["abc*"]- V_front["abc*"];
-			//  double dT2_norm = dT2.norm2();
-			//  if(dw.rank==0) cout <<dT2_norm << endl;	
-			// 		int lensT2[4] = {10,10,4};
-			// Tensor<>T2 = Tensor<>(3,lensT2,dw);
-			//  Tensor<>dT2 = Tensor<>(3,lensT2,dw);
-			//  			T2["ab*"]= V["abcdef"]*W[2]["c*"]*W[3]["d*"]*W[4]["e*"]*W[5]["f*"];
-			//  dT2["ab*"] = T2["ab*"]- V_temp["ab*"];
-			//  double dT2_norm = dT2.norm2();
-			//  if(dw.rank==0) cout <<dT2_norm << endl;						
-
+		V_temp[seq_f] = V_front[seq]*W[seq_w[0]-'a'][seq_w];				
 		V_front = V_temp;
 	}
-			// 	int lensT2[4] = {10,10,4};
-			// Tensor<>T2 = Tensor<>(3,lensT2,dw);
-			//  Tensor<>dT2 = Tensor<>(3,lensT2,dw);
-			//  			T2["ab*"]= V["abcdef"]*W[2]["c*"]*W[3]["d*"]*W[4]["e*"]*W[5]["f*"];
-			//  dT2["ab*"] = T2["ab*"]- V_front["ab*"];
-			//  double dT2_norm = dT2.norm2();
-			//  if(dw.rank==0) cout <<dT2_norm << endl;	
 	mttkrp_map[args] = V_front;
 	return;
 }
@@ -401,11 +352,9 @@ bool alsCP_DT(Tensor<> & V,
 			char args[2];
 			args[1] = '\0';
 			args[0] = i+'a';
-			if (dw.rank==0) cout << "here" << endl;
 			if (mttkrp_map.find(parent[args])==mttkrp_map.end()) {
 				mttkrp_map_DT(mttkrp_map, parent, sibling, V , W, parent[args], dw);
 			}
-			if (dw.rank==0) cout << "here2" << endl;
 			Matrix<> M = Matrix<>(W[i].nrow,W[i].ncol);
 			if (sibling[args].length()==1) {
 				char seq[3],seq_A[3],seq_p[4];
@@ -414,7 +363,6 @@ bool alsCP_DT(Tensor<> & V,
 				seq[0] = args[0]; seq_p[0] = parent[args][0]; seq_p[1] = parent[args][1];
 				if (seq_p[0]==seq[0]) seq_A[0] = seq_p[1];
 				else seq_A[0] = seq_p[0];
-				if (dw.rank==0) cout << seq << "  "<< seq_p << "  "<< seq_A << endl; 
 				M[seq] = mttkrp_map[parent[args]][seq_p]*W[int(seq_A[0]-'a')][seq_A];
 			} else {
 				char seq[3],seq_A1[3],seq_A2[3],seq_p[5];
@@ -429,25 +377,10 @@ bool alsCP_DT(Tensor<> & V,
 					seq_A1[0] = seq_p[0];
 					seq_A2[0] = seq_p[1];
 				}
-				if (dw.rank==0) cout << seq << "  "<< seq_p << "  "<< seq_A1 << "  " << seq_A2 << endl; 
 				M[seq] = mttkrp_map[parent[args]][seq_p]*W[int(seq_A1[0]-'a')][seq_A1]*W[int(seq_A2[0]-'a')][seq_A2];				
 			}
-						Matrix<> M2 = Matrix<>(W[i].nrow,W[i].ncol);
-						Matrix<> dM2 = Matrix<>(W[i].nrow,W[i].ncol);
 			// Khatri-Rao Product C[I,J,K]= A[I,K](op)B[J,K]
-			 KhatriRao_contract(M2, V, W, index, lens_H, dw);
-						// M2["a*"] = V["abcdef"]*W[3]["d*"]*W[4]["e*"]*W[5]["f*"]*W[2]["c*"]*W[1]["b*"];
-			 dM2["ij"] = M2["ij"]-M["ij"];
-			 double dM_norm = dM2.norm2();
-			 if(dw.rank==0) cout <<dM_norm << endl;
-			 // int lensT2[5] = {10,10,4};
-			 // Tensor<>T2 = Tensor<>(3,lensT2,dw);
-			 // Tensor<>dT2 = Tensor<>(3,lensT2,dw);
-
-			 // T2["ab*"]= V["abcdef"]*W[2]["c*"]*W[3]["d*"]*W[4]["e*"]*W[5]["f*"];
-			 // dT2["ab*"] = T2["ab*"]- mttkrp_map["ab"]["ab*"];
-			 // double dT2_norm = dT2.norm2();
-			 // if(dw.rank==0) cout <<dT2_norm << endl;			 
+			// KhatriRao_contract(M2, V, W, index, lens_H, dw);
 			// calculating S
 			S["ij"] = W[index[0]]["ki"]*W[index[0]]["kj"];
 			for (int ii=1; ii<V.order-1; ii++) {
@@ -676,7 +609,6 @@ bool alsCP_mod(Tensor<> & V,
 			seq_M[V.order-1] = '\0';
 			strncpy(seq_M,seq,i);
 			strncpy(seq_M+i,seq+i+1,V.order-i-1);
-			//if(dw.rank==0) cout <<"seq_M= "<< seq_M << endl;
 			M["ij"] = mttkrp_map[seq_M]["ij"];
 			for (int ii=0;ii<i; ii++) {
 				char seq_tensor[V.order-1];

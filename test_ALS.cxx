@@ -194,7 +194,7 @@ void TEST_sparse_laplacian_alsCP_mod(int N,				// Dimension of the tensor
 	double Vnorm = V->norm2();
 	if(dw.rank==0) printf("Norm of V %E \n",Vnorm);
 	bool finished = false;
-	alsCP(*V, W, grad_W, F, 1e-10*Vnorm, 500, 500, dw);
+	alsCP_DT(*V, W, grad_W, F, 1e-10*Vnorm, 500, 500, dw);
 	// Run ALS
 	while (finished == false) {
 		finished = alsCP_mod(*V, W, grad_W, F, 1e-10*Vnorm, 20000, 20000, dw);
@@ -708,9 +708,9 @@ int main(int argc, char ** argv){
 
 		int lens[2] = {8, 8};
 		//TEST_alsCP(2, lens, 8, dw);
-		//TEST_sparse_laplacian_alsCP(4, 20, 4, 0, dw); 
-		TEST_sparse_laplacian_alsCP_DT(6, 10, 4, 0, dw); 
-		//TEST_sparse_laplacian_alsCP_mod(6, 10, 4, 0, dw); 
+		TEST_sparse_laplacian_alsCP(6, 10, 4, 0, dw); 
+		//TEST_sparse_laplacian_alsCP_DT(6, 12, 4, 0, dw); 
+		//TEST_sparse_laplacian_alsCP_mod(6, 12, 4, 0, dw); 
 		//TEST_dense_uniform_alsCP(100, 5, dw);
 		//TEST_3d_poisson_CP(6, 3, 3, 0, dw);
 
