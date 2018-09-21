@@ -345,12 +345,30 @@ bool alsTucker_DT(Tensor<> & V,
 	for (iter=0; iter<=maxiter; iter++)
 	{
 		// print the difference norm 
-		if ((iter%100==0 && iter!=0) || iter==maxiter) {
+		if ((iter%5==0 && iter!=0) || iter==maxiter) {
 			TTMc(core, V, W, -1, dw);
 			double diffnorm1 = core.norm2();
 			double diffnorm2 = core_prev.norm2();
 			diffnorm = abs(diffnorm1-diffnorm2);
 			if(dw.rank==0) cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [diffnorm]  "<< diffnorm << "  [tol]  " << tol <<  endl;
+			// check the residule
+			Matrix<>* W_T = new Matrix<>[V.order];
+			for (int i=0; i<V.order; i++) {
+				W_T[i] = Matrix<>(W[i].ncol,W[i].nrow,dw);
+				W_T[i]["ij"] = W[i]["ji"];
+			}
+			Tensor<> V_check(V.order, V.lens, dw);
+			Tensor<> V_diff(V.order, V.lens, dw);
+			TTMc(V_check, core, W_T, -1, dw);
+			char seq[V.order+1];
+			seq[V.order] = '\0';
+			for (int jj=0; jj<V.order; jj++) {
+				seq[jj] = 'a'+jj;
+			}
+			V_diff[seq] = V_check[seq] - V[seq];
+			double diffnorm_V = V_diff.norm2();
+			if(dw.rank==0) printf("diff Norm of V =%lf\n", diffnorm_V); 
+			// end check the residue
 			if ((diffnorm < tol) || MPI_Wtime()-st_time > timelimit) 
 				break;
 			core_prev[seq] = core[seq];
@@ -535,7 +553,7 @@ bool alsTucker_mod(Tensor<> & V,
 	for (iter=0; iter<=maxiter; iter++)
 	{
 		// initialize the TTMc
-		if (iter%35==0) {
+		if (iter%20==0) {
 			for (int j=0; j<V.order; j++) {
 				W_init[j] = W[j];
 				dW[j] = Matrix<>(W[j].nrow,W[j].ncol);
@@ -563,12 +581,30 @@ bool alsTucker_mod(Tensor<> & V,
 			}			
 		}
 		// print the difference norm 
-		if ((iter%100==0 && iter!=0) || iter==maxiter) {
+		if ((iter%5==0 && iter!=0) || iter==maxiter) {
 			TTMc(core, V, W, -1, dw);
 			double diffnorm1 = core.norm2();
 			double diffnorm2 = core_prev.norm2();
 			diffnorm = abs(diffnorm1-diffnorm2);
 			if(dw.rank==0) cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [diffnorm]  "<< diffnorm << "  [tol]  " << tol <<  endl;
+			// check the residule
+			Matrix<>* W_T = new Matrix<>[V.order];
+			for (int i=0; i<V.order; i++) {
+				W_T[i] = Matrix<>(W[i].ncol,W[i].nrow,dw);
+				W_T[i]["ij"] = W[i]["ji"];
+			}
+			Tensor<> V_check(V.order, V.lens, dw);
+			Tensor<> V_diff(V.order, V.lens, dw);
+			TTMc(V_check, core, W_T, -1, dw);
+			char seq[V.order+1];
+			seq[V.order] = '\0';
+			for (int jj=0; jj<V.order; jj++) {
+				seq[jj] = 'a'+jj;
+			}
+			V_diff[seq] = V_check[seq] - V[seq];
+			double diffnorm_V = V_diff.norm2();
+			if(dw.rank==0) printf("diff Norm of V =%lf\n", diffnorm_V); 
+			// end check the residue
 			if ((diffnorm < tol) || MPI_Wtime()-st_time > timelimit) 
 				break;
 			core_prev[seq] = core[seq];

@@ -22,7 +22,7 @@ void TEST_alsCP(int dim,
 	Tensor<>* V = new Tensor<>(dim, lens, dw); 
 	V->fill_random(10,100);
 	if(dw.rank==0) cout << "V_origin" << endl;
-	(*V).print();
+	// (*V).print();
 	Matrix<>* W = new Matrix<>[dim];
 	Matrix<>* grad_W = new Matrix<>[dim];
 	for (int i=0; i<dim; i++) {
@@ -44,15 +44,15 @@ void TEST_alsCP(int dim,
 	//bool
 	bool finished = false;
 	while (finished==false) {
-		finished = alsCP(*V, W, grad_W, F, 1e-5*initnorm, 5000, 5000, dw);
+		finished = alsCP_DT(*V, W, grad_W, F, 1e-5*initnorm, 500, 500, false, dw);
+		Tensor<>* V2 = new Tensor<>(dim, lens, dw); 
+		(*V2)["abcdef"] = W[0]["ak"]*W[1]["bk"]*W[2]["ck"]*W[3]["dk"]*W[4]["ek"]*W[5]["fk"];
+		Tensor<> residule(dim, lens, dw);
+		residule["abcdef"] = (*V2)["abcdef"]-(*V)["abcdef"];
+		// residule.print();
+		double norm = residule.norm2();
+		if(dw.rank==0) printf("norm=%lf\n", norm); 
 	}
-	Tensor<>* V2 = new Tensor<>(dim, lens, dw); 
-	(*V2)["ij"] = W[0]["ik"]*W[1]["jk"];
-	Tensor<> residule(dim, lens, dw);
-	residule["ij"] = (*V2)["ij"]-(*V)["ij"];
-	residule.print();
-	double norm = residule.norm2();
-	if(dw.rank==0) printf("norm=%lf\n", norm); 
 	if(dw.rank==0) printf("alstf test finished\n");
 }
 
@@ -143,7 +143,7 @@ void TEST_sparse_laplacian_alsCP_DT(int N,				// Dimension of the tensor
 	bool finished = false;
 	// Run ALS
 	while (finished == false) {
-		finished = alsCP_DT(*V, W, grad_W, F, 1e-10*Vnorm, 20000, 20000, dw);
+		finished = alsCP_DT(*V, W, grad_W, F, 1e-10*Vnorm, 20000, 20000, false, dw);
 			// Check for the residule of the CP. (Here V2 is hard coded for N=4)
 	Tensor<>* V2 = new Tensor<>(N, lens, dw); 
 	(*V2)["ijlm"] = W[0]["ik"]*W[1]["jk"]*W[2]["lk"]*W[3]["mk"];
@@ -194,7 +194,7 @@ void TEST_sparse_laplacian_alsCP_mod(int N,				// Dimension of the tensor
 	double Vnorm = V->norm2();
 	if(dw.rank==0) printf("Norm of V %E \n",Vnorm);
 	bool finished = false;
-	alsCP_DT(*V, W, grad_W, F, 1e-10*Vnorm, 500, 500, dw);
+	alsCP_DT(*V, W, grad_W, F, 1e-10*Vnorm, 500, 500, false, dw);
 	// Run ALS
 	while (finished == false) {
 		finished = alsCP_mod(*V, W, grad_W, F, 1e-10*Vnorm, 20000, 20000, dw);
@@ -499,24 +499,24 @@ void TEST_alsTucker_DT(int N,
 	// Tucker decomposition
 	bool finished = false;
 	while (finished == false) {
-		finished = alsTucker_DT(V, hosvd_core, W, 1e-10*Vnorm, 40000, 40000, dw);
-		// check the residule
-		Matrix<>* W_T = new Matrix<>[N];
-		for (int i=0; i<N; i++) {
-			W_T[i] = Matrix<>(W[i].ncol,W[i].nrow,dw);
-			W_T[i]["ij"] = W[i]["ji"];
-		}
-		Tensor<> V_check(N, V_lens, dw);
-		Tensor<> V_diff(N, V_lens, dw);
-		TTMc(V_check, hosvd_core, W_T, -1, dw);
-		char seq[V.order+1];
-		seq[V.order] = '\0';
-		for (int jj=0; jj<V.order; jj++) {
-			seq[jj] = 'a'+jj;
-		}
-		V_diff[seq] = V_check[seq] - V[seq];
-		double diffnorm_V = V_diff.norm2();
-		if(dw.rank==0) printf("diff Norm of V =%lf\n", diffnorm_V); 
+		finished = alsTucker_DT(V, hosvd_core, W, 1e-10*Vnorm, 1000000, 100000, dw);
+ 	// 	// check the residule
+		// Matrix<>* W_T = new Matrix<>[N];
+		// for (int i=0; i<N; i++) {
+		// 	W_T[i] = Matrix<>(W[i].ncol,W[i].nrow,dw);
+		// 	W_T[i]["ij"] = W[i]["ji"];
+		// }
+		// Tensor<> V_check(N, lens, dw);
+		// Tensor<> V_diff(N, lens, dw);
+		// TTMc(V_check, hosvd_core, W_T, -1, dw);
+		// char seq[V.order+1];
+		// seq[V.order] = '\0';
+		// for (int jj=0; jj<V.order; jj++) {
+		// 	seq[jj] = 'a'+jj;
+		// }
+		// V_diff[seq] = V_check[seq] - V[seq];
+		// double diffnorm_V = V_diff.norm2();
+		// if(dw.rank==0) printf("diff Norm of V =%lf\n", diffnorm_V); 
 	}
 	if(dw.rank==0) printf ("TEST_alsTucker_DT took %lf seconds\n\n\n",MPI_Wtime()-st_time);
 }
@@ -540,27 +540,27 @@ void TEST_alsTucker_mod(int N,
 	// using hosvd to initialize W and hosvd_core
 	hosvd(V, hosvd_core, W, ranks, dw);
 	// Tucker decomposition
-	alsTucker_DT(V, hosvd_core, W, 1e-10*Vnorm, 200, 200, dw);
+	alsTucker_DT(V, hosvd_core, W, 1e-10*Vnorm, 200000, 150, dw);
 	bool finished = false;
 	while (finished == false) {
-		finished = alsTucker_mod(V, hosvd_core, W, 1e-10*Vnorm, 40000, 40000, dw);
-		// check the residule
-		Matrix<>* W_T = new Matrix<>[N];
-		for (int i=0; i<N; i++) {
-			W_T[i] = Matrix<>(W[i].ncol,W[i].nrow,dw);
-			W_T[i]["ij"] = W[i]["ji"];
-		}
-		Tensor<> V_check(N, V_lens, dw);
-		Tensor<> V_diff(N, V_lens, dw);
-		TTMc(V_check, hosvd_core, W_T, -1, dw);
-		char seq[V.order+1];
-		seq[V.order] = '\0';
-		for (int jj=0; jj<V.order; jj++) {
-			seq[jj] = 'a'+jj;
-		}
-		V_diff[seq] = V_check[seq] - V[seq];
-		double diffnorm_V = V_diff.norm2();
-		if(dw.rank==0) printf("diff Norm of V =%lf\n", diffnorm_V); 
+		finished = alsTucker_mod(V, hosvd_core, W, 1e-10*Vnorm, 1000000, 100000, dw);
+ 	// 	// check the residule
+		// Matrix<>* W_T = new Matrix<>[N];
+		// for (int i=0; i<N; i++) {
+		// 	W_T[i] = Matrix<>(W[i].ncol,W[i].nrow,dw);
+		// 	W_T[i]["ij"] = W[i]["ji"];
+		// }
+		// Tensor<> V_check(N, lens, dw);
+		// Tensor<> V_diff(N, lens, dw);
+		// TTMc(V_check, hosvd_core, W_T, -1, dw);
+		// char seq[V.order+1];
+		// seq[V.order] = '\0';
+		// for (int jj=0; jj<V.order; jj++) {
+		// 	seq[jj] = 'a'+jj;
+		// }
+		// V_diff[seq] = V_check[seq] - V[seq];
+		// double diffnorm_V = V_diff.norm2();
+		// if(dw.rank==0) printf("diff Norm of V =%lf\n", diffnorm_V); 
 	}
 	if(dw.rank==0) printf ("TEST_alsTucker_mod took %lf seconds\n\n\n",MPI_Wtime()-st_time);
 }
@@ -593,24 +593,24 @@ void TEST_sparse_laplacian_alsTucker(int N,				// Dimension of the tensor
 	// Tucker decomposition
 	bool finished = false;
 	while (finished == false) {
-		finished = alsTucker(V, hosvd_core, W, 1e-10*Vnorm, 20000, 20000, dw);
-		// check the residule
-		Matrix<>* W_T = new Matrix<>[N];
-		for (int i=0; i<N; i++) {
-			W_T[i] = Matrix<>(W[i].ncol,W[i].nrow,dw);
-			W_T[i]["ij"] = W[i]["ji"];
-		}
-		Tensor<> V_check(N, lens, dw);
-		Tensor<> V_diff(N, lens, dw);
-		TTMc(V_check, hosvd_core, W_T, -1, dw);
-		char seq[V.order+1];
-		seq[V.order] = '\0';
-		for (int jj=0; jj<V.order; jj++) {
-			seq[jj] = 'a'+jj;
-		}
-		V_diff[seq] = V_check[seq] - V[seq];
-		double diffnorm_V = V_diff.norm2();
-		if(dw.rank==0) printf("diff Norm of V =%lf\n", diffnorm_V); 
+		finished = alsTucker_DT(V, hosvd_core, W, 1e-10*Vnorm, 100000000, 10000, dw);
+ 	// 	// check the residule
+		// Matrix<>* W_T = new Matrix<>[N];
+		// for (int i=0; i<N; i++) {
+		// 	W_T[i] = Matrix<>(W[i].ncol,W[i].nrow,dw);
+		// 	W_T[i]["ij"] = W[i]["ji"];
+		// }
+		// Tensor<> V_check(N, lens, dw);
+		// Tensor<> V_diff(N, lens, dw);
+		// TTMc(V_check, hosvd_core, W_T, -1, dw);
+		// char seq[V.order+1];
+		// seq[V.order] = '\0';
+		// for (int jj=0; jj<V.order; jj++) {
+		// 	seq[jj] = 'a'+jj;
+		// }
+		// V_diff[seq] = V_check[seq] - V[seq];
+		// double diffnorm_V = V_diff.norm2();
+		// if(dw.rank==0) printf("diff Norm of V =%lf\n", diffnorm_V); 
 	}
 	if(dw.rank==0) printf ("TEST_sparse_laplacian_alsTucker took %lf seconds\n\n\n",MPI_Wtime()-st_time);
 }
@@ -640,28 +640,32 @@ void TEST_sparse_laplacian_alsTucker_mod(int N,				// Dimension of the tensor
 	Tensor<> hosvd_core;
 	// using hosvd to initialize W and hosvd_core
 	hosvd(V, hosvd_core, W, ranks, dw);
-	alsTucker(V, hosvd_core, W, 1e-10*Vnorm, 200, 200, dw);
+	// alsTucker(V, hosvd_core, W, 1e-10*Vnorm, 200, 200, dw);
+	for (int iter=0; iter<1; iter++) {
+		alsTucker_DT(V, hosvd_core, W, 1e-10*Vnorm, 200000000, 20, dw);
+ 	// 	// check the residule
+		// Matrix<>* W_T = new Matrix<>[N];
+		// for (int i=0; i<N; i++) {
+		// 	W_T[i] = Matrix<>(W[i].ncol,W[i].nrow,dw);
+		// 	W_T[i]["ij"] = W[i]["ji"];
+		// }
+		// Tensor<> V_check(N, lens, dw);
+		// Tensor<> V_diff(N, lens, dw);
+		// TTMc(V_check, hosvd_core, W_T, -1, dw);
+		// char seq[V.order+1];
+		// seq[V.order] = '\0';
+		// for (int jj=0; jj<V.order; jj++) {
+		// 	seq[jj] = 'a'+jj;
+		// }
+		// V_diff[seq] = V_check[seq] - V[seq];
+		// double diffnorm_V = V_diff.norm2();
+		// if(dw.rank==0) printf("diff Norm of V =%lf\n", diffnorm_V); 
+	}
 	// Tucker decomposition
 	bool finished = false;
 	while (finished == false) {
-		finished = alsTucker_mod(V, hosvd_core, W, 1e-10*Vnorm, 20000, 20000, dw);
-		// check the residule
-		Matrix<>* W_T = new Matrix<>[N];
-		for (int i=0; i<N; i++) {
-			W_T[i] = Matrix<>(W[i].ncol,W[i].nrow,dw);
-			W_T[i]["ij"] = W[i]["ji"];
-		}
-		Tensor<> V_check(N, lens, dw);
-		Tensor<> V_diff(N, lens, dw);
-		TTMc(V_check, hosvd_core, W_T, -1, dw);
-		char seq[V.order+1];
-		seq[V.order] = '\0';
-		for (int jj=0; jj<V.order; jj++) {
-			seq[jj] = 'a'+jj;
-		}
-		V_diff[seq] = V_check[seq] - V[seq];
-		double diffnorm_V = V_diff.norm2();
-		if(dw.rank==0) printf("diff Norm of V =%lf\n", diffnorm_V); 
+		if(dw.rank==0) printf("pairwise perturbation starts\n"); 
+		finished = alsTucker_mod(V, hosvd_core, W, 1e-10*Vnorm, 200000000, 2000000, dw);
 	}
 	if(dw.rank==0) printf ("TEST_sparse_laplacian_alsTucker took %lf seconds\n\n\n",MPI_Wtime()-st_time);
 }  
@@ -691,7 +695,7 @@ void TEST_3d_poisson_Tucker(int N,				// Dimension of the tensor
 	// reshape V0 into V
 	fold_unfold(V0, V);
 	//V0->print();
-	//V->print();
+	V.print();
 	N = N/2;
 	double Vnorm = V.norm2();
 	if(dw.rank==0) printf("initial Norm of V =%lf\n", Vnorm); 
@@ -703,7 +707,7 @@ void TEST_3d_poisson_Tucker(int N,				// Dimension of the tensor
 	// Tucker decomposition
 	bool finished = false;
 	while (finished == false) {
-		finished = alsTucker(V, hosvd_core, W, 1e-10*Vnorm, 20000, 20000, dw);
+		finished = alsTucker_DT(V, hosvd_core, W, 1e-10*Vnorm, 20000, 20000, dw);
 	}
 	// check the residule
 	Matrix<>* W_T = new Matrix<>[N];
@@ -713,6 +717,7 @@ void TEST_3d_poisson_Tucker(int N,				// Dimension of the tensor
 	}
 	Tensor<> V_check(N, lens, dw);
 	Tensor<> V_diff(N, lens, dw);
+	hosvd_core.print();
 	TTMc(V_check, hosvd_core, W_T, -1, dw);
 	char seq[V.order+1];
 	seq[V.order] = '\0';
@@ -724,6 +729,231 @@ void TEST_3d_poisson_Tucker(int N,				// Dimension of the tensor
 	if(dw.rank==0) printf("diff Norm of V =%lf\n", diffnorm_V); 
 	if(dw.rank==0) printf ("TEST_3d_poisson_Tucker took %lf seconds\n\n\n",MPI_Wtime()-st_time);
 } 
+
+void TEST_Gram_Schmidt() {
+	Vector<> A(5);
+	Vector<> B(5);
+	A.fill_random(0,1);
+	B.fill_random(0,1);
+	A.print();
+	B.print();
+	double innerproduct = A["i"]*B["i"];
+	Gram_Schmidt(A, B);
+	cout << "innerproduct before GS: " << innerproduct << endl;
+	A.print();
+	B.print();
+	innerproduct = A["i"]*B["i"];
+	cout << "innerproduc after GS: " << innerproduct << endl;
+}
+
+void TEST_Gen_vector_condition(int * lens,
+						  		int dim,
+						  		int R,
+						  		double condition) {
+	Vector<>** vec =  Gen_vector_condition(lens, dim, R, condition);
+	for (int i=0; i< dim; i++) {
+		for (int j=0; j<R; j++) {
+			vec[i][j].print();
+		}
+	}
+	double error= 0.;
+	for (int i=0; i< dim; i++) {
+		for (int j=0; j<R; j++) 
+		for (int k=j+1; k<R; k++) {
+			double innerproduct = vec[i][j]["i"]*vec[i][k]["i"];
+			error += abs(innerproduct);
+		}
+	}
+	cout << "error= " << error << endl;
+}
+
+void TEST_Gen_tensor_condition(int * lens,
+						  	   int dim,
+						  	   int R,       // generate how many independent vectors in each mode
+						  	   int base,    // how many basis
+						  	   int K,
+						  	   double condition, 
+						  	   World & dw) {
+	if(dw.rank==0) printf("Test of alscp with tensor of different conditions\n");
+	Tensor<> V =  Gen_tensor_condition(lens, dim, R, base, condition, dw);
+	if(dw.rank==0) cout << "V_origin" << endl;
+	// V.print();
+	Matrix<>* W = new Matrix<>[dim];
+	Matrix<>* grad_W = new Matrix<>[dim];
+	for (int i=0; i<dim; i++) {
+		W[i] = Matrix<>(V.lens[i],K);
+		grad_W[i] = Matrix<>(V.lens[i],K);
+		W[i].fill_random(0,1);  
+		grad_W[i].fill_random(0,1);  
+	}
+	//construct F matrices
+	Matrix<>* F = new Matrix<>[dim];
+	for (int i=0; i<dim; i++) {
+		F[i] = Matrix<>(V.lens[i],K);
+		F[i]["ij"] = 0.;
+	}	
+	//initnorm
+	gradient_CP(V, W, grad_W, dw);
+	double initnorm = V.norm2();
+	if(dw.rank==0) printf("Init norm %E \n",initnorm);
+	//bool
+	bool finished = false;
+	while (finished==false) {
+		finished = alsCP_DT(V, W, grad_W, F, 1e-8*initnorm, 10000, 10000, false, dw);
+		Tensor<> V2 = Tensor<>(dim, lens, dw); 
+		V2["abcdef"] = W[0]["ak"]*W[1]["bk"]*W[2]["ck"]*W[3]["dk"]*W[4]["ek"]*W[5]["fk"];
+		Tensor<> residule(dim, lens, dw);
+		residule["abcdef"] = V2["abcdef"]-V["abcdef"];
+		// residule.print();
+		double norm = residule.norm2();
+		if(dw.rank==0) printf("norm=%lf\n", norm); 
+	}
+	if(dw.rank==0) printf("alscp test finished\n");
+}
+
+void TEST_Gen_tensor_condition_pp(int * lens,
+						  		  int dim,
+						  		  int R,       // generate how many independent vectors in each mode
+						  		  int base,    // how many basis
+						  		  int K,
+						  		  double condition, 
+						  		  World & dw) {
+	if(dw.rank==0) printf("Test of alscp with tensor of different conditions with PP\n");
+	double st_time = MPI_Wtime();
+	Tensor<> V =  Gen_tensor_condition(lens, dim, R, base, condition, dw);
+	if(dw.rank==0) cout << "V_origin" << endl;
+	V.print();
+	Matrix<>* W = new Matrix<>[dim];
+	Matrix<>* grad_W = new Matrix<>[dim];
+	for (int i=0; i<dim; i++) {
+		W[i] = Matrix<>(V.lens[i],K);
+		grad_W[i] = Matrix<>(V.lens[i],K);
+		W[i].fill_random(0,1);  
+		grad_W[i].fill_random(0,1);  
+	}
+	//construct F matrices
+	Matrix<>* F = new Matrix<>[dim];
+	for (int i=0; i<dim; i++) {
+		F[i] = Matrix<>(V.lens[i],K);
+		F[i]["ij"] = 0.;
+	}	
+	//initnorm
+	gradient_CP(V, W, grad_W, dw);
+	double initnorm = V.norm2();
+	if(dw.rank==0) printf("Init norm %E \n",initnorm);
+	//bool
+	bool finished = false;
+	alsCP(V, W, grad_W, F, 1e-8*initnorm, 1000, 1000, dw);
+	// alsCP_DT(V, W, grad_W, F, 1e-8*initnorm, 1000, 1000, true, dw);
+	// Check for the residule of the CP. (Here V2 is hard coded for N=4)
+	Tensor<> V2 = Tensor<>(dim, lens, dw); 
+	W[0].print();
+	V2["abcd"] = W[0]["ak"]*W[1]["bk"]*W[2]["ck"]*W[3]["dk"];
+	Tensor<> residule(dim, lens, dw);
+	residule["abcd"] = V2["abcd"]-V["abcd"];
+	residule.print();
+	double norm = residule.norm2();
+	if(dw.rank==0) printf("norm=%llf\n", norm);  
+	// Run ALS
+	while (finished == false) {
+		finished = alsCP_mod(V, W, grad_W, F, 1e-8*initnorm, 10000, 10000, dw);
+		// Check for the residule of the CP. (Here V2 is hard coded for N=4)
+		Tensor<> V2 = Tensor<>(dim, lens, dw); 
+		V2["abcd"] = W[0]["ak"]*W[1]["bk"]*W[2]["ck"]*W[3]["dk"];
+		Tensor<> residule(dim, lens, dw);
+		residule["abcd"] = V2["abcd"]-V["abcd"];
+		// residule.print();
+		double norm = residule.norm2();
+		if(dw.rank==0) printf("norm=%llf\n", norm);  
+	}
+	if(dw.rank==0) printf("alscp test finished with PP\n");
+	if(dw.rank==0) printf ("TEST_Gen_tensor_condition_pp took %lf seconds\n\n\n",MPI_Wtime()-st_time);
+
+}
+
+void TEST_unit_tensor_pp(int* lens,
+						 int dim,
+						 int K,
+						 double condition, 
+						 World & dw) {
+	if(dw.rank==0) printf("Test of alscp with unit tensors with PP\n");
+	double st_time = MPI_Wtime();
+	Tensor<> V = Tensor<>(dim, lens, dw); 
+	unit_tensor(V, dim, lens[0], dw);
+	if(dw.rank==0) cout << "V_origin" << endl;
+	V.print();
+
+	int s = lens[0];
+	int lens2[1];
+	lens2[0] = s;
+	Vector<> vec3 = Vector<>(s);
+	Matrix<> mat3 = Matrix<>(s,s);
+	Vector<>** vec = Gen_vector_condition(lens, 1, 2, condition);
+	double contract = vec[0][0]["i"]*vec[0][1]["i"];
+	double n1 = vec[0][0].norm2();
+	double n2 = vec[0][1].norm2();
+	cout << n1 << "  " << n2 << endl;
+	Matrix<> matproduct = Matrix<>(s,s);
+	matproduct["ij"] = vec[0][0]["i"]*vec[0][1]["j"];
+	n1 = matproduct.norm2();
+	cout << n1 << endl;
+
+	vec3["i"] = V["ijk"]*vec[0][0]["j"]*vec[0][1]["k"];
+	mat3["jk"] = V["ijk"]*vec[0][0]["j"]*vec[0][1]["k"];
+
+	double norm = vec3.norm2();
+	double norm_mat = mat3.norm2();
+	cout << "norm is: " <<norm << endl;
+	cout << "norm_mat is: " <<norm_mat << endl;
+
+
+	// Matrix<>* W = new Matrix<>[dim];
+	// Matrix<>* grad_W = new Matrix<>[dim];
+	// for (int i=0; i<dim; i++) {
+	// 	W[i] = Matrix<>(V.lens[i],K);
+	// 	grad_W[i] = Matrix<>(V.lens[i],K);
+	// 	W[i].fill_random(0,1);  
+	// 	grad_W[i].fill_random(0,1);  
+	// }
+	// //construct F matrices
+	// Matrix<>* F = new Matrix<>[dim];
+	// for (int i=0; i<dim; i++) {
+	// 	F[i] = Matrix<>(V.lens[i],K);
+	// 	F[i]["ij"] = 0.;
+	// }	
+	// //initnorm
+	// gradient_CP(V, W, grad_W, dw);
+	// double initnorm = V.norm2();
+	// if(dw.rank==0) printf("Init norm %E \n",initnorm);
+	// //bool
+	// bool finished = false;
+	// alsCP(V, W, grad_W, F, 1e-8*initnorm, 100, 100, dw);
+	// // alsCP_DT(V, W, grad_W, F, 1e-8*initnorm, 1000, 1000, true, dw);
+	// // Check for the residule of the CP. (Here V2 is hard coded for N=4)
+	// Tensor<> V2 = Tensor<>(dim, lens, dw); 
+	// W[0].print();
+	// V2["abc"] = W[0]["ak"]*W[1]["bk"]*W[2]["ck"];
+	// Tensor<> residule(dim, lens, dw);
+	// residule["abc"] = V2["abc"]-V["abc"];
+	// residule.print();
+	// double norm = residule.norm2();
+	// if(dw.rank==0) printf("residue norm=%llf\n", norm);  
+	// // Run ALS
+	// while (finished == false) {
+	// 	finished = alsCP_mod(V, W, grad_W, F, 1e-8*initnorm, 100, 100, dw);
+	// 	// Check for the residule of the CP. (Here V2 is hard coded for N=4)
+	// 	Tensor<> V2 = Tensor<>(dim, lens, dw); 
+	// 	V2["abc"] = W[0]["ak"]*W[1]["bk"]*W[2]["ck"];
+	// 	Tensor<> residule(dim, lens, dw);
+	// 	residule["abc"] = V2["abc"]-V["abc"];
+	// 	// residule.print();
+	// 	double norm = residule.norm2();
+	// 	if(dw.rank==0) printf("norm=%llf\n", norm);  
+	// }
+	// if(dw.rank==0) printf("alscp test finished with PP\n");
+	// if(dw.rank==0) printf ("TEST_unit_tensor_pp took %lf seconds\n\n\n",MPI_Wtime()-st_time);
+
+}
 
 char* getCmdOption(char ** begin,
                    char ** end,
@@ -747,11 +977,11 @@ int main(int argc, char ** argv){
 	{
 		World dw(argc, argv);
 
-		//srand48(dw.rank*0);
+		srand48(dw.rank*0);
 
-		int lens[2] = {8, 8};
-		//TEST_alsCP(2, lens, 8, dw);
-		TEST_sparse_laplacian_alsCP(6, 12, 4, 0, dw); 
+		int lens[6] = {20, 20, 20, 20};
+		// TEST_alsCP(6, lens, 8, dw);
+		//TEST_sparse_laplacian_alsCP(6, 12, 4, 0, dw); 
 		//TEST_sparse_laplacian_alsCP_DT(6, 12, 4, 0, dw); 
 		//TEST_sparse_laplacian_alsCP_mod(6, 12, 4, 0, dw); 
 		//TEST_dense_uniform_alsCP(100, 5, dw);
@@ -767,10 +997,23 @@ int main(int argc, char ** argv){
 		//TEST_hosvd(3, T_lens, ranks, dw);
 		//TEST_alsTucker(6, T_lens, ranks, dw);	
 		//TEST_alsTucker_DT(6, T_lens, ranks, dw);	
-		//TEST_alsTucker_mod(6, T_lens, ranks, dw);	
-		//TEST_3d_poisson_Tucker(6, 8, 2, 0, dw);
-		//TEST_sparse_laplacian_alsTucker(6, 10, 4, 0, dw); 
+		// TEST_alsTucker_mod(6, T_lens, ranks, dw);	
+		// TEST_3d_poisson_Tucker(4, 20, 10, 0, dw);
+		TEST_sparse_laplacian_alsTucker(6, 16, 5, 0, dw); 
+		// TEST_sparse_laplacian_alsTucker_mod(6, 16, 5, 0, dw); 
+		// TEST_sparse_laplacian_alsTucker_mod(6, 20, 7, 0, dw); 
 
+
+		int lens_GS[3] = {4, 4, 4};
+		// TEST_Gram_Schmidt();
+		// TEST_Gen_vector_condition(lens_GS, 3, 2, 1.0);
+		//TEST_Gen_tensor_condition(lens_GS, 6, 8, 20, 15, 1.0, dw);
+		// TEST_Gen_tensor_condition_pp(lens_GS, 6, 8, 10, 10, 1.0, dw);
+		// // 210.309819    227
+		// TEST_Gen_tensor_condition_pp(lens_GS, 6, 8, 20, 10, 1.0, dw);
+		// 210.309819    227
+		// TEST_Gen_tensor_condition_pp(lens_GS, 4, 4, 4, 1, 1.0, dw);
+		// TEST_unit_tensor_pp(lens_GS, 3, 4, 1., dw);
 	}
 
 	MPI_Finalize();

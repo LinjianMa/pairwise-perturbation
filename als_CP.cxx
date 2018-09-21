@@ -285,7 +285,23 @@ bool alsCP_DT(Tensor<> & V,
 			  double tol, 
 			  double timelimit, 
 			  int maxiter, 
+			  bool PP,    // whether it works as preconditioning
 			  World & dw) {
+
+	// work as the preconditioning of pairwise perturbation
+		Vector<>* ones = new Vector<>[V.order];
+		Vector<>* dw_sum = new Vector<>[V.order];
+		Vector<>* w_sum = new Vector<>[V.order];
+		Matrix<>* W_prev = new Matrix<>[V.order];
+		Matrix<>* dW = new Matrix<>[V.order];
+		for (int i=0; i<V.order; i++) {
+			ones[i] = Vector<>(V.lens[i]);
+			dw_sum[i] = Vector<>(W[i].ncol);
+			w_sum[i] = Vector<>(W[i].ncol);
+			ones[i]["i"] = 1.;
+			W_prev[i] = Matrix<>(W[i].nrow,W[i].ncol);
+			dW[i] = Matrix<>(W[i].nrow,W[i].ncol);
+		}
 
 	double st_time = MPI_Wtime();
 	int iter; double projnorm; double Fnorm; 
@@ -389,12 +405,35 @@ bool alsCP_DT(Tensor<> & V,
 			// subproblem M=W*S
 			M["ij"] += F[i]["ij"];
 			SVD_solve(M, W[i], S);
+			// double norm_middle = W[i].norm2();
+			// if (dw.rank==0) cout << norm_middle << endl;
 			// recover the char
 			temp = seq_V[V.order-1];
 			seq_V[V.order-1] = seq_V[i];
 			seq_V[i] = temp;
 		}
 		if (Fnorm == 0) Normalize(W, V.order, dw);
+		
+		// work as the preconditioning of pairwise perturbation
+		if (PP==1) {
+			int num_dw_break = 0;
+			for (int i=0; i<V.order; i++) {
+				dW[i]["ij"] = W[i]["ij"] - W_prev[i]["ij"];
+				W_prev[i]["ij"] = W[i]["ij"];
+				dW[i]["ij"] = dW[i]["ij"]*dW[i]["ij"];
+				dw_sum[i]["j"] = ones[i]["i"]*dW[i]["ij"];
+				w_sum[i]["j"] = ones[i]["i"]*W[i]["ij"]*W[i]["ij"];
+				// double norm_dW = dW[i].norm2();
+				// double norm_W = W[i].norm2();
+    			Transform<double,double>([](double a, double & b){ b=b/a; })(w_sum[i]["j"],dw_sum[i]["j"]);
+				Scalar<int> scl;
+				scl[""] = Function<double,int>([](double a){ return (int)(sqrt(a) < .0001); })(dw_sum[i]["i"]);
+				int num_column = scl.get_val();
+				num_dw_break += num_column;
+				// if (abs(norm_dW/norm_W)<0.0001) num_dw_break++;
+			}
+			if (num_dw_break==V.order*W[0].ncol) return false;
+		}
 		// print .
 		if (iter%10==0 && dw.rank==0) printf(".");
 	}
@@ -540,10 +579,12 @@ bool alsCP_mod(Tensor<> & V,
 	for (iter=0; iter<=maxiter; iter++)
 	{ 
 		// initialize the MTTKRP
-		if (iter%50==0) {
+		if (iter%10==0) {
 			for (int j=0; j<V.order; j++) {
 				W_init[j] = W[j];
 				dW[j]["ij"] = 0.;
+			double norm_middle = W[j].norm2();
+			// if (dw.rank==0) cout << norm_middle << endl;
 			}
 			mttkrp_map.clear();
 			// build the char [abcd...] except ii and jj
@@ -631,9 +672,16 @@ bool alsCP_mod(Tensor<> & V,
 			for (int ii=1; ii<V.order-1; ii++) {
 				S["ij"] = S["ij"]*(W[index[ii]]["ki"]*W[index[ii]]["kj"]);
 			}
+			// // calculating S
+			// S["ij"] = W_init[index[0]]["ki"]*W_init[index[0]]["kj"];
+			// for (int ii=1; ii<V.order-1; ii++) {
+			// 	S["ij"] = S["ij"]*(W_init[index[ii]]["ki"]*W_init[index[ii]]["kj"]);
+			// }
 			// subproblem M=W*S
 			M["ij"] += F[i]["ij"];
 			SVD_solve_mod(M, W[i], W_init[i], dW[i], S);
+			// double norm_middle = W[i].norm2();
+			// if (dw.rank==0) cout << norm_middle << endl;
 			// recover the char
 			temp = seq_V[V.order-1];
 			seq_V[V.order-1] = seq_V[i];
