@@ -568,56 +568,6 @@ void TEST_alsTucker_mod(int N,
 /**
  * \brief CP decomposition of laplacian tensor using simple ALS
  */
-void TEST_sparse_laplacian_alsTucker(int N,				// Dimension of the tensor
-									 int s,				// size in each dimension
-									 int K, 			// Decomposition rank
-									 bool sparse_V,		// Whether V is set to be sparse or not
-									 World & dw){
-	if(dw.rank==0) printf("Test of sparse laplacian Tucker Decomposition\n");
-	double st_time = MPI_Wtime();
-	int * lens = new int[N];
-	int * ranks = new int[N];
-	for (int i=0; i<N; i++) {
-		lens[i] = s;
-		ranks[i] = K;
-	}
-	Tensor<>V = Tensor<>(N, sparse_V, lens, dw); 
-	laplacian_tensor(V, N, s, sparse_V, dw);
-	// Norm of V
-	double Vnorm = V.norm2();
-	if(dw.rank==0) printf("initial Norm of V =%lf\n", Vnorm); 
-	Matrix<>* W = new Matrix<>[N];
-	Tensor<> hosvd_core;
-	// using hosvd to initialize W and hosvd_core
-	hosvd(V, hosvd_core, W, ranks, dw);
-	// Tucker decomposition
-	bool finished = false;
-	while (finished == false) {
-		finished = alsTucker_DT(V, hosvd_core, W, 1e-10*Vnorm, 100000000, 10000, dw);
- 	// 	// check the residule
-		// Matrix<>* W_T = new Matrix<>[N];
-		// for (int i=0; i<N; i++) {
-		// 	W_T[i] = Matrix<>(W[i].ncol,W[i].nrow,dw);
-		// 	W_T[i]["ij"] = W[i]["ji"];
-		// }
-		// Tensor<> V_check(N, lens, dw);
-		// Tensor<> V_diff(N, lens, dw);
-		// TTMc(V_check, hosvd_core, W_T, -1, dw);
-		// char seq[V.order+1];
-		// seq[V.order] = '\0';
-		// for (int jj=0; jj<V.order; jj++) {
-		// 	seq[jj] = 'a'+jj;
-		// }
-		// V_diff[seq] = V_check[seq] - V[seq];
-		// double diffnorm_V = V_diff.norm2();
-		// if(dw.rank==0) printf("diff Norm of V =%lf\n", diffnorm_V); 
-	}
-	if(dw.rank==0) printf ("TEST_sparse_laplacian_alsTucker took %lf seconds\n\n\n",MPI_Wtime()-st_time);
-}
-
-/**
- * \brief CP decomposition of laplacian tensor using simple ALS
- */
 void TEST_sparse_laplacian_alsTucker_mod(int N,				// Dimension of the tensor
 										 int s,				// size in each dimension
 										 int K, 			// Decomposition rank
@@ -955,6 +905,73 @@ void TEST_unit_tensor_pp(int* lens,
 
 }
 
+/**
+ * \brief CP decomposition of laplacian tensor using simple ALS
+ */
+void TEST_sparse_laplacian_alsTucker(int N,				// Dimension of the tensor
+									 int s,				// size in each dimension
+									 int K, 			// Decomposition rank
+									 bool sparse_V,		// Whether V is set to be sparse or not
+									 double criteria,    // global stopping criteria
+									 World & dw){
+	if(dw.rank==0) printf("Test of sparse laplacian Tucker Decomposition\n");
+	double st_time = MPI_Wtime();
+	int * lens = new int[N];
+	int * ranks = new int[N];
+	for (int i=0; i<N; i++) {
+		lens[i] = s;
+		ranks[i] = K;
+	}
+	Tensor<>V = Tensor<>(N, sparse_V, lens, dw); 
+	laplacian_tensor(V, N, s, sparse_V, dw);
+	// Norm of V
+	double Vnorm = V.norm2();
+	if(dw.rank==0) printf("initial Norm of V =%lf\n", Vnorm); 
+	Matrix<>* W = new Matrix<>[N];
+	Tensor<> hosvd_core;
+	// using hosvd to initialize W and hosvd_core
+	hosvd(V, hosvd_core, W, ranks, dw);
+	// Tucker decomposition
+	bool finished = false;
+	while (finished == false) {
+		finished = alsTucker_DT(V, hosvd_core, W, criteria*Vnorm, 100000000, 10000, dw);
+	}
+	if(dw.rank==0) printf ("TEST_sparse_laplacian_alsTucker took %lf seconds\n\n\n",MPI_Wtime()-st_time);
+}
+
+/**
+ * \brief CP decomposition of laplacian tensor using simple ALS
+ */
+void TEST_sparse_laplacian_alsTucker_PP(int N,				// Dimension of the tensor
+										int s,				// size in each dimension
+										int K, 			// Decomposition rank
+										bool sparse_V,		// Whether V is set to be sparse or not
+										double criteria,    // global stopping criteria
+										double tol_init,
+										World & dw){
+	if(dw.rank==0) printf("Test of sparse laplacian Tucker Decomposition\n");
+	double st_time = MPI_Wtime();
+	int * lens = new int[N];
+	int * ranks = new int[N];
+	for (int i=0; i<N; i++) {
+		lens[i] = s;
+		ranks[i] = K;
+	}
+	Tensor<>V = Tensor<>(N, sparse_V, lens, dw); 
+	laplacian_tensor(V, N, s, sparse_V, dw);
+	// Norm of V
+	double Vnorm = V.norm2();
+	if(dw.rank==0) printf("initial Norm of V =%lf\n", Vnorm); 
+	Matrix<>* W = new Matrix<>[N];
+	Tensor<> hosvd_core;
+	// using hosvd to initialize W and hosvd_core
+	hosvd(V, hosvd_core, W, ranks, dw);
+
+	alsTucker_PP(V, hosvd_core, W, criteria*Vnorm, tol_init, 200000000, 200000, dw);
+
+	if(dw.rank==0) printf ("TEST_sparse_laplacian_alsTucker took %lf seconds\n\n\n",MPI_Wtime()-st_time);
+}  
+
 char* getCmdOption(char ** begin,
                    char ** end,
                    const   std::string & option){
@@ -999,9 +1016,13 @@ int main(int argc, char ** argv){
 		//TEST_alsTucker_DT(6, T_lens, ranks, dw);	
 		// TEST_alsTucker_mod(6, T_lens, ranks, dw);	
 		// TEST_3d_poisson_Tucker(4, 20, 10, 0, dw);
-		TEST_sparse_laplacian_alsTucker(6, 16, 5, 0, dw); 
+		// TEST_sparse_laplacian_alsTucker(6, 14, 5, 0, 1e-10, dw); 
+		TEST_sparse_laplacian_alsTucker_PP(4, 40, 10, 0, 1e-10, 1e-2, dw);
 		// TEST_sparse_laplacian_alsTucker_mod(6, 16, 5, 0, dw); 
 		// TEST_sparse_laplacian_alsTucker_mod(6, 20, 7, 0, dw); 
+		// 6 16 5 
+		// 4 40 10
+		// 6, 14, 5, 0, 1e-10, 1e-2
 
 
 		int lens_GS[3] = {4, 4, 4};
