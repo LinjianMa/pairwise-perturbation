@@ -499,7 +499,7 @@ void TEST_alsTucker_DT(int N,
 	// Tucker decomposition
 	bool finished = false;
 	while (finished == false) {
-		finished = alsTucker_DT(V, hosvd_core, W, 1e-10*Vnorm, 1000000, 100000, dw);
+		// finished = alsTucker_DT(V, hosvd_core, W, 1e-10*Vnorm, 1000000, 100000, dw);
  	// 	// check the residule
 		// Matrix<>* W_T = new Matrix<>[N];
 		// for (int i=0; i<N; i++) {
@@ -540,7 +540,7 @@ void TEST_alsTucker_mod(int N,
 	// using hosvd to initialize W and hosvd_core
 	hosvd(V, hosvd_core, W, ranks, dw);
 	// Tucker decomposition
-	alsTucker_DT(V, hosvd_core, W, 1e-10*Vnorm, 200000, 150, dw);
+	// alsTucker_DT(V, hosvd_core, W, 1e-10*Vnorm, 200000, 150, dw);
 	bool finished = false;
 	while (finished == false) {
 		finished = alsTucker_mod(V, hosvd_core, W, 1e-10*Vnorm, 1000000, 100000, dw);
@@ -592,7 +592,7 @@ void TEST_sparse_laplacian_alsTucker_mod(int N,				// Dimension of the tensor
 	hosvd(V, hosvd_core, W, ranks, dw);
 	// alsTucker(V, hosvd_core, W, 1e-10*Vnorm, 200, 200, dw);
 	for (int iter=0; iter<1; iter++) {
-		alsTucker_DT(V, hosvd_core, W, 1e-10*Vnorm, 200000000, 20, dw);
+		// alsTucker_DT(V, hosvd_core, W, 1e-10*Vnorm, 200000000, 20, dw);
  	// 	// check the residule
 		// Matrix<>* W_T = new Matrix<>[N];
 		// for (int i=0; i<N; i++) {
@@ -657,7 +657,7 @@ void TEST_3d_poisson_Tucker(int N,				// Dimension of the tensor
 	// Tucker decomposition
 	bool finished = false;
 	while (finished == false) {
-		finished = alsTucker_DT(V, hosvd_core, W, 1e-10*Vnorm, 20000, 20000, dw);
+		// finished = alsTucker_DT(V, hosvd_core, W, 1e-10*Vnorm, 20000, 20000, dw);
 	}
 	// check the residule
 	Matrix<>* W_T = new Matrix<>[N];
@@ -913,6 +913,7 @@ void TEST_sparse_laplacian_alsTucker(int N,				// Dimension of the tensor
 									 int K, 			// Decomposition rank
 									 bool sparse_V,		// Whether V is set to be sparse or not
 									 double criteria,    // global stopping criteria
+									 ofstream & Plot_File, 
 									 World & dw){
 	if(dw.rank==0) printf("Test of sparse laplacian Tucker Decomposition\n");
 	double st_time = MPI_Wtime();
@@ -934,7 +935,7 @@ void TEST_sparse_laplacian_alsTucker(int N,				// Dimension of the tensor
 	// Tucker decomposition
 	bool finished = false;
 	while (finished == false) {
-		finished = alsTucker_DT(V, hosvd_core, W, criteria*Vnorm, 100000000, 10000, dw);
+		finished = alsTucker_DT(V, hosvd_core, W, criteria*Vnorm, 100000000, 10000, Plot_File, dw);
 	}
 	if(dw.rank==0) printf ("TEST_sparse_laplacian_alsTucker took %lf seconds\n\n\n",MPI_Wtime()-st_time);
 }
@@ -948,6 +949,7 @@ void TEST_sparse_laplacian_alsTucker_PP(int N,				// Dimension of the tensor
 										bool sparse_V,		// Whether V is set to be sparse or not
 										double criteria,    // global stopping criteria
 										double tol_init,
+										ofstream & Plot_File,
 										World & dw){
 	if(dw.rank==0) printf("Test of sparse laplacian Tucker Decomposition\n");
 	double st_time = MPI_Wtime();
@@ -967,11 +969,189 @@ void TEST_sparse_laplacian_alsTucker_PP(int N,				// Dimension of the tensor
 	// using hosvd to initialize W and hosvd_core
 	hosvd(V, hosvd_core, W, ranks, dw);
 
-	alsTucker_PP(V, hosvd_core, W, criteria*Vnorm, tol_init, 200000000, 200000, dw);
+	alsTucker_PP(V, hosvd_core, W, criteria*Vnorm, tol_init, 200000000, 200000, Plot_File, dw);
+
+	if(dw.rank==0) printf ("TEST_sparse_laplacian_alsTucker took %lf seconds\n\n\n",MPI_Wtime()-st_time);
+} 
+
+/**
+ * \brief CP decomposition of laplacian tensor using simple ALS
+ */
+void TEST_random_alsTucker(int N,				// Dimension of the tensor
+									 int s,				// size in each dimension
+									 int K, 			// Decomposition rank
+									 bool sparse_V,		// Whether V is set to be sparse or not
+									 double criteria,    // global stopping criteria
+									 ofstream & Plot_File, 
+									 World & dw){
+	if(dw.rank==0) printf("Test of sparse laplacian Tucker Decomposition\n");
+	double st_time = MPI_Wtime();
+	int * lens = new int[N];
+	int * ranks = new int[N];
+	for (int i=0; i<N; i++) {
+		lens[i] = s;
+		ranks[i] = K;
+	}
+	Tensor<>V = Tensor<>(N, sparse_V, lens, dw); 
+	V.fill_random(0,1);
+	// Norm of V
+	double Vnorm = V.norm2();
+	if(dw.rank==0) printf("initial Norm of V =%lf\n", Vnorm); 
+	Matrix<>* W = new Matrix<>[N];
+	Tensor<> hosvd_core;
+	// using hosvd to initialize W and hosvd_core
+	hosvd(V, hosvd_core, W, ranks, dw);
+	// Tucker decomposition
+	bool finished = false;
+	while (finished == false) {
+		finished = alsTucker_DT(V, hosvd_core, W, criteria*Vnorm, 100000000, 10000, Plot_File, dw);
+	}
+	if(dw.rank==0) printf ("TEST_sparse_laplacian_alsTucker took %lf seconds\n\n\n",MPI_Wtime()-st_time);
+}
+
+/**
+ * \brief CP decomposition of laplacian tensor using simple ALS
+ */
+void TEST_random_alsTucker_PP(int N,				// Dimension of the tensor
+										int s,				// size in each dimension
+										int K, 			// Decomposition rank
+										bool sparse_V,		// Whether V is set to be sparse or not
+										double criteria,    // global stopping criteria
+										double tol_init,
+										ofstream & Plot_File,
+										World & dw){
+	if(dw.rank==0) printf("Test of sparse laplacian Tucker Decomposition\n");
+	double st_time = MPI_Wtime();
+	int * lens = new int[N];
+	int * ranks = new int[N];
+	for (int i=0; i<N; i++) {
+		lens[i] = s;
+		ranks[i] = K;
+	}
+	Tensor<>V = Tensor<>(N, sparse_V, lens, dw); 
+	V.fill_random(0,1);
+	// Norm of V
+	double Vnorm = V.norm2();
+	if(dw.rank==0) printf("initial Norm of V =%lf\n", Vnorm); 
+	Matrix<>* W = new Matrix<>[N];
+	Tensor<> hosvd_core;
+	// using hosvd to initialize W and hosvd_core
+	hosvd(V, hosvd_core, W, ranks, dw);
+
+	alsTucker_PP(V, hosvd_core, W, criteria*Vnorm, tol_init, 200000000, 200000, Plot_File, dw);
 
 	if(dw.rank==0) printf ("TEST_sparse_laplacian_alsTucker took %lf seconds\n\n\n",MPI_Wtime()-st_time);
 }  
 
+/**
+ * \brief CP decomposition of dense tensor using simple als
+ *        This test is not functional now
+ */
+void TEST_dense_uniform_alsTucker(int s, 
+							  	  int K, 
+								  bool sparse_V,		// Whether V is set to be sparse or not
+								  double criteria,    // global stopping criteria
+								  ofstream & Plot_File,
+								  World & dw){
+	int N=6;
+
+	double st_time = MPI_Wtime();
+
+	int * lens = new int[N];
+	int * ranks = new int[N];
+	for (int i=0; i<N; i++) {
+		lens[i] = s;
+		ranks[i] = K;
+	}
+	Tensor<> V = Tensor<>(N, lens, dw); 
+
+	// build V tensor
+	int64_t my_tot_nnz = s*s*s*s*s*s;
+	int64_t * inds = (int64_t*)malloc(sizeof(int64_t)*my_tot_nnz);
+	double * vals = (double*)malloc(sizeof(double)*my_tot_nnz);
+	for (int64_t i=0; i<s; i++)
+	for (int64_t j=0; j<s; j++)
+	for (int64_t k=0; k<s; k++) 
+	for (int64_t l=0; l<s; l++)
+	for (int64_t m=0; m<s; m++)
+	for (int64_t n=0; n<s; n++){
+		inds[i+j*s+k*s*s+l*s*s*s+m*s*s*s*s+n*s*s*s*s*s] = i+j*s+k*s*s+l*s*s*s+m*s*s*s*s+n*s*s*s*s*s;
+		if (dw.rank==0) vals[i+j*s+k*s*s+l*s*s*s+m*s*s*s*s+n*s*s*s*s*s] = pow((i+1)*(i+1)+(j+1)*(j+1)+(k+1)*(k+1)+(l+1)*(l+1)+(m+1)*(m+1)+(n+1)*(n+1),-0.5);
+		else vals[i+j*s+k*s*s+l*s*s*s+m*s*s*s*s+n*s*s*s*s*s] = 0.;
+	}
+	V.write(my_tot_nnz, inds, vals);
+	free(inds);
+	free(vals);
+
+	// Norm of V
+	double Vnorm = V.norm2();
+	if(dw.rank==0) printf("initial Norm of V =%lf\n", Vnorm); 
+	Matrix<>* W = new Matrix<>[N];
+	Tensor<> hosvd_core;
+	// using hosvd to initialize W and hosvd_core
+	hosvd(V, hosvd_core, W, ranks, dw);
+	// Tucker decomposition
+	bool finished = false;
+	while (finished == false) {
+		finished = alsTucker_DT(V, hosvd_core, W, criteria*Vnorm, 100000000, 10000, Plot_File, dw);
+	}
+
+	if (dw.rank==0)printf ("TEST_dense_uniform_alsTucker took %lf seconds\n",MPI_Wtime()-st_time);
+} 
+
+/**
+ * \brief CP decomposition of dense tensor using simple als
+ *        This test is not functional now
+ */
+void TEST_dense_uniform_alsTucker_PP(int s, 
+							  		 int K, 
+									 bool sparse_V,		// Whether V is set to be sparse or not
+									 double criteria,    // global stopping criteria
+									 double tol_init,
+									 ofstream & Plot_File,
+									 World & dw){
+	int N=6;
+
+	double st_time = MPI_Wtime();
+
+	int * lens = new int[N];
+	int * ranks = new int[N];
+	for (int i=0; i<N; i++) {
+		lens[i] = s;
+		ranks[i] = K;
+	}
+	Tensor<> V = Tensor<>(N, lens, dw); 
+
+	// build V tensor
+	int64_t my_tot_nnz = s*s*s*s*s*s;
+	int64_t * inds = (int64_t*)malloc(sizeof(int64_t)*my_tot_nnz);
+	double * vals = (double*)malloc(sizeof(double)*my_tot_nnz);
+	for (int64_t i=0; i<s; i++)
+	for (int64_t j=0; j<s; j++)
+	for (int64_t k=0; k<s; k++) 
+	for (int64_t l=0; l<s; l++)
+	for (int64_t m=0; m<s; m++)
+	for (int64_t n=0; n<s; n++){
+		inds[i+j*s+k*s*s+l*s*s*s+m*s*s*s*s+n*s*s*s*s*s] = i+j*s+k*s*s+l*s*s*s+m*s*s*s*s+n*s*s*s*s*s;
+		if (dw.rank==0) vals[i+j*s+k*s*s+l*s*s*s+m*s*s*s*s+n*s*s*s*s*s] = pow((i+1)*(i+1)+(j+1)*(j+1)+(k+1)*(k+1)+(l+1)*(l+1)+(m+1)*(m+1)+(n+1)*(n+1),-0.5);
+		else vals[i+j*s+k*s*s+l*s*s*s+m*s*s*s*s+n*s*s*s*s*s] = 0.;
+	}
+	V.write(my_tot_nnz, inds, vals);
+	free(inds);
+	free(vals);
+
+	// Norm of V
+	double Vnorm = V.norm2();
+	if(dw.rank==0) printf("initial Norm of V =%lf\n", Vnorm); 
+	Matrix<>* W = new Matrix<>[N];
+	Tensor<> hosvd_core;
+	// using hosvd to initialize W and hosvd_core
+	hosvd(V, hosvd_core, W, ranks, dw);
+
+	alsTucker_PP(V, hosvd_core, W, criteria*Vnorm, tol_init, 200000000, 200000, Plot_File, dw);
+
+	if (dw.rank==0)printf ("TEST_dense_uniform_alsTucker took %lf seconds\n",MPI_Wtime()-st_time);
+} 
 char* getCmdOption(char ** begin,
                    char ** end,
                    const   std::string & option){
@@ -1016,8 +1196,51 @@ int main(int argc, char ** argv){
 		//TEST_alsTucker_DT(6, T_lens, ranks, dw);	
 		// TEST_alsTucker_mod(6, T_lens, ranks, dw);	
 		// TEST_3d_poisson_Tucker(4, 20, 10, 0, dw);
-		// TEST_sparse_laplacian_alsTucker(6, 14, 5, 0, 1e-10, dw); 
-		TEST_sparse_laplacian_alsTucker_PP(4, 40, 10, 0, 1e-10, 1e-2, dw);
+
+  //   	ofstream Plot_File("tucker_dt_4_40_10_ps.csv");      
+		// TEST_sparse_laplacian_alsTucker(4, 40, 10, 0, 1e-10, Plot_File, dw); 
+  //   	ofstream Plot_File("tucker_pp_4_40_10_ps.csv");       
+		// TEST_sparse_laplacian_alsTucker_PP(6, 40, 10, 0, 1e-10, 1e-2, Plot_File, dw);
+  //   	ofstream Plot_File("tucker_dt_6_14_5_ps.csv");       
+		// TEST_sparse_laplacian_alsTucker(6, 14, 5, 0, 1e-10, Plot_File, dw); 
+  //   	ofstream Plot_File("tucker_pp_6_14_5_ps.csv");         
+		// TEST_sparse_laplacian_alsTucker_PP(6, 14, 5, 0, 1e-10, 1e-2, Plot_File, dw);
+  //   	ofstream Plot_File("tucker_dt_6_16_8_ps.csv");       
+		// TEST_sparse_laplacian_alsTucker(6, 16, 8, 0, 1e-10, Plot_File, dw); 
+  //   	ofstream Plot_File("tucker_pp_6_16_8_ps.csv");         
+		// TEST_sparse_laplacian_alsTucker_PP(6, 16, 8, 0, 1e-10, 5e-3, Plot_File, dw);
+  //   	ofstream Plot_File("tucker_dt_6_16_5_ps.csv");       
+		// TEST_sparse_laplacian_alsTucker(6, 16, 5, 0, 1e-10, Plot_File, dw); 
+  //   	ofstream Plot_File("tucker_pp_6_16_5_ps.csv");         
+		// TEST_sparse_laplacian_alsTucker_PP(6, 16, 5, 0, 1e-10, 1e-2, Plot_File, dw);
+
+  //   	ofstream Plot_File("tucker_dt_4_40_10_random.csv");      
+		// TEST_random_alsTucker(4, 40, 10, 0, 1e-10, Plot_File, dw); 
+  //   	ofstream Plot_File("tucker_pp_4_40_10_random.csv");       
+		// TEST_random_alsTucker_PP(4, 40, 10, 0, 1e-10, 5e-3, Plot_File, dw);
+  //   	ofstream Plot_File("tucker_dt_6_14_5_random.csv");       
+		// TEST_random_alsTucker(6, 14, 5, 0, 1e-10, Plot_File, dw); 
+  //   	ofstream Plot_File("tucker_pp_6_14_5_random.csv");         
+		// TEST_random_alsTucker_PP(6, 14, 5, 0, 1e-10, 1e-2, Plot_File, dw);
+  //   	ofstream Plot_File("tucker_dt_6_16_5_random.csv");       
+		// TEST_random_alsTucker(6, 16, 5, 0, 1e-10, Plot_File, dw); 
+  //   	ofstream Plot_File("tucker_pp_6_16_5_random.csv");         
+		// TEST_random_alsTucker_PP(6, 16, 5, 0, 1e-10, 5e-3, Plot_File, dw);
+  //   	ofstream Plot_File("tucker_dt_6_16_8_random.csv");       
+		// TEST_random_alsTucker(6, 16, 8, 0, 1e-10, Plot_File, dw); 
+  //   	ofstream Plot_File("tucker_pp_6_16_8_random.csv");         
+		// TEST_random_alsTucker_PP(6, 16, 8, 0, 1e-10, 1e-2, Plot_File, dw);
+  //   	ofstream Plot_File("tucker_dt_6_13_4_random.csv");       
+		// TEST_random_alsTucker(6, 13, 4, 0, 1e-10, Plot_File, dw); 
+  //   	ofstream Plot_File("tucker_pp_6_13_4_random.csv");         
+		// TEST_random_alsTucker_PP(6, 13, 4, 0, 1e-10, 1e-2, Plot_File, dw);
+
+
+  //   	ofstream Plot_File("tucker_dt_40_10_uniform.csv");      
+		// TEST_dense_uniform_alsTucker(14, 2, 0, 1e-10, Plot_File, dw); 
+    	ofstream Plot_File("tucker_pp_40_10_uniform.csv");      
+		TEST_dense_uniform_alsTucker_PP(14, 2, 0, 1e-10, 1e-2, Plot_File, dw); 
+
 		// TEST_sparse_laplacian_alsTucker_mod(6, 16, 5, 0, dw); 
 		// TEST_sparse_laplacian_alsTucker_mod(6, 20, 7, 0, dw); 
 		// 6 16 5 
