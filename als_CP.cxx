@@ -4,9 +4,8 @@
   * @{ 
   * \brief NTF algorithms based on projected gradient methods
   */
-#include <ctf.hpp>
-#include "common.cxx"
-using namespace CTF;
+#include "common.h"
+#include "als_CP.h"
 //#define ERR_REPORT
 
 /**
@@ -107,51 +106,6 @@ bool alsCP(Tensor<> & V,
 	}
 	if (iter == maxiter+1) return false;
 	else return true;
-}
-
-void Construct_Dimension_Tree(map<string, string>& parent,
-							  map<string, string>& sibling, 
-							  int start, 
-							  int end) {
-	if (end==start) return;
-	if (end==start+1) {
-		char args_parent[3];
-		args_parent[2] = '\0';
-		args_parent[1] = 'a'+end;
-		args_parent[0] = 'a'+start;
-		char args[2];
-		char args2[2];
-		args[1] = '\0'; args2[1] = '\0';
-		args[0] = 'a'+start; args2[0] = 'a'+end;
-		parent[args] = args_parent;
-		parent[args2] = args_parent;
-		sibling[args] = args2;
-		sibling[args2] = args;
-		return;
-	}
-	char args_parent[end-start+2];
-	args_parent[end-start+1] = '\0';
-	for (int i=start;i<=end;i++) {
-		args_parent[i-start] = 'a'+i;
-	}
-	int middle = (start+end)/2;
-	char args[middle-start+2];
-	args[middle-start+1] = '\0';
-	for (int i=start;i<=middle;i++) {
-		args[i-start] = 'a'+i;
-	}
-	char args2[end-middle+1];
-	args2[end-middle] = '\0';
-	for (int i=middle+1;i<=end;i++) {
-		args2[i-middle-1] = 'a'+i;
-	}
-	parent[args] = args_parent;
-	sibling[args] = args2;
-	Construct_Dimension_Tree(parent, sibling, start, middle);	
-	sibling[args2] = args;
-	parent[args2] = args_parent;
-	Construct_Dimension_Tree(parent, sibling, middle+1, end);
-	return;
 }
 
 void mttkrp_map_DT(map<string,Tensor<>>& mttkrp_map, 

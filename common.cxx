@@ -4,9 +4,54 @@
   * @{ 
   * \brief NTF algorithms based on projected gradient methods
   */
-#include <ctf.hpp>
-using namespace CTF;
+#include "common.h"
 //#define ERR_REPORT
+
+void Construct_Dimension_Tree(map<string, string>& parent,
+							  map<string, string>& sibling, 
+							  int start, 
+							  int end) {
+	if (end==start) return;
+	if (end==start+1) {
+		char args_parent[3];
+		args_parent[2] = '\0';
+		args_parent[1] = 'a'+end;
+		args_parent[0] = 'a'+start;
+		char args[2];
+		char args2[2];
+		args[1] = '\0'; args2[1] = '\0';
+		args[0] = 'a'+start; args2[0] = 'a'+end;
+		parent[args] = args_parent;
+		parent[args2] = args_parent;
+		sibling[args] = args2;
+		sibling[args2] = args;
+		return;
+	}
+	char args_parent[end-start+2];
+	args_parent[end-start+1] = '\0';
+	for (int i=start;i<=end;i++) {
+		args_parent[i-start] = 'a'+i;
+	}
+	int middle = (start+end)/2;
+	char args[middle-start+2];
+	args[middle-start+1] = '\0';
+	for (int i=start;i<=middle;i++) {
+		args[i-start] = 'a'+i;
+	}
+	char args2[end-middle+1];
+	args2[end-middle] = '\0';
+	for (int i=middle+1;i<=end;i++) {
+		args2[i-middle-1] = 'a'+i;
+	}
+	parent[args] = args_parent;
+	sibling[args] = args2;
+	Construct_Dimension_Tree(parent, sibling, start, middle);	
+	sibling[args2] = args;
+	parent[args2] = args_parent;
+	Construct_Dimension_Tree(parent, sibling, middle+1, end);
+	return;
+}
+
 
 void unit_tensor(Tensor<>& V,
 				 int N, 
@@ -249,6 +294,69 @@ Tensor<> identitiy_tensor(int N,
 	}
 	I = (I_temp);
     return I;
+}
+
+/**
+ * \brief laplacian tensor: 
+ * 3d example : I x D x I + D x I x I + I x I x D
+ */
+void random_laplacian_tensor(Tensor<>& V,
+							 int N, 
+							 int s, 
+							 bool sparse_V,
+							 World & dw){
+
+	int d = N/2;
+	// build D matrix
+	Matrix<> D = Matrix<>(s,s,SP,dw);
+	int64_t my_tot_nnz = s-1;
+	int64_t * inds = (int64_t*)malloc(sizeof(int64_t)*my_tot_nnz);
+	double * vals = (double*)malloc(sizeof(double)*my_tot_nnz);
+	for (int64_t row=0; row<my_tot_nnz; row++){
+		inds[row] = row*s+row+1;
+		if(dw.rank==0) vals[row] = -1.;
+		else vals[row] = 0.;
+	}
+	D.write(my_tot_nnz, inds, vals);
+	free(inds);
+	free(vals);
+	D["ij"] += 2. * D["ji"];
+	D["ii"] = 2.;
+
+	// build char for seq
+	char seq[N+1]; seq[N] = '\0';
+	for (int jj=0; jj<N; jj++) seq[jj] = 'a'+jj;
+	/* k=1 */
+	// initialize		
+	Tensor<> I2 = identitiy_tensor(N-2, s, dw);
+	// build char
+	char seq_D[3] = "ab";
+	char seq_I2[N-1]; seq_I2[N-2] = '\0';
+	for (int jj=2; jj<N; jj++) seq_I2[jj-2] = 'a'+jj;
+	// contract
+	V[seq] += D[seq_D]*I2[seq_I2];
+	// k=d
+	// initialize		
+	Tensor<> I1 = identitiy_tensor(N-2, s, dw);
+	// build char
+	char seq_I1[N-1]; seq_I1[N-2] = '\0';
+	for (int jj=0; jj<N-2; jj++) seq_I1[jj] = 'a'+jj;
+	for (int jj=N-2; jj<N; jj++) seq_D[jj-(N-2)] = 'a'+jj;
+	// contract
+	V[seq] += I1[seq_I1]*D[seq_D];
+	// k in [2,d-1]
+	for (int k=2; k<=d-1; k++) {
+		Tensor<> I1 = identitiy_tensor(2*(k-1), s, dw);
+		Tensor<> I2 = identitiy_tensor(2*(d-k), s, dw);
+		// build char
+		char seq_I1[2*(k-1)+1]; seq_I1[2*(k-1)] = '\0';
+		char seq_I2[2*(d-k)+1]; seq_I2[2*(d-k)] = '\0';
+		for (int jj=0; jj<2*(k-1); jj++) seq_I1[jj] = 'a'+jj;
+		for (int jj=2*(k-1); jj<2*k; jj++) seq_D[jj-2*(k-1)] = 'a'+jj;
+		for (int jj=2*k; jj<2*d; jj++) seq_I2[jj-2*k] = 'a'+jj;
+		// contract
+		V[seq] += I1[seq_I1]*D[seq_D]*I2[seq_I2];
+	} 
 }
 
 /**
