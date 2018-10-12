@@ -47,7 +47,7 @@ bool alsCP_DT(Tensor<> & V,
         double tol, 
         double timelimit, 
         int maxiter, 
-        bool PP,    // whether it works as preconditioning
+        ofstream & Plot_File,
         World & dw);
 
 // [cd] --> [ab*]
@@ -71,14 +71,76 @@ void Build_mttkrp_map(map<string, Tensor<>> & mttkrp_map,
  *  tol: tolerance for a relative stopping condition
  *  timelimit, maxiter: limit of time and iterations
  */
-bool alsCP_mod(Tensor<> & V, 
-         Matrix<> * W, 
-         Matrix<> * grad_W, 
-         Matrix<> * F,
-         double tol, 
-         double timelimit, 
-         int maxiter, 
-         World & dw) ;
+// bool alsCP_mod(Tensor<> & V, 
+//          Matrix<> * W, 
+//          Matrix<> * grad_W, 
+//          Matrix<> * F,
+//          double tol, 
+//          double timelimit, 
+//          int maxiter, 
+//          World & dw) ;
+
+/**
+ * \brief ALS method for CP decomposition with dimension tree PP subroutine
+ *  W: output matrices
+ *  V: input tensor
+ *  tol: tolerance for a relative stopping condition
+ *  timelimit, maxiter: limit of time and iterations
+ */
+double alsCP_DT_sub(Tensor<> & V, 
+					  Matrix<> * W, 
+        	  		  Matrix<> * grad_W, 
+					  Matrix<> * dW,
+					  Matrix<> * F,
+					  double tol, 
+					  double tol_init,
+					  double timelimit, 
+					  int maxiter, 
+					  double & st_time,
+					  ofstream & Plot_File,
+					  double & projnorm,
+					  int & iter,
+					  World & dw);
+
+/**
+ * \brief ALS method for CP decomposition
+ *  W: output matrices
+ *  V: input tensor
+ *  tol: tolerance for a relative stopping condition
+ *  timelimit, maxiter: limit of time and iterations
+ */
+double alsCP_PP_sub(Tensor<> & V, 
+				  	  Matrix<> * W, 
+        	  		  Matrix<> * grad_W, 
+				  	  Matrix<> * dW,
+				  	  Matrix<> * F,
+				  	  double tol, 
+				  	  double tol_init,
+				  	  double timelimit, 
+				  	  int maxiter, 
+				  	  double & st_time,
+				  	  ofstream & Plot_File,
+				  	  double & projnorm,
+				  	  int & iter,
+				  	  World & dw);
+
+/**
+ * \brief ALS method for CP decomposition
+ *  W: output matrices
+ *  V: input tensor
+ *  tol: tolerance for a relative stopping condition
+ *  timelimit, maxiter: limit of time and iterations
+ */
+bool alsCP_PP(Tensor<> & V, 
+        	  Matrix<> * W, 
+        	  Matrix<> * grad_W, 
+        	  Matrix<> * F,
+        	  double tol, 
+          	  double tol_init,
+        	  double timelimit, 
+        	  int maxiter, 
+          	  ofstream & Plot_File,
+          	  World & dw) ;
 
 
 #endif

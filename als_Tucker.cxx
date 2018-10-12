@@ -146,6 +146,7 @@ void TTMc(Tensor<>& Y,
 			lens_Y[index] = W[index].ncol;
 			Y = Tensor<>(V.order, lens_Y, dw);		
 			Y[seq] = (*V_temp)[seq_mod]*W[index][seq_p];
+			// TODO: check memory leak
 			V_temp = new Tensor<>(V.order, lens_Y, dw);
 			*V_temp = Y;
 			//recover seq

@@ -69,7 +69,8 @@ void SVD_solve_mod(Matrix<>& M,
            Matrix<>& W,
            Matrix<>& W_init,
            Matrix<>& dW, 
-           Matrix<>& S);
+           Matrix<>& S,
+           double ratio_step);
 
 // Gauss-Seidel relaxation for A*Gamma = F
 void Gauss_Seidel(Matrix<>& A, 

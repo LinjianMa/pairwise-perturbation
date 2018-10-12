@@ -86,16 +86,42 @@ void Build_ttmc_map(map<string, Tensor<>> & ttmc_map,
  *  timelimit, maxiter: limit of time and iterations
  */
 void alsTucker_DT_sub(Tensor<> & V, 
-            Tensor<> & core, 
-            Matrix<> * W, 
-            double tol, 
-            double tol_init,
-            double timelimit, 
-            int maxiter, 
-            double & st_time,
-            ofstream & Plot_File,
-            int & iter,
-            World & dw);
+					  Tensor<> & core, 
+					  Tensor<> & core_prev,
+					  Matrix<> * W, 
+					  Matrix<> * dW,
+					  double tol, 
+					  double tol_init,
+					  double timelimit, 
+					  int maxiter, 
+					  double & st_time,
+					  ofstream & Plot_File,
+					  double & diffnorm,
+					  int & iter,
+					  World & dw);
+
+/**
+ * \brief ALS method for Tucker decomposition
+ *  W: output matrices
+ *  core: output core tensor
+ *  V: input tensor
+ *  tol: tolerance for a relative stopping condition
+ *  timelimit, maxiter: limit of time and iterations
+ */
+void alsTucker_PP_sub(Tensor<> & V, 
+				  	  Tensor<> & core, 
+				  	  Tensor<> & core_prev,
+				  	  Matrix<> * W, 
+				  	  Matrix<> * dW,
+				  	  double tol, 
+				  	  double tol_init,
+				  	  double timelimit, 
+				  	  int maxiter, 
+				  	  double & st_time,
+				  	  ofstream & Plot_File,
+				  	  double & diffnorm,
+				  	  int & iter,
+				  	  World & dw);
 
 /**
  * \brief ALS method for Tucker decomposition
@@ -106,14 +132,14 @@ void alsTucker_DT_sub(Tensor<> & V,
  *  timelimit, maxiter: limit of time and iterations
  */
 bool alsTucker_PP(Tensor<> & V, 
-          Tensor<> & core, 
-          Matrix<> * W, 
-          double tol, 
-          double tol_init,
-          double timelimit, 
-          int maxiter, 
-          ofstream & Plot_File,
-          World & dw) ;
+          		  Tensor<> & core, 
+          		  Matrix<> * W, 
+          		  double tol, 
+          		  double tol_init,
+          		  double timelimit, 
+          		  int maxiter, 
+          		  ofstream & Plot_File,
+          		  World & dw) ;
 
 
 

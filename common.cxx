@@ -489,7 +489,8 @@ void SVD_solve_mod(Matrix<>& M,
 				   Matrix<>& W,
 				   Matrix<>& W_init,
 				   Matrix<>& dW, 
-				   Matrix<>& S) {
+				   Matrix<>& S,
+				   double ratio_step) {
 	// Perform SVD
 	Matrix<> U,VT;
 	Vector<> s;
@@ -500,7 +501,8 @@ void SVD_solve_mod(Matrix<>& M,
 	inv(s["i"]);
 	S_reverse["ij"] = VT["ki"]*s["k"]*U["jk"];
 	W["ij"] = M["ik"]*S_reverse["kj"];
-	dW["ij"] = W["ij"]-W_init["ij"];
+	dW["ij"] = ratio_step*(W["ij"]-W_init["ij"]);
+	W["ij"] = W_init["ij"] + dW["ij"];
 }
 
 // Gauss-Seidel relaxation for A*Gamma = F

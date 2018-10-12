@@ -39,14 +39,19 @@ int main(int argc, char ** argv){
 		//TEST_sparse_laplacian_alsCP_DT(6, 12, 4, 0, dw); 
 		//TEST_sparse_laplacian_alsCP_mod(6, 12, 4, 0, dw); 
 		//TEST_dense_uniform_alsCP(100, 5, dw);
-		//TEST_3d_poisson_CP(6, 3, 3, 0, dw);
+ 		ofstream Plot_File("bbb.csv"); 
+ 		// TEST_3d_poisson_CP(8, 5, 2, 0, 1e-10, 1e-3, 0.00, 1, Plot_File, dw);      
+		// TEST_3d_poisson_CP(12, 4, 2, 0, 1e-10, 1e-3, 0.00, 1.0, Plot_File, dw);
+		// TEST_poisson_CP(6, 10, 8, 0, 1e-3, 0.00, 0.8, Plot_File, dw);
+		// TEST_randmat_CP(6, 12, 5, false, 1e-10, 1e-3, 0.00, 1., Plot_File, dw);
+
 
 		//TEST_identity_tensor(6, 4, dw);
 		//TEST_SVD_solve(6, dw);
 		//TEST_laplacian_tensor(4, 8, 1, dw);  // sparse	
 		//TEST_gauss_seidel(4, 4, dw);
-  		ofstream Plot_File("aaa.csv");      
-		TEST_construct_Tucker(6, 10, 2, 0, 1e-10, Plot_File, dw);
+  // 		ofstream Plot_File("aaa.csv");      
+		// TEST_construct_Tucker(6, 10, 2, 0, 1e-10, Plot_File, dw);
   // 		ofstream Plot_File("aaa.csv");      
 		// TEST_construct_Tucker_pp(6, 10, 3, 0, 1e-10, 5e-1, Plot_File, dw);
 
