@@ -52,6 +52,25 @@ int main(int argc, char ** argv){
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &np);
 
+	/*
+	examples: 
+ 	1: TEST_3d_poisson_CP(8, 5, 2, 0, 1e-10, 1e-3, 0.00, 1, Plot_File, dw); 
+  	-model CP -tensor p -pp 0 -dim 8 -size 5 -rank 2   
+ 	-model CP -tensor p -pp 1 -dim 8 -size 5 -rank 2 
+	2: TEST_3d_poisson_CP(12, 4, 2, 0, 1e-10, 1e-3, 0.00, 1.0, Plot_File, dw);
+ 	-model CP -tensor p -pp 0 -dim 12 -size 4 -rank 2 
+ 	-model CP -tensor p -pp 1 -dim 12 -size 4 -rank 2 
+	3: TEST_poisson_CP(6, 10, 8, 0, 1e-3, 0.00, 0.8, Plot_File, dw);
+ 	-model CP -tensor p2 -pp 0 -dim 6 -size 10 -rank 8 
+ 	-model CP -tensor p2 -pp 1 -dim 6 -size 10 -rank 8 
+	4: TEST_randmat_CP(6, 14, 5, false, 1e-10, 1e-3, 0.00, 1., Plot_File, dw);
+ 	-model CP -tensor r -pp 0 -dim 6 -size 14 -rank 5 
+ 	-model CP -tensor r -pp 1 -dim 6 -size 14 -rank 5 
+	5: TEST_collinearity_CP(6, 14,	5, false, 1e-10, 1e-3, 0.00, 1., 0.5, 0.9, 0.05, Plot_File, dw);
+ 	-model CP -tensor c -pp 0 -dim 6 -size 14 -rank 5 
+ 	-model CP -tensor c -pp 1 -dim 6 -size 14 -rank 5 
+	*/
+
 	if (getCmdOption(input_str, input_str+in_num, "-model")) {
 		model = getCmdOption(input_str, input_str+in_num, "-model");
     	if (model[0] != 'C' && model[0] != 'T') model = "CP";
@@ -101,9 +120,9 @@ int main(int argc, char ** argv){
 	}	
 	if (getCmdOption(input_str, input_str+in_num, "-pp_res_tol")) {
 		pp_res_tol = atof(getCmdOption(input_str, input_str+in_num, "-pp_res_tol"));
-    	if (pp_res_tol < 0 || pp_res_tol > 1) pp_res_tol = 1e-10;
+    	if (pp_res_tol < 0 || pp_res_tol > 1) pp_res_tol = 1e-3;
 	} else {
-		pp_res_tol = 1e-10;
+		pp_res_tol = 1e-3;
 	}
 	if (getCmdOption(input_str, input_str+in_num, "-lambda")) {
 		lambda_ = atof(getCmdOption(input_str, input_str+in_num, "-lambda"));
@@ -220,8 +239,6 @@ int main(int argc, char ** argv){
 			// TODO
 		}
 
-		if (dw.rank==0) cout << "aaaa" << endl;
-
 		double timelimit = 1e5;
 		int maxiter = 1e5;
 		double Vnorm = V.norm2();
@@ -234,14 +251,12 @@ int main(int argc, char ** argv){
 			W[i].fill_random(0,1); 
 			grad_W[i].fill_random(0,1);  
 		}
-		if (dw.rank==0) cout << "ccc" << endl;
 		//construct F matrices (correction terms, F[]=0 initially)
 		Matrix<>* F = new Matrix<>[dim];
 		for (int i=0; i<V.order; i++) {
 			F[i] = Matrix<>(V.lens[i],R,dw);
 			F[i]["ij"] = 0.;
 		}	
-		if (dw.rank==0) cout << "bbbb" << endl;
 
 		if (model[0]=='C') {
 			if (pp==0) {
@@ -260,29 +275,6 @@ int main(int argc, char ** argv){
 			}
 		}
 
-
-
-
-
-
-		// int lens[6] = {20, 20, 20, 20};
-		// TEST_alsCP(6, lens, 8, dw);
-		//TEST_sparse_laplacian_alsCP(6, 12, 4, 0, dw); 
-		//TEST_sparse_laplacian_alsCP_DT(6, 12, 4, 0, dw); 
-		//TEST_sparse_laplacian_alsCP_mod(6, 12, 4, 0, dw); 
-		//TEST_dense_uniform_alsCP(100, 5, dw);
- 		// ofstream Plot_File("bbb.csv"); 
- 		// TEST_3d_poisson_CP(8, 5, 2, 0, 1e-10, 1e-3, 0.00, 1, Plot_File, dw);      
-		// TEST_3d_poisson_CP(12, 4, 2, 0, 1e-10, 1e-3, 0.00, 1.0, Plot_File, dw);
-		// TEST_poisson_CP(6, 10, 8, 0, 1e-3, 0.00, 0.8, Plot_File, dw);
-		// TEST_randmat_CP(6, 14, 5, false, 1e-10, 1e-3, 0.00, 1., Plot_File, dw);
-		// TEST_collinearity_CP(6, 14,	5, false, 1e-10, 1e-3, 0.00, 1., 0.5, 0.9, 0.05, Plot_File, dw);
-
-
-		//TEST_identity_tensor(6, 4, dw);
-		//TEST_SVD_solve(6, dw);
-		//TEST_laplacian_tensor(4, 8, 1, dw);  // sparse	
-		//TEST_gauss_seidel(4, 4, dw);
   // 		ofstream Plot_File("aaa.csv");      
 		// TEST_construct_Tucker(6, 10, 2, 0, 1e-10, Plot_File, dw);
   // 		ofstream Plot_File("aaa.csv");      
@@ -364,18 +356,6 @@ int main(int argc, char ** argv){
 		// 6 16 5 
 		// 4 40 10
 		// 6, 14, 5, 0, 1e-10, 1e-2
-
-
-		// int lens_GS[3] = {4, 4, 4};
-		// TEST_Gram_Schmidt();
-		// TEST_Gen_vector_condition(lens_GS, 3, 2, 1.0);
-		//TEST_Gen_tensor_condition(lens_GS, 6, 8, 20, 15, 1.0, dw);
-		// TEST_Gen_tensor_condition_pp(lens_GS, 6, 8, 10, 10, 1.0, dw);
-		// // 210.309819    227
-		// TEST_Gen_tensor_condition_pp(lens_GS, 6, 8, 20, 10, 1.0, dw);
-		// 210.309819    227
-		// TEST_Gen_tensor_condition_pp(lens_GS, 4, 4, 4, 1, 1.0, dw);
-		// TEST_unit_tensor_pp(lens_GS, 3, 4, 1., dw);
 	}
 
 	MPI_Finalize();

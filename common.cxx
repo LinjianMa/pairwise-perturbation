@@ -628,7 +628,9 @@ void SVD_solve_mod(Matrix<>& M,
 	S_reverse["ij"] = VT["ki"]*s["k"]*U["jk"];
 	W["ij"] = M["ik"]*S_reverse["kj"];
 	dW["ij"] = ratio_step*(W["ij"]-W_init["ij"]);
-	W["ij"] = W_init["ij"] + dW["ij"];
+	if (ratio_step!=1.){
+		W["ij"] = W_init["ij"] + dW["ij"];
+	}
 }
 
 // Gauss-Seidel relaxation for A*Gamma = F
