@@ -112,6 +112,132 @@ Vector<>** Gen_vector_condition(int * lens,
 	return vec;
 }
 
+double collinearity(Vector<> v1, Vector<> v2) {
+	double ip = v1["i"]*v2["i"];
+	double nm1 = v1.norm2();
+	double nm2 = v2.norm2();
+	return ip/(nm1*nm2);
+}
+
+void build_V_vec(Tensor<> & V,
+			 	Vector<> * W,
+			 	int order,
+			 	World & dw) {
+	char chars[] = {'i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','\0'};
+	// int lens_V[2];
+	// lens_V[0] = W[0].nrow;
+	// lens_V[1] = W[0].ncol;
+	V = W[0];
+	char seq_W[2] = {'i', '\0'};
+	// char seq = {'i','*','\0'};
+	for (int i=1; i<order-1; i++) {
+		// build V_temp
+		int lens_V[i+1];
+		for (int j=0; j<i+1; j++) {
+			lens_V[j] = W[j].len;
+		}		
+		Tensor<> V_temp = Tensor<>(i+1, lens_V, dw);
+		// seq_temp
+		char seq_temp[i+2];
+		seq_temp[i+1] = '\0';
+		for (int j=0; j<i+1; j++) {
+			seq_temp[j] = chars[j];
+		}
+		// seq
+		char seq[i+1];
+		seq[i] = '\0';
+		for (int j=0; j<i; j++) {
+			seq[j] = chars[j];
+		}
+		// seq_W		
+		seq_W[0] = chars[i];
+		V_temp[seq_temp] = V[seq] * W[i][seq_W];
+		V = V_temp;
+		// char seq[i+3];
+		// for (int j=0; j<i+3; j++) {
+		// 	seq[j] = seq_temp[j];
+		// }
+	}
+	// build V_temp
+	int lens_V[order];
+	for (int j=0; j<order; j++) {
+		lens_V[j] = W[j].len;
+	}		
+	Tensor<> V_temp = Tensor<>(order, lens_V, dw);
+	char seq_temp[order+1];
+	char seq[order+1];
+	seq_temp[order] = '\0';
+	seq_temp[order] = '\0';
+	for (int j=0; j<order; j++) {
+		seq_temp[j] = chars[j];
+		seq[j] = chars[j];
+	}
+	seq_W[0] = chars[order-1];
+
+	V_temp[seq_temp] = V[seq] * W[order-1][seq_W];
+	V = V_temp;
+
+}
+
+Tensor<> Gen_collinearity(int * lens,
+						 int dim,
+						 int R,
+						 double col_min,
+						 double col_max, 
+						 World & dw) {
+	// build chars
+	char chars[] = {'i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','\0'};
+	char arg[dim+1];
+	arg[dim] = '\0';
+	for (int i = 0; i < dim; i++) {
+		arg[i] = chars[i];
+	}
+	// build vectors
+	Vector<> ** vec = new Vector<>*[R];
+	// range over different modes
+	for (int i=0; i< R; i++) {
+		vec[i] = new Vector<>[dim];
+		// range over different ranks
+		for (int j=0; j<dim; j++) {
+			vec[i][j] = Vector<>(lens[j]);
+			vec[i][j].fill_random(0,1);
+		}
+	}
+	for (int j=0; j<dim; j++) {
+		for (int i=1; i<R; i++) {
+			bool condition = false;
+			while (condition==false) {
+				int k=0;
+				for (; k<i; k++) {
+					double col = collinearity(vec[i][j], vec[k][j]);
+					if (dw.rank==0) cout << col << endl;
+					if ( col<col_min || col>col_max) {
+						if (dw.rank==0) cout << "resellect" << endl;
+						break;
+					}
+				}
+				if (k==i) condition = true;
+				else vec[i][j].fill_random(0,1);
+			}
+		}
+	}
+
+	// Vector<> lambda = Vector<>[R];
+	// lambda.fill_random(0.2,0.8);
+	// 
+	Tensor<> X(dim, lens, dw);
+	for (int i=0; i<R; i++) {
+		double lambda_;
+		lambda_ = rand()%600 *1./1000 + 0.2;
+					if (dw.rank==0) cout << "lambda=" << lambda_ << endl;
+		Tensor<> X_sub;
+		build_V_vec(X_sub, vec[i], dim, dw); 
+		X[arg] = X[arg] + lambda_ * X_sub[arg];
+	}
+	return X;
+	
+}
+
 Tensor<> Gen_tensor_condition(int * lens,
 							  int dim,
 							  int R,
