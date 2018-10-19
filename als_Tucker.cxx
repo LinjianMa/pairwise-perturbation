@@ -136,8 +136,8 @@ void TTMc(Tensor<>& Y,
 	for (int m=0; m<V.order; m++) {
 		lens_Y[m] = V.lens[m];
 	}
-	Tensor<> * V_temp = new Tensor<>;
-	*V_temp = V;
+	Tensor<> V_temp;
+	V_temp = V;
 	for (int index=0; index<V.order; index++) {
 		if (index != i) {
 			seq_p[0] = index+'a';
@@ -145,10 +145,10 @@ void TTMc(Tensor<>& Y,
 			//lens
 			lens_Y[index] = W[index].ncol;
 			Y = Tensor<>(V.order, lens_Y, dw);		
-			Y[seq] = (*V_temp)[seq_mod]*W[index][seq_p];
+			Y[seq] = (V_temp)[seq_mod]*W[index][seq_p];
 			// TODO: check memory leak
-			V_temp = new Tensor<>(V.order, lens_Y, dw);
-			*V_temp = Y;
+			V_temp = Tensor<>(V.order, lens_Y, dw);
+			V_temp = Y;
 			//recover seq
 			seq[index] = 'a'+index;
 		}
@@ -356,7 +356,7 @@ bool alsTucker_DT(Tensor<> & V,
 			double diffnorm2 = core_prev.norm2();
 			diffnorm = abs(diffnorm1-diffnorm2);
 			// check the residule
-			Matrix<>* W_T = new Matrix<>[V.order];
+			Matrix<> W_T[V.order];
 			for (int i=0; i<V.order; i++) {
 				W_T[i] = Matrix<>(W[i].ncol,W[i].nrow,dw);
 				W_T[i]["ij"] = W[i]["ji"];
@@ -556,7 +556,7 @@ void alsTucker_DT_sub(Tensor<> & V,
 					  World & dw) {
 
 	// work as the preconditioning of pairwise perturbation
-	Matrix<>* W_prev = new Matrix<>[V.order];
+	Matrix<> W_prev[V.order];
 	for (int i=0; i<V.order; i++) {
 		W_prev[i] = Matrix<>(W[i].nrow,W[i].ncol);
 	}
@@ -584,7 +584,7 @@ void alsTucker_DT_sub(Tensor<> & V,
 			double diffnorm2 = core_prev.norm2();
 			diffnorm = abs(diffnorm1-diffnorm2);
 			// check the residule
-			Matrix<>* W_T = new Matrix<>[V.order];
+			Matrix<> W_T[V.order];
 			for (int i=0; i<V.order; i++) {
 				W_T[i] = Matrix<>(W[i].ncol,W[i].nrow,dw);
 				W_T[i]["ij"] = W[i]["ji"];
@@ -770,7 +770,7 @@ void alsTucker_PP_sub(Tensor<> & V,
 		seq[jj] = 'a'+jj;
 		seq_Y[jj] = 'a'+jj;
 	}
-	Matrix<> * W_init = new Matrix<>[V.order];
+	Matrix<> W_init[V.order];
 	// initialize the map
 	map<string, Tensor<>> ttmc_map;
 	for (; iter<=maxiter; iter++)
@@ -821,7 +821,7 @@ void alsTucker_PP_sub(Tensor<> & V,
 			double corenorm_prev = core_prev.norm2();
 			diffnorm = abs(corenorm-corenorm_prev);
 			// check the residule
-			Matrix<>* W_T = new Matrix<>[V.order];
+			Matrix<> W_T[V.order];
 			for (int i=0; i<V.order; i++) {
 				W_T[i] = Matrix<>(W[i].ncol,W[i].nrow,dw);
 				W_T[i]["ij"] = W[i]["ji"];
@@ -1010,7 +1010,7 @@ bool alsTucker_PP(Tensor<> & V,
 						 st_time, Plot_File,
 						 diffnorm, iter, dw);
 
-		tol_init *= 0.9;
+		if (tol_init>1e-3) tol_init *= 0.9;
 
 	}
 	if(dw.rank==0) {

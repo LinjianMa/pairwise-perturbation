@@ -573,14 +573,14 @@ double alsCP_DT_sub(Tensor<> & V,
     regul["ii"] =  1.*lambda;
 
 	// work as the preconditioning of pairwise perturbation
-	Matrix<>* W_prev = new Matrix<>[V.order];
+	Matrix<> W_prev[V.order];
 	for (int i=0; i<V.order; i++) {
 		W_prev[i] = Matrix<>(W[i].nrow,W[i].ncol);
 	}
 
 	double Fnorm = 0.; 
 	double diffnorm_V;
-	Matrix<> * grad_W_proj = new Matrix<>[V.order];
+	Matrix<> grad_W_proj[V.order];
 	//make the char
 	char seq[V.order+1], seq_V[V.order+1];
 	seq[V.order] = '\0'; seq_V[V.order] = '\0'; 
@@ -761,9 +761,9 @@ double alsCP_PP_sub(Tensor<> & V,
 
 	double Fnorm; 
 	double diffnorm_V;
-	Matrix<> * grad_W_proj = new Matrix<>[V.order];
+	Matrix<> grad_W_proj[V.order];
 	// initialize the dW matrices
-	Matrix<> * W_init = new Matrix<>[V.order];
+	Matrix<> W_init[V.order];
 	// initialize the map
 	map<string, Tensor<>> mttkrp_map;
 	//make the char

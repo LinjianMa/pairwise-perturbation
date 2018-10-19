@@ -53,22 +53,50 @@ int main(int argc, char ** argv){
 	MPI_Comm_size(MPI_COMM_WORLD, &np);
 
 	/*
-	examples: 
+	CP test examples: 
  	1: TEST_3d_poisson_CP(8, 5, 2, 0, 1e-10, 1e-3, 0.00, 1, Plot_File, dw); 
-  	-model CP -tensor p -pp 0 -dim 8 -size 5 -rank 2   
- 	-model CP -tensor p -pp 1 -dim 8 -size 5 -rank 2 
+  		-model CP -tensor p -pp 0 -dim 8 -size 5 -rank 2   
+ 		-model CP -tensor p -pp 1 -dim 8 -size 5 -rank 2 
 	2: TEST_3d_poisson_CP(12, 4, 2, 0, 1e-10, 1e-3, 0.00, 1.0, Plot_File, dw);
- 	-model CP -tensor p -pp 0 -dim 12 -size 4 -rank 2 
- 	-model CP -tensor p -pp 1 -dim 12 -size 4 -rank 2 
+ 		-model CP -tensor p -pp 0 -dim 12 -size 4 -rank 2 
+ 		-model CP -tensor p -pp 1 -dim 12 -size 4 -rank 2 
 	3: TEST_poisson_CP(6, 10, 8, 0, 1e-3, 0.00, 0.8, Plot_File, dw);
- 	-model CP -tensor p2 -pp 0 -dim 6 -size 10 -rank 8 
- 	-model CP -tensor p2 -pp 1 -dim 6 -size 10 -rank 8 
+ 		-model CP -tensor p2 -pp 0 -dim 6 -size 10 -rank 8 
+ 		-model CP -tensor p2 -pp 1 -dim 6 -size 10 -rank 8 
 	4: TEST_randmat_CP(6, 14, 5, false, 1e-10, 1e-3, 0.00, 1., Plot_File, dw);
- 	-model CP -tensor r -pp 0 -dim 6 -size 14 -rank 5 
- 	-model CP -tensor r -pp 1 -dim 6 -size 14 -rank 5 
+ 		-model CP -tensor r -pp 0 -dim 6 -size 14 -rank 5 
+ 		-model CP -tensor r -pp 1 -dim 6 -size 14 -rank 5 
 	5: TEST_collinearity_CP(6, 14,	5, false, 1e-10, 1e-3, 0.00, 1., 0.5, 0.9, 0.05, Plot_File, dw);
- 	-model CP -tensor c -pp 0 -dim 6 -size 14 -rank 5 
- 	-model CP -tensor c -pp 1 -dim 6 -size 14 -rank 5 
+ 		-model CP -tensor c -pp 0 -dim 6 -size 14 -rank 5 
+ 		-model CP -tensor c -pp 1 -dim 6 -size 14 -rank 5 
+	*/
+
+	/*
+	Tucker test examples:
+	1. TEST_sparse_laplacian_alsTucker(4, 40, 10, 0, 1e-10, Plot_File, dw); 
+ 		-model Tucker -tensor p2 -pp 0 -dim 4 -size 40 -rank 10
+ 		-model Tucker -tensor p2 -pp 1 -dim 4 -size 40 -rank 10 -pp_res_tol 1e-1
+	2. TEST_sparse_laplacian_alsTucker(6, 14, 5, 0, 1e-10, Plot_File, dw); 
+ 		-model Tucker -tensor p2 -pp 0 -dim 6 -size 14 -rank 5
+ 		-model Tucker -tensor p2 -pp 1 -dim 6 -size 14 -rank 5 -pp_res_tol 1e-1
+	3. TEST_sparse_laplacian_alsTucker(6, 16, 8, 0, 1e-10, Plot_File, dw); 
+ 		-model Tucker -tensor p2 -pp 0 -dim 6 -size 16 -rank 8
+ 		-model Tucker -tensor p2 -pp 1 -dim 6 -size 16 -rank 8 -pp_res_tol 1e-1
+	4. TEST_sparse_laplacian_alsTucker(6, 16, 5, 0, 1e-10, Plot_File, dw); 
+ 		-model Tucker -tensor p2 -pp 0 -dim 6 -size 16 -rank 5
+ 		-model Tucker -tensor p2 -pp 1 -dim 6 -size 16 -rank 5 -pp_res_tol 1e-1
+	5. TEST_random_alsTucker(4, 40, 10, 0, 1e-10, Plot_File, dw);
+ 		-model Tucker -tensor r2 -pp 0 -dim 4 -size 40 -rank 10
+ 		-model Tucker -tensor r2 -pp 1 -dim 4 -size 40 -rank 10 -pp_res_tol 1e-1
+	6. TEST_random_alsTucker(6, 14, 5, 0, 1e-10, Plot_File, dw); 
+ 		-model Tucker -tensor r2 -pp 0 -dim 6 -size 14 -rank 5
+ 		-model Tucker -tensor r2 -pp 1 -dim 6 -size 14 -rank 5 -pp_res_tol 1e-1		
+	7. TEST_random_alsTucker(6, 16, 5, 0, 1e-10, Plot_File, dw); 
+ 		-model Tucker -tensor r2 -pp 0 -dim 6 -size 16 -rank 5
+ 		-model Tucker -tensor r2 -pp 1 -dim 6 -size 16 -rank 5 -pp_res_tol 1e-1		
+	8. TEST_random_alsTucker(6, 16, 8, 0, 1e-10, Plot_File, dw); 
+ 		-model Tucker -tensor r2 -pp 0 -dim 6 -size 16 -rank 8
+ 		-model Tucker -tensor r2 -pp 1 -dim 6 -size 16 -rank 8 -pp_res_tol 1e-1				
 	*/
 
 	if (getCmdOption(input_str, input_str+in_num, "-model")) {
@@ -243,8 +271,8 @@ int main(int argc, char ** argv){
 		int maxiter = 1e5;
 		double Vnorm = V.norm2();
  		ofstream Plot_File(filename); 
-		Matrix<>* W = new Matrix<>[dim];				// N matrices V will be decomposed into
-		Matrix<>* grad_W = new Matrix<>[dim];			// gradients in N dimensions 
+		Matrix<>* W = new Matrix<>[V.order];				// N matrices V will be decomposed into
+		Matrix<>* grad_W = new Matrix<>[V.order];			// gradients in N dimensions 
 		for (int i=0; i<V.order; i++) {
 			W[i] = Matrix<>(V.lens[i],R,dw);
 			grad_W[i] = Matrix<>(V.lens[i],R,dw);
@@ -252,7 +280,7 @@ int main(int argc, char ** argv){
 			grad_W[i].fill_random(0,1);  
 		}
 		//construct F matrices (correction terms, F[]=0 initially)
-		Matrix<>* F = new Matrix<>[dim];
+		Matrix<>* F = new Matrix<>[V.order];
 		for (int i=0; i<V.order; i++) {
 			F[i] = Matrix<>(V.lens[i],R,dw);
 			F[i]["ij"] = 0.;
@@ -267,11 +295,18 @@ int main(int argc, char ** argv){
 			}
 		}
 		else if (model[0]=='T') {
+			int ranks[V.order];
+			for (int i=0; i<V.order; i++) {
+				ranks[i] = R;
+			}
+			Tensor<> hosvd_core;
+			// using hosvd to initialize W and hosvd_core
+			hosvd(V, hosvd_core, W, ranks, dw);
 			if (pp==0) {
-
+				alsTucker_DT(V, hosvd_core, W, tol*Vnorm, timelimit, maxiter, Plot_File, dw);
 			}
 			else if (pp==1) {
-				
+				alsTucker_PP(V, hosvd_core, W, tol*Vnorm, pp_res_tol, timelimit, maxiter, Plot_File, dw);				
 			}
 		}
 
@@ -290,23 +325,6 @@ int main(int argc, char ** argv){
   //   	ofstream Plot_File("poisson_DT_4_36_2_ps.csv");         
 		// TEST_3d_poisson_Tucker(8, 6, 2, 0, 1e-10, Plot_File, dw);
 
-  //   	ofstream Plot_File("tucker_dt_4_40_10_ps.csv");      
-		// TEST_sparse_laplacian_alsTucker(4, 40, 10, 0, 1e-10, Plot_File, dw); 
-  //   	ofstream Plot_File("tucker_pp_4_40_10_ps.csv");       
-		// TEST_sparse_laplacian_alsTucker_PP(4, 40, 10, 0, 1e-10, 1e-1, Plot_File, dw);
-  //   	ofstream Plot_File("tucker_dt_6_14_5_ps.csv");       
-		// TEST_sparse_laplacian_alsTucker(6, 14, 5, 0, 1e-10, Plot_File, dw); 
-  //   	ofstream Plot_File("tucker_pp_6_14_5_ps.csv");         
-		// TEST_sparse_laplacian_alsTucker_PP(6, 14, 5, 0, 1e-10, 8e-1, Plot_File, dw);
-  //   	ofstream Plot_File("tucker_dt_6_16_8_ps.csv");       
-		// TEST_sparse_laplacian_alsTucker(6, 16, 8, 0, 1e-10, Plot_File, dw); 
-  //   	ofstream Plot_File("tucker_pp_6_16_8_ps.csv");         
-		// TEST_sparse_laplacian_alsTucker_PP(6, 16, 8, 0, 1e-10, 2e-1, Plot_File, dw);
-  //   	ofstream Plot_File("tucker_dt_6_16_5_ps.csv");       
-		// TEST_sparse_laplacian_alsTucker(6, 16, 5, 0, 1e-10, Plot_File, dw); 
-  //   	ofstream Plot_File("tucker_pp_6_16_5_ps.csv");         
-		// TEST_sparse_laplacian_alsTucker_PP(6, 16, 5, 0, 1e-10, 1e-2, Plot_File, dw);
-
   //   	ofstream Plot_File("tucker_dt_4_40_15_rand_ps.csv");      
 		// TEST_random_laplacian_alsTucker(4, 40, 15, 0, 1e-10, Plot_File, dw); 
   //   	ofstream Plot_File("tucker_pp_4_40_15_rand_ps.csv");       
@@ -323,28 +341,6 @@ int main(int argc, char ** argv){
 		// TEST_random_laplacian_alsTucker(6, 16, 5, 0, 1e-10, Plot_File, dw); 
   //   	ofstream Plot_File("tucker_pp_6_16_5_rand_ps.csv");         
 		// TEST_random_laplacian_alsTucker_PP(6, 16, 5, 0, 1e-10, 1e-2, Plot_File, dw);
-
-  //   	ofstream Plot_File("tucker_dt_4_40_10_random.csv");      
-		// TEST_random_alsTucker(4, 40, 10, 0, 1e-10, Plot_File, dw);
-  //   	ofstream Plot_File("tucker_pp_4_40_10_random.csv");       
-		// TEST_random_alsTucker_PP(4, 40, 10, 0, 1e-10, 5e-1, Plot_File, dw);
-  //   	ofstream Plot_File("tucker_dt_6_14_5_random.csv");       
-		// TEST_random_alsTucker(6, 14, 5, 0, 1e-10, Plot_File, dw); 
-  //   	ofstream Plot_File("tucker_pp_6_14_5_random.csv");         
-		// TEST_random_alsTucker_PP(6, 14, 5, 0, 1e-10, 1e-2, Plot_File, dw);
-  //   	ofstream Plot_File("tucker_dt_6_16_5_random.csv");       
-		// TEST_random_alsTucker(6, 16, 5, 0, 1e-10, Plot_File, dw); 
-  //   	ofstream Plot_File("tucker_pp_6_16_5_random.csv");         
-		// TEST_random_alsTucker_PP(6, 16, 5, 0, 1e-10, 1e-2, Plot_File, dw);
-  //   	ofstream Plot_File("tucker_dt_6_16_8_random.csv");       
-		// TEST_random_alsTucker(6, 16, 8, 0, 1e-10, Plot_File, dw); 
-  //   	ofstream Plot_File("tucker_pp_6_16_8_random.csv");         
-		// TEST_random_alsTucker_PP(6, 16, 8, 0, 1e-10, 1e-2, Plot_File, dw);
-  //   	ofstream Plot_File("tucker_dt_6_13_4_random.csv");       
-		// TEST_random_alsTucker(6, 13, 4, 0, 1e-10, Plot_File, dw); 
-  //   	ofstream Plot_File("tucker_pp_6_13_4_random.csv");         
-		// TEST_random_alsTucker_PP(6, 13, 4, 0, 1e-10, 1e-2, Plot_File, dw);
-
 
   //   	ofstream Plot_File("tucker_dt_40_10_uniform.csv");      
 		// TEST_dense_uniform_alsTucker(14, 2, 0, 1e-10, Plot_File, dw); 
