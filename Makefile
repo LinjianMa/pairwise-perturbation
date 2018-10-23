@@ -1,13 +1,10 @@
-CXX=mpicxx
-CXXFLAGS=-std=c++0x -g -O0
+include config.mk
+
 FCXX=$(CXX) $(CXXFLAGS)
-INCLUDE_PATH=
-LIB_PATH=
-LIBS=-lctf
 
 all: test_ALS
 
-test_ALS: test_ALS.cxx als_CP.o als_Tucker.o common.o Makefile 
+test_ALS: test_ALS.cxx als_CP.o als_Tucker.o common.o Makefile config.mk
 	$(FCXX) $< als_CP.o als_Tucker.o common.o  -o $@ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
 als_CP.o: als_CP.cxx als_CP.h 
@@ -19,3 +16,5 @@ als_Tucker.o: als_Tucker.cxx als_Tucker.h
 common.o: common.cxx common.h 
 	$(FCXX) -c $< -o $@ $(INCLUDE_PATH) 
 
+clean:
+	rm common.o als_CP.o als_Tucker.o test_ALS
