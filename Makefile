@@ -1,21 +1,21 @@
+CXX=mpicxx
+CXXFLAGS=-std=c++0x -g -O0
+FCXX=$(CXX) $(CXXFLAGS)
+INCLUDE_PATH=
+LIB_PATH=
+LIBS=-lctf
 
-.PHONY:
-$(ALS): %: $(BDIR)/bin/%
+all: test_ALS
 
-$(BDIR)/bin/%: %.cxx  $(BDIR)/lib/libctf.a Makefile ../Makefile ../src/interface
-	$(FCXX) $< -o $@ -I../include/ -L$(BDIR)/lib -lctf $(LIBS)
+test_ALS: test_ALS.cxx als_CP.o als_Tucker.o common.o Makefile 
+	$(FCXX) $< als_CP.o als_Tucker.o common.o  -o $@ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
+als_CP.o: als_CP.cxx als_CP.h 
+	$(FCXX) -c $< -o $@ $(INCLUDE_PATH) 
 
-# $(BDIR)/bin/test_ALS: test_ALS.cxx als_CP.cxx als_Tucker.cxx common.cxx $(ODIR)/als_CP.o $(ODIR)/als_Tucker.o $(ODIR)/common.o $(BDIR)/lib/libctf.a Makefile ../Makefile 
-# 	$(FCXX) $< -o $@ -I../include/ -L$(BDIR)/lib -lctf $(LIBS)
+als_Tucker.o: als_Tucker.cxx als_Tucker.h 
+	$(FCXX) -c $< -o $@ $(INCLUDE_PATH) 
 
-
-# $(ODIR)/als_CP.o: als_CP.cxx als_CP.h ../src/interface
-# 	$(OFFLOAD_CXX) -c $< -o $@ -I../include/ 
-
-# $(ODIR)/als_Tucker.o: als_Tucker.cxx als_Tucker.h ../src/interface
-# 	$(OFFLOAD_CXX) -c $< -o $@ -I../include/ 
-
-# $(ODIR)/common.o: common.cxx common.h ../src/interface
-# 	$(OFFLOAD_CXX) -c $< -o $@ -I../include/ 
+common.o: common.cxx common.h 
+	$(FCXX) -c $< -o $@ $(INCLUDE_PATH) 
 

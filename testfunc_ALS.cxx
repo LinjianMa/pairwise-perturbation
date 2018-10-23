@@ -4,9 +4,9 @@
   * @{ 
   * \brief NTF/TF multigrid tests
   */
-#include "als_Tucker.cxx"
-#include "als_CP.cxx"
-#include "common.cxx"
+#include "als_Tucker.h"
+#include "als_CP.h"
+#include "common.h"
 #include "testfunc_ALS.h"
 //#define ERR_REPORT
 

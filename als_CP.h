@@ -41,14 +41,15 @@ void mttkrp_map_DT(map<string,Tensor<>>& mttkrp_map,
  *  V.order should be >=4
  */
 bool alsCP_DT(Tensor<> & V, 
-        Matrix<> * W, 
-        Matrix<> * grad_W, 
-        Matrix<> * F,
-        double tol, 
-        double timelimit, 
-        int maxiter, 
-        ofstream & Plot_File,
-        World & dw);
+			  Matrix<> * W, 
+			  Matrix<> * grad_W, 
+			  Matrix<> * F,
+			  double tol, 
+			  double timelimit, 
+			  int maxiter, 
+			  double lambda,
+        	  ofstream & Plot_File,
+			  World & dw) ;
 
 // [cd] --> [ab*]
 void stringbuilder_mttkrp(char* seq, 
@@ -62,6 +63,10 @@ void Build_mttkrp_map(map<string, Tensor<>> & mttkrp_map,
             char* seq,
             World & dw);
 
+void build_V(Tensor<> & V,
+			 Matrix<> * W,
+			 int order,
+			 World & dw);
 /**
  * \brief ALS method for CP decomposition
  *  W: output solutions
@@ -136,9 +141,11 @@ bool alsCP_PP(Tensor<> & V,
         	  Matrix<> * grad_W, 
         	  Matrix<> * F,
         	  double tol, 
-          	  double tol_init,
+        	  double tol_init,
         	  double timelimit, 
         	  int maxiter, 
+        	  double lambda,
+        	  double ratio_step,
           	  ofstream & Plot_File,
           	  World & dw) ;
 
