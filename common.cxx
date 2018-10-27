@@ -397,7 +397,8 @@ Tensor<> identitiy_tensor(int N,
 						  int s, 
 						  World & dw) {
 	int d = N/2;
-	Matrix<> ident = Matrix<>(s,s,SP,dw);
+	// Matrix<> ident = Matrix<>(s,s,SP,dw);
+	Matrix<> ident = Matrix<>(s,s,dw);
 	ident["ii"] = 1.;
 
 	int lens[N];
@@ -434,7 +435,8 @@ void random_laplacian_tensor(Tensor<>& V,
 
 	int d = N/2;
 	// build D matrix
-	Matrix<> D = Matrix<>(s,s,SP,dw);
+	// Matrix<> D = Matrix<>(s,s,SP,dw);
+	Matrix<> D = Matrix<>(s,s,dw);
 	int64_t my_tot_nnz = s-1;
 	int64_t * inds = (int64_t*)malloc(sizeof(int64_t)*my_tot_nnz);
 	double * vals = (double*)malloc(sizeof(double)*my_tot_nnz);
@@ -497,7 +499,8 @@ void laplacian_tensor(Tensor<>& V,
 
 	int d = N/2;
 	// build D matrix
-	Matrix<> D = Matrix<>(s,s,SP,dw);
+	// Matrix<> D = Matrix<>(s,s,SP,dw);
+	Matrix<> D = Matrix<>(s,s,dw);
 	int64_t my_tot_nnz = s-1;
 	int64_t * inds = (int64_t*)malloc(sizeof(int64_t)*my_tot_nnz);
 	double * vals = (double*)malloc(sizeof(double)*my_tot_nnz);

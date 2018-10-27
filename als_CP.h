@@ -2,6 +2,7 @@
 #define __ALS_CP_H__
 
 #include <ctf.hpp>
+#include <fstream>
 using namespace CTF;
 
 /**

@@ -2,6 +2,7 @@
 #define __ALS_TUCKER_H__
 
 #include <ctf.hpp>
+#include <fstream>
 using namespace CTF;
 
 void get_factor_matrices(Tensor<>& T, 
