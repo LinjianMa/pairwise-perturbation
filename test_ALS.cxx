@@ -47,6 +47,8 @@ int main(int argc, char ** argv){
 	double col_min;		// collinearity min
 	double col_max;		// collinearity max
 	double ratio_noise; // collinearity ratio of noise
+	double timelimit = 5e3;  // time limits
+	int maxiter = 5e3;		// maximum iterations
 
 	MPI_Init(&argc, &argv);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -55,8 +57,8 @@ int main(int argc, char ** argv){
 	/*
 	CP test examples: 
  	1: TEST_3d_poisson_CP(8, 5, 2, 0, 1e-10, 1e-3, 0.00, 1, Plot_File, dw); 
-  		-model CP -tensor p -pp 0 -dim 8 -size 5 -rank 2   
- 		-model CP -tensor p -pp 1 -dim 8 -size 5 -rank 2 
+  		-model CP -tensor p -pp 0 -dim 8 -size 5 -rank 2 -maxiter 5000   
+ 		-model CP -tensor p -pp 1 -dim 8 -size 5 -rank 2 -maxiter 5000
 	2: TEST_3d_poisson_CP(12, 4, 2, 0, 1e-10, 1e-3, 0.00, 1.0, Plot_File, dw);
  		-model CP -tensor p -pp 0 -dim 12 -size 4 -rank 2 
  		-model CP -tensor p -pp 1 -dim 12 -size 4 -rank 2 
@@ -118,9 +120,21 @@ int main(int argc, char ** argv){
 	}
 	if (getCmdOption(input_str, input_str+in_num, "-dim")) {
 		dim = atoi(getCmdOption(input_str, input_str+in_num, "-dim"));
-    	if (dim < 0) dim = 6;
+    	if (dim < 0) dim = 8;
 	} else {
-		dim = 6;
+		dim = 8;
+	}
+	if (getCmdOption(input_str, input_str+in_num, "-maxiter")) {
+		maxiter = atoi(getCmdOption(input_str, input_str+in_num, "-maxiter"));
+    	if (maxiter < 0) maxiter = 5e3;
+	} else {
+		maxiter = 5e3;
+	}
+	if (getCmdOption(input_str, input_str+in_num, "-timelimit")) {
+		timelimit = atof(getCmdOption(input_str, input_str+in_num, "-timelimit"));
+    	if (timelimit < 0) timelimit = 5e3;
+	} else {
+		timelimit = 5e3;
 	}
 	if (getCmdOption(input_str, input_str+in_num, "-size")) {
 		s = atoi(getCmdOption(input_str, input_str+in_num, "-size"));
@@ -196,7 +210,7 @@ int main(int argc, char ** argv){
 			cout << "  issparse=  " << issparse << "  tolerance=  " << tol << "  restarttol=  " << pp_res_tol << endl;
 			cout << "  lambda=  " << lambda_ << "  magnitude=  " << magni << "  filename=  " << filename << endl;
 			cout << "  col_min=  " << col_min << "  col_max=  " << col_max  << "  rationoise  " << ratio_noise << endl;
-
+			cout << "  timelimit=  " << timelimit << "  maxiter=  " << maxiter  << endl;
 		}
 
 		// initialization of tensor
@@ -267,8 +281,6 @@ int main(int argc, char ** argv){
 			// TODO
 		}
 
-		double timelimit = 1e5;
-		int maxiter = 1e5;
 		double Vnorm = V.norm2();
  		ofstream Plot_File(filename); 
 		Matrix<>* W = new Matrix<>[V.order];				// N matrices V will be decomposed into
