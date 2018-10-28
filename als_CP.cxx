@@ -965,7 +965,7 @@ bool alsCP_PP(Tensor<> & V,
 		dW[j]["ij"] = 0.;
 	}
 
-	while (gradnorm > tol )
+	while (gradnorm > tol && iter<=maxiter)
 	{
 		
 		if (dw.rank==0) printf("DT starts from %d\n", iter);
