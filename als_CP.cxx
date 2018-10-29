@@ -226,6 +226,8 @@ void build_V(Tensor<> & V,
 			 Matrix<> * W,
 			 int order,
 			 World & dw) {
+  Timer tbuild_V("build_V");
+  tbuild_V.start();
 	char chars[] = {'i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','\0'};
 	// int lens_V[2];
 	// lens_V[0] = W[0].nrow;
@@ -283,6 +285,7 @@ void build_V(Tensor<> & V,
 
 	V_temp[seq_temp] = V[seq] * W[order-1][seq_W];
 	V = V_temp;
+  tbuild_V.stop();
 
 }
 

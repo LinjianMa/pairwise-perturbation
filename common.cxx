@@ -602,6 +602,8 @@ void Normalize(Matrix<>* W,
 void SVD_solve(Matrix<>& M, 
 			   Matrix<>& W, 
 			   Matrix<>& S) {
+  Timer tSVD_solve("SVD_solve");
+  tSVD_solve.start();
 	// Perform SVD
 	Matrix<> U,VT;
 	Vector<> s;
@@ -612,6 +614,7 @@ void SVD_solve(Matrix<>& M,
 	inv(s["i"]);
 	S_reverse["ij"] = VT["ki"]*s["k"]*U["jk"];
 	W["ij"] = M["ik"]*S_reverse["kj"];
+  tSVD_solve.stop();
 }
 
 void SVD_solve_mod(Matrix<>& M, 
@@ -620,6 +623,8 @@ void SVD_solve_mod(Matrix<>& M,
 				   Matrix<>& dW, 
 				   Matrix<>& S,
 				   double ratio_step) {
+  Timer tSVD_solve_mod("SVD_solve");
+  tSVD_solve_mod.start();
 	// Perform SVD
 	Matrix<> U,VT;
 	Vector<> s;
@@ -634,6 +639,7 @@ void SVD_solve_mod(Matrix<>& M,
 	if (ratio_step!=1.){
 		W["ij"] = W_init["ij"] + dW["ij"];
 	}
+  tSVD_solve_mod.stop();
 }
 
 // Gauss-Seidel relaxation for A*Gamma = F
@@ -820,6 +826,8 @@ void gradient_CP(Tensor<> & V,
 				 Matrix<> * W, 
 				 Matrix<> * grad_W, 
 				 World & dw) {
+  Timer tgradient_CP("gradient_CP");
+  tgradient_CP.start();
 	//make the char
 	char seq_V[V.order+1];
 	seq_V[V.order] = '\0'; 
@@ -859,6 +867,7 @@ void gradient_CP(Tensor<> & V,
 		seq_V[V.order-1] = seq_V[i];
 		seq_V[i] = temp;
 	}
+  tgradient_CP.stop();
 }
 
 void char_string_copy(char* a, 

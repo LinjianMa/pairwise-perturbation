@@ -297,7 +297,8 @@ int main(int argc, char ** argv){
 			F[i] = Matrix<>(V.lens[i],R,dw);
 			F[i]["ij"] = 0.;
 		}	
-
+    Timer_epoch tALS("ALS");
+    tALS.begin();
 		if (model[0]=='C') {
 			if (pp==0) {
 				alsCP_DT(V, W, grad_W, F, tol*Vnorm, timelimit, maxiter, lambda_, Plot_File, dw);
@@ -321,6 +322,7 @@ int main(int argc, char ** argv){
 				alsTucker_PP(V, hosvd_core, W, tol*Vnorm, pp_res_tol, timelimit, maxiter, Plot_File, dw);				
 			}
 		}
+    tALS.end();
 
   // 		ofstream Plot_File("aaa.csv");      
 		// TEST_construct_Tucker(6, 10, 2, 0, 1e-10, Plot_File, dw);
