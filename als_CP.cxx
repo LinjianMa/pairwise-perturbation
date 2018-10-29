@@ -344,15 +344,15 @@ bool alsCP_DT(Tensor<> & V,
 		if (iter%resprint==0 || iter==maxiter) {
 			double st_time1 = MPI_Wtime();
 			//get the gradient
-			gradient_CP(V, W, grad_W, dw);
+			// gradient_CP(V, W, grad_W, dw);
+			// for (int i=0; i<V.order; i++) { 
+			// 	grad_W_proj[i] = Matrix<>(W[i].nrow,W[i].ncol);
+			// 	grad_W_proj[i]["ij"] = grad_W[i]["ij"]-F[i]["ij"];
+			// }
+			projnorm = 0; //Fnorm = 0;
 			for (int i=0; i<V.order; i++) { 
-				grad_W_proj[i] = Matrix<>(W[i].nrow,W[i].ncol);
-				grad_W_proj[i]["ij"] = grad_W[i]["ij"]-F[i]["ij"];
-			}
-			projnorm = 0; Fnorm = 0;
-			for (int i=0; i<V.order; i++) { 
-				projnorm += grad_W_proj[i].norm2()*grad_W_proj[i].norm2();
-				Fnorm += F[i].norm2();
+				projnorm += grad_W[i].norm2()*grad_W[i].norm2();//grad_W_proj[i].norm2()*grad_W_proj[i].norm2();
+				//Fnorm += F[i].norm2();
 			}
 			projnorm = sqrt(projnorm);
 			// diffnorm
@@ -365,7 +365,7 @@ bool alsCP_DT(Tensor<> & V,
 			st_time += MPI_Wtime() - st_time1;
 			double dtime = MPI_Wtime() - st_time;
 			if(dw.rank==0) {
-				cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [gradnorm]  "<< projnorm << "  [tol]  " << tol << "  [pp_update]  " << 0  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
+				// cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [gradnorm]  "<< projnorm << "  [tol]  " << tol << "  [pp_update]  " << 0  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
 				Plot_File << V.lens[0] << "," << iter << "," << projnorm << "," << tol << "," << 0 << "," << diffnorm_V << "," << dtime << "\n";
 				if(iter%100==0 && iter!=0) {// flush
 					Plot_File << endl;
@@ -437,9 +437,9 @@ bool alsCP_DT(Tensor<> & V,
 			S["ij"] += regul["ij"]; 
 			// subproblem M=W*S
 			M["ij"] += F[i]["ij"];
+			// calculate gradient
+			grad_W[i]["ij"] = -M["ij"]+W[i]["ik"]*S["kj"]; 
 			SVD_solve(M, W[i], S);
-			// double norm_middle = W[i].norm2();
-			// if (dw.rank==0) cout << norm_middle << endl;
 			// recover the char
 			temp = seq_V[V.order-1];
 			seq_V[V.order-1] = seq_V[i];
@@ -607,15 +607,15 @@ double alsCP_DT_sub(Tensor<> & V,
 		if (iter%resprint==0 || iter==maxiter) {
 			double st_time1 = MPI_Wtime();
 			//get the gradient
-			gradient_CP(V, W, grad_W, dw);
-			for (int i=0; i<V.order; i++) { 
-				grad_W_proj[i] = Matrix<>(W[i].nrow,W[i].ncol);
-				grad_W_proj[i]["ij"] = grad_W[i]["ij"]-F[i]["ij"];
-			}
+			// gradient_CP(V, W, grad_W, dw);
+			// for (int i=0; i<V.order; i++) { 
+			// 	grad_W_proj[i] = Matrix<>(W[i].nrow,W[i].ncol);
+			// 	grad_W_proj[i]["ij"] = grad_W[i]["ij"]-F[i]["ij"];
+			// }
 			projnorm = 0; Fnorm = 0;
 			for (int i=0; i<V.order; i++) { 
-				projnorm += grad_W_proj[i].norm2()*grad_W_proj[i].norm2();
-				Fnorm += F[i].norm2();
+				projnorm += grad_W[i].norm2()*grad_W[i].norm2();//grad_W_proj[i].norm2()*grad_W_proj[i].norm2();
+				// Fnorm += F[i].norm2();
 			}
 			projnorm = sqrt(projnorm);
 			// diffnorm
@@ -628,7 +628,7 @@ double alsCP_DT_sub(Tensor<> & V,
 			st_time += MPI_Wtime() - st_time1;
 			double dtime = MPI_Wtime() - st_time;
 			if(dw.rank==0) {
-				cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [gradnorm]  "<< projnorm << "  [tol]  " << tol << "  [pp_update]  " << 0  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
+				// cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [gradnorm]  "<< projnorm << "  [tol]  " << tol << "  [pp_update]  " << 0  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
 				// plot to file
 				Plot_File << V.lens[0] << "," << iter << "," << projnorm << "," << tol << "," << 0 << "," << diffnorm_V << "," << dtime << "\n";
 				if(iter%100==0 && iter!=0) {// flush
@@ -702,7 +702,8 @@ double alsCP_DT_sub(Tensor<> & V,
 				S["ij"] += regul["ij"]; 
 			}
 			// subproblem M=W*S
-			M["ij"] += F[i]["ij"];
+			// M["ij"] += F[i]["ij"];
+			grad_W[i]["ij"] = -M["ij"]+W[i]["ik"]*S["kj"]; 
 			SVD_solve(M, W[i], S);
 			// double norm_middle = W[i].norm2();
 			// if (dw.rank==0) cout << norm_middle << endl;
@@ -825,15 +826,15 @@ double alsCP_PP_sub(Tensor<> & V,
 		if (iter%resprint==0 || iter==maxiter || iter==init_iter) {
 			double st_time1 = MPI_Wtime();
 			//get the gradient
-			gradient_CP(V, W, grad_W, dw);
+			// gradient_CP(V, W, grad_W, dw);
+			// for (int i=0; i<V.order; i++) { 
+			// 	grad_W_proj[i] = Matrix<>(W[i].nrow,W[i].ncol);
+			// 	grad_W_proj[i]["ij"] = grad_W[i]["ij"]-F[i]["ij"];
+			// }
+			projnorm = 0; //Fnorm = 0;
 			for (int i=0; i<V.order; i++) { 
-				grad_W_proj[i] = Matrix<>(W[i].nrow,W[i].ncol);
-				grad_W_proj[i]["ij"] = grad_W[i]["ij"]-F[i]["ij"];
-			}
-			projnorm = 0; Fnorm = 0;
-			for (int i=0; i<V.order; i++) { 
-				projnorm += grad_W_proj[i].norm2()*grad_W_proj[i].norm2();
-				Fnorm += F[i].norm2();
+				projnorm += grad_W[i].norm2()*grad_W[i].norm2(); //grad_W_proj[i].norm2()*grad_W_proj[i].norm2();
+				// Fnorm += F[i].norm2();
 			}
 			projnorm = sqrt(projnorm);
 			// diffnorm
@@ -846,7 +847,7 @@ double alsCP_PP_sub(Tensor<> & V,
 			st_time += MPI_Wtime() - st_time1;
 			double dtime = MPI_Wtime() - st_time;
 			if(dw.rank==0) {
-				cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [gradnorm]  "<< projnorm << "  [tol]  " << tol << "  [pp_update]  " << 1  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
+				// cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [gradnorm]  "<< projnorm << "  [tol]  " << tol << "  [pp_update]  " << 1  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
 				// plot to file
 				Plot_File << V.lens[0] << "," << iter << "," << projnorm << "," << tol << "," << 1 << "," << diffnorm_V << "," << dtime << "\n";
 				if(iter%100==0 && iter!=0) {// flush
@@ -913,7 +914,8 @@ double alsCP_PP_sub(Tensor<> & V,
 			// 	S["ij"] = S["ij"]*(W_init[index[ii]]["ki"]*W_init[index[ii]]["kj"]);
 			// }
 			// subproblem M=W*S
-			M["ij"] += F[i]["ij"];
+			// M["ij"] += F[i]["ij"];
+			grad_W[i]["ij"] = -M["ij"]+W[i]["ik"]*S["kj"]; 
 			SVD_solve_mod(M, W[i], W_init[i], dW[i], S, ratio_step);
 			// recover the char
 			temp = seq_V[V.order-1];

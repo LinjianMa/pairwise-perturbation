@@ -337,16 +337,32 @@ bool alsTucker_DT(Tensor<> & V,
 	// initialize the char
 	char seq[V.order+1];
 	char seq_Y[V.order+1];
+	char seq_Y_end[V.order+1];
 	seq[V.order] = '\0'; seq_Y[V.order] = '\0';
 	for (int jj=0; jj<V.order; jj++) {
 		seq[jj] = 'a'+jj;
 		seq_Y[jj] = 'a'+jj;
+		seq_Y_end[jj] = 'a'+jj;
 	}
+	seq_Y_end[V.order-1] = '*';
+	char seq_W_end[3];
+	seq_W_end[0] = '*'; 
+	seq_W_end[1] = seq[V.order-1]; 
+	seq_W_end[2] = '\0'; 
+
 	// maps 
 	map<string, Tensor<>> ttmc_map;
 	map<string, string> parent;
 	map<string, string> sibling;
 	Construct_Dimension_Tree(parent, sibling, 0, V.order-1);
+	// build len for Y
+	int lens_Y[V.order];
+	for (int m=0; m<V.order; m++) {
+		lens_Y[m] = W[m].ncol;
+	}
+	lens_Y[V.order-1] = V.lens[V.order-1];
+	Tensor<> Y_end = Tensor<>(V.order, lens_Y, dw);	
+	lens_Y[V.order-1] = W[V.order-1].ncol;
 	// iterations
 	for (iter=0; iter<=maxiter; iter++)
 	{
@@ -354,7 +370,7 @@ bool alsTucker_DT(Tensor<> & V,
 		if ((iter%resprint==0 && iter!=0) || iter==maxiter) {
 			double st_time1 = MPI_Wtime();
 
-				TTMc(core, V, W, -1, dw);
+				// TTMc(core, V, W, -1, dw);
 				double diffnorm1 = core.norm2();
 				double diffnorm2 = core_prev.norm2();
 				diffnorm = abs(diffnorm1-diffnorm2);
@@ -378,7 +394,7 @@ bool alsTucker_DT(Tensor<> & V,
 			st_time += MPI_Wtime() - st_time1;
 			double dtime = MPI_Wtime() - st_time;
 			if(dw.rank==0) {
-				cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [diffnorm]  "<< diffnorm << "  [tol]  " << tol << "  [pp_update]  " << 0  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
+				// cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [diffnorm]  "<< diffnorm << "  [tol]  " << tol << "  [pp_update]  " << 0  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
 				// plot to file
 				Plot_File << V.lens[0] << "," << iter << "," << diffnorm << "," << tol << "," << 0 << "," << diffnorm_V << "," << dtime << "\n";
 				if(iter%100==0 && iter!=0) {// flush
@@ -400,12 +416,13 @@ bool alsTucker_DT(Tensor<> & V,
 			// Tensor<> Y;
 			// TTMc(Y, V, W, i, dw);
 			// build len for Y
-			int lens_Y[V.order];
-			for (int m=0; m<V.order; m++) {
-				lens_Y[m] = W[m].ncol;
-			}
+			// int lens_Y[V.order];
+			// for (int m=0; m<V.order; m++) {
+			// 	lens_Y[m] = W[m].ncol;
+			// }
 			lens_Y[i] = V.lens[i];
-			Tensor<> Y = Tensor<>(V.order, lens_Y, dw);	
+			Tensor<> Y = Tensor<>(V.order, lens_Y, dw);
+			lens_Y[i] = W[i].ncol;	
 			// make args
 			char args[2];
 			args[1] = '\0';
@@ -438,6 +455,9 @@ bool alsTucker_DT(Tensor<> & V,
 				Y[seq_Y] = ttmc_map[parent[args]][seq]*W[int(seq_A1[0]-'a')][seq_A1]*W[int(seq_A2[0]-'a')][seq_A2];	
 				seq_Y[int(seq_A1[0]-'a')] = seq_A1[0];
 				seq_Y[int(seq_A2[0]-'a')] = seq_A2[0];			
+			}
+			if (i==V.order-1) {
+				Y_end[seq_Y] = Y[seq_Y];
 			}
 			/* transpose Y
 			*/
@@ -481,6 +501,7 @@ bool alsTucker_DT(Tensor<> & V,
 			if (norm_U<0) U["ij"] = -U["ij"];
 			W[i] = U;
 		}
+		core[seq] = Y_end[seq_Y_end] * W[V.order-1][seq_W_end];
 		// print .
 		if (iter%10==0 && dw.rank==0) printf(".");
 	}
@@ -566,17 +587,33 @@ void alsTucker_DT_sub(Tensor<> & V,
 	// initialize the char
 	char seq[V.order+1];
 	char seq_Y[V.order+1];
+	char seq_Y_end[V.order+1];
 	double diffnorm_V = 1000;
 	seq[V.order] = '\0'; seq_Y[V.order] = '\0';
 	for (int jj=0; jj<V.order; jj++) {
 		seq[jj] = 'a'+jj;
 		seq_Y[jj] = 'a'+jj;
+		seq_Y_end[jj] = 'a'+jj;
 	}
+	seq_Y_end[V.order-1] = '*';
+	char seq_W_end[3];
+	seq_W_end[0] = '*'; 
+	seq_W_end[1] = seq[V.order-1]; 
+	seq_W_end[2] = '\0'; 
 	// maps 
 	map<string, Tensor<>> ttmc_map;
 	map<string, string> parent;
 	map<string, string> sibling;
 	Construct_Dimension_Tree(parent, sibling, 0, V.order-1);
+	// build len for Y
+	int lens_Y[V.order];
+	for (int m=0; m<V.order; m++) {
+		lens_Y[m] = W[m].ncol;
+	}
+	lens_Y[V.order-1] = V.lens[V.order-1];
+	Tensor<> Y_end = Tensor<>(V.order, lens_Y, dw);	
+	lens_Y[V.order-1] = W[V.order-1].ncol;
+
 	// iterations
 	for (; iter<=maxiter; iter++)
 	{
@@ -584,7 +621,7 @@ void alsTucker_DT_sub(Tensor<> & V,
 		if ((iter%resprint==0 && iter!=0) || iter==maxiter ) {
 			double st_time1 = MPI_Wtime();
 
-				TTMc(core, V, W, -1, dw);
+				// TTMc(core, V, W, -1, dw);
 				double diffnorm1 = core.norm2();
 				double diffnorm2 = core_prev.norm2();
 				diffnorm = abs(diffnorm1-diffnorm2);
@@ -608,7 +645,7 @@ void alsTucker_DT_sub(Tensor<> & V,
 			st_time += (MPI_Wtime() - st_time1);
 			double dtime = MPI_Wtime() - st_time;
 			if(dw.rank==0) { 
-				cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [diffnorm]  "<< diffnorm << "  [tol]  " << tol << "  [pp_update]  " << "0"  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
+				// cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [diffnorm]  "<< diffnorm << "  [tol]  " << tol << "  [pp_update]  " << "0"  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
 				// plot to file
 				Plot_File << V.lens[0] << "," << iter << "," << diffnorm << "," << tol << "," << 0 << "," << diffnorm_V << "," << dtime << "\n";
 				if(iter%100==0 && iter!=0) {// flush
@@ -669,6 +706,9 @@ void alsTucker_DT_sub(Tensor<> & V,
 				seq_Y[int(seq_A1[0]-'a')] = seq_A1[0];
 				seq_Y[int(seq_A2[0]-'a')] = seq_A2[0];			
 			}
+			if (i==V.order-1) {
+				Y_end[seq_Y] = Y[seq_Y];
+			}
 			/* transpose Y
 			*/
 			// seq setup
@@ -719,6 +759,8 @@ void alsTucker_DT_sub(Tensor<> & V,
 			W[i]["ij"] = W[i]["ik"]*trans["kj"];
 
 		}
+		core[seq] = Y_end[seq_Y_end] * W[V.order-1][seq_W_end];
+
 		// work as the preconditioning of pairwise perturbation
 		int num_dw_break = 0;
 		for (int i=0; i<V.order; i++) {
@@ -768,6 +810,7 @@ void alsTucker_PP_sub(Tensor<> & V,
 	double diffnorm_V = 1000;
 	// initialize the char
 	char seq[V.order+1], seq_Y[V.order+1], seq_dW[3];
+	char seq_Y_end[V.order+1];
 	seq[V.order] = '\0';
 	seq_Y[V.order] = '\0';
 	seq_dW[2] = '\0';
@@ -775,10 +818,27 @@ void alsTucker_PP_sub(Tensor<> & V,
 	for (int jj=0; jj<V.order; jj++) {
 		seq[jj] = 'a'+jj;
 		seq_Y[jj] = 'a'+jj;
+		seq_Y_end[jj] = 'a'+jj;
 	}
+	seq_Y_end[V.order-1] = '*';
+	char seq_W_end[3];
+	seq_W_end[0] = '*'; 
+	seq_W_end[1] = seq[V.order-1]; 
+	seq_W_end[2] = '\0'; 
+
 	Matrix<> W_init[V.order];
 	// initialize the map
 	map<string, Tensor<>> ttmc_map;
+
+	// build len for Y
+	int lens_Y[V.order];
+	for (int m=0; m<V.order; m++) {
+		lens_Y[m] = W[m].ncol;
+	}
+	lens_Y[V.order-1] = V.lens[V.order-1];
+	Tensor<> Y_end = Tensor<>(V.order, lens_Y, dw);	
+	lens_Y[V.order-1] = W[V.order-1].ncol;
+
 	for (; iter<=maxiter; iter++)
 	{
 		// work as the preconditioning of pairwise perturbation
@@ -823,7 +883,7 @@ void alsTucker_PP_sub(Tensor<> & V,
 		if ((iter%resprint==0 && iter!=0) || iter==maxiter || iter==init_iter) {
 			double st_time1 = MPI_Wtime();
 
-				TTMc(core, V, W, -1, dw);
+				// TTMc(core, V, W, -1, dw);
 				double corenorm = core.norm2();
 				double corenorm_prev = core_prev.norm2();
 				diffnorm = abs(corenorm-corenorm_prev);
@@ -847,7 +907,7 @@ void alsTucker_PP_sub(Tensor<> & V,
 			st_time += (MPI_Wtime() - st_time1);
 			double dtime = MPI_Wtime() - st_time;
 			if(dw.rank==0) {
-				cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [diffnorm]  "<< diffnorm << "  [tol]  " << tol << "  [pp_update]  " << 1  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
+				// cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [diffnorm]  "<< diffnorm << "  [tol]  " << tol << "  [pp_update]  " << 1  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
 				// plot to file
 				Plot_File << V.lens[0] << "," << iter << "," << diffnorm << "," << tol << "," << 1 << "," << diffnorm_V << "," << dtime << "\n";
 				if(iter%100==0 && iter!=0) {// flush
@@ -896,6 +956,9 @@ void alsTucker_PP_sub(Tensor<> & V,
 				seq_Y[ii] = '*';
 				Y[seq_Y] += ttmc_map[args][seq]*dW[ii][seq_dW];	
 				seq_Y[ii] = 'a'+ii;			
+			}
+			if (i==V.order-1) {
+				Y_end[seq_Y] = Y[seq_Y];
 			}
 			/* transpose Y
 			*/
@@ -951,6 +1014,7 @@ void alsTucker_PP_sub(Tensor<> & V,
 
 			double norm_dW = dW[i].norm2();
 		}
+		core[seq] = Y_end[seq_Y_end] * W[V.order-1][seq_W_end];
 		// print .
 		// if (iter%10==0 && dw.rank==0) printf(".");
 	}
@@ -1017,7 +1081,7 @@ bool alsTucker_PP(Tensor<> & V,
 						 st_time, Plot_File,
 						 diffnorm, iter, resprint, dw);
 
-		if (tol_init>1e-3) tol_init *= 0.9;
+		if (tol_init>5e-3) tol_init *= 0.9;
 
 	}
 	if(dw.rank==0) {

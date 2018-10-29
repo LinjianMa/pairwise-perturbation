@@ -169,9 +169,9 @@ int main(int argc, char ** argv){
 	}	
 	if (getCmdOption(input_str, input_str+in_num, "-pp_res_tol")) {
 		pp_res_tol = atof(getCmdOption(input_str, input_str+in_num, "-pp_res_tol"));
-    	if (pp_res_tol < 0 || pp_res_tol > 1) pp_res_tol = 1e-3;
+    	if (pp_res_tol < 0 || pp_res_tol > 1) pp_res_tol = 1e-2;
 	} else {
-		pp_res_tol = 1e-3;
+		pp_res_tol = 1e-2;
 	}
 	if (getCmdOption(input_str, input_str+in_num, "-lambda")) {
 		lambda_ = atof(getCmdOption(input_str, input_str+in_num, "-lambda"));
