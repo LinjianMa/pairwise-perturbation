@@ -140,12 +140,12 @@ void TEST_collinearity_CP(int N,				// Dimension of the tensor
 	if(dw.rank==0) printf("Norm of V %E \n",Vnorm);
 	bool finished = false;
 	// Run ALS
-	while (finished == false) {
+	// while (finished == false) {
 		// finished = alsCP(V, W, grad_W, F, tol_grad*Vnorm, 400, 400, dw);
 		// finished = alsCP_DT(V, W, grad_W, F, tol_grad*Vnorm, 80000, 80000, lambda, Plot_File, dw);
 		// finished = alsCP_mod(V, W, grad_W, F, tol_grad*Vnorm, 4000000, 4000000, dw);
-		finished = alsCP_PP(V, W, grad_W, F, tol_grad*Vnorm, tol_init, 200000, 200000, lambda, ratio_step, Plot_File, dw);
-	}
+		// finished = alsCP_PP(V, W, grad_W, F, tol_grad*Vnorm, tol_init, 200000, 200000, lambda, ratio_step, Plot_File, dw);
+	//}
 	if(dw.rank==0) printf ("TEST_sparse_laplacian_alstf took %lf seconds\n\n\n",MPI_Wtime()-st_time);
 } 
 
@@ -192,12 +192,12 @@ void TEST_randmat_CP(int N,				// Dimension of the tensor
 	if(dw.rank==0) printf("Norm of V %E \n",Vnorm);
 	bool finished = false;
 	// Run ALS
-	while (finished == false) {
-		// finished = alsCP(V, W, grad_W, F, tol_grad*Vnorm, 400, 400, dw);
-		// finished = alsCP_DT(V, W, grad_W, F, tol_grad*Vnorm, 80000, 80000, lambda, Plot_File, dw);
-		// finished = alsCP_mod(V, W, grad_W, F, tol_grad*Vnorm, 4000000, 4000000, dw);
-		finished = alsCP_PP(V, W, grad_W, F, tol_grad*Vnorm, tol_init, 200000, 200000, lambda, ratio_step, Plot_File, dw);
-	}
+	// while (finished == false) {
+	// 	// finished = alsCP(V, W, grad_W, F, tol_grad*Vnorm, 400, 400, dw);
+	// 	// finished = alsCP_DT(V, W, grad_W, F, tol_grad*Vnorm, 80000, 80000, lambda, Plot_File, dw);
+	// 	// finished = alsCP_mod(V, W, grad_W, F, tol_grad*Vnorm, 4000000, 4000000, dw);
+	// 	finished = alsCP_PP(V, W, grad_W, F, tol_grad*Vnorm, tol_init, 200000, 200000, lambda, ratio_step, Plot_File, dw);
+	// }
 	if(dw.rank==0) printf ("TEST_sparse_laplacian_alstf took %lf seconds\n\n\n",MPI_Wtime()-st_time);
 } 
 
@@ -247,21 +247,21 @@ void TEST_3d_poisson_CP(int N,				// Dimension of the tensor
 	// Norm of V
 	double Vnorm = V->norm2();
 	if(dw.rank==0) printf("Norm of V %E \n",Vnorm);
-	bool finished = false;
+	// bool finished = false;
 	// Check for the residule of the CP. (Here V2 is hard coded for N=4)
 	Tensor<>* V2 = new Tensor<>(N, lens, dw); 
 	Tensor<> residule(N, lens, dw);
 	// Run ALS
-	while (finished == false) {
-		// finished = alsCP(*V, W, grad_W, F, 1e-10*Vnorm, 400, 400, dw);
-		// finished = alsCP_DT(*V, W, grad_W, F, 1e-10*Vnorm, 80000, 80000, lambda, Plot_File, dw);
-		// finished = alsCP_mod(*V, W, grad_W, F, 1e-10*Vnorm, 4000000, 4000000, dw);
-		finished = alsCP_PP(*V, W, grad_W, F, tol_grad*Vnorm, tol_init, 200000, 200000, lambda, ratio_step, Plot_File, dw);
-		(*V2)["ijlm"] = W[0]["ik"]*W[1]["jk"]*W[2]["lk"]*W[3]["mk"];
-		residule["ijlm"] = (*V2)["ijlm"]-(*V)["ijlm"];
-		double norm = residule.norm2();
-		if(dw.rank==0) printf("Residule Norm=%lf\n", norm); 
-	}
+	// while (finished == false) {
+	// 	// finished = alsCP(*V, W, grad_W, F, 1e-10*Vnorm, 400, 400, dw);
+	// 	// finished = alsCP_DT(*V, W, grad_W, F, 1e-10*Vnorm, 80000, 80000, lambda, Plot_File, dw);
+	// 	// finished = alsCP_mod(*V, W, grad_W, F, 1e-10*Vnorm, 4000000, 4000000, dw);
+	// 	finished = alsCP_PP(*V, W, grad_W, F, tol_grad*Vnorm, tol_init, 200000, 200000, lambda, ratio_step, Plot_File, dw);
+	// 	(*V2)["ijlm"] = W[0]["ik"]*W[1]["jk"]*W[2]["lk"]*W[3]["mk"];
+	// 	residule["ijlm"] = (*V2)["ijlm"]-(*V)["ijlm"];
+	// 	double norm = residule.norm2();
+	// 	if(dw.rank==0) printf("Residule Norm=%lf\n", norm); 
+	// }
 	if(dw.rank==0) printf ("TEST_sparse_laplacian_alstf took %lf seconds\n\n\n",MPI_Wtime()-st_time);
 } 
 
@@ -301,21 +301,21 @@ void TEST_poisson_CP(int N,				// Dimension of the tensor
 	// Norm of V
 	double Vnorm = V->norm2();
 	if(dw.rank==0) printf("Norm of V %E \n",Vnorm);
-	bool finished = false;
+	// bool finished = false;
 	// Check for the residule of the CP. (Here V2 is hard coded for N=4)
-	Tensor<>* V2 = new Tensor<>(N, lens, dw); 
+	// Tensor<>* V2 = new Tensor<>(N, lens, dw); 
 	Tensor<> residule(N, lens, dw);
 	// Run ALS
-	while (finished == false) {
-		// finished = alsCP(*V, W, grad_W, F, 1e-10*Vnorm, 400, 400, dw);
-		// finished = alsCP_DT(*V, W, grad_W, F, 1e-10*Vnorm, 80000, 80000, lambda, Plot_File, dw);
-		// finished = alsCP_mod(*V, W, grad_W, F, 1e-10*Vnorm, 4000000, 4000000, dw);
-		finished = alsCP_PP(*V, W, grad_W, F, 1e-10*Vnorm, tol_init, 200000, 200000, lambda, ratio_step, Plot_File, dw);
-		(*V2)["ijlm"] = W[0]["ik"]*W[1]["jk"]*W[2]["lk"]*W[3]["mk"];
-		residule["ijlm"] = (*V2)["ijlm"]-(*V)["ijlm"];
-		double norm = residule.norm2();
-		if(dw.rank==0) printf("Residule Norm=%lf\n", norm); 
-	}
+	// while (finished == false) {
+	// 	// finished = alsCP(*V, W, grad_W, F, 1e-10*Vnorm, 400, 400, dw);
+	// 	// finished = alsCP_DT(*V, W, grad_W, F, 1e-10*Vnorm, 80000, 80000, lambda, Plot_File, dw);
+	// 	// finished = alsCP_mod(*V, W, grad_W, F, 1e-10*Vnorm, 4000000, 4000000, dw);
+	// 	finished = alsCP_PP(*V, W, grad_W, F, 1e-10*Vnorm, tol_init, 200000, 200000, lambda, ratio_step, Plot_File, dw);
+	// 	(*V2)["ijlm"] = W[0]["ik"]*W[1]["jk"]*W[2]["lk"]*W[3]["mk"];
+	// 	residule["ijlm"] = (*V2)["ijlm"]-(*V)["ijlm"];
+	// 	double norm = residule.norm2();
+	// 	if(dw.rank==0) printf("Residule Norm=%lf\n", norm); 
+	// }
 	if(dw.rank==0) printf ("TEST_sparse_laplacian_alstf took %lf seconds\n\n\n",MPI_Wtime()-st_time);
 } 
 
@@ -433,10 +433,10 @@ void TEST_sparse_laplacian_alsTucker(int N,				// Dimension of the tensor
 	// using hosvd to initialize W and hosvd_core
 	hosvd(V, hosvd_core, W, ranks, dw);
 	// Tucker decomposition
-	bool finished = false;
-	while (finished == false) {
-		finished = alsTucker_DT(V, hosvd_core, W, criteria*Vnorm, 100000000, 10000, Plot_File, dw);
-	}
+	// bool finished = false;
+	// while (finished == false) {
+	// 	finished = alsTucker_DT(V, hosvd_core, W, criteria*Vnorm, 100000000, 10000, Plot_File, dw);
+	// }
 	if(dw.rank==0) printf ("TEST_sparse_laplacian_alsTucker took %lf seconds\n\n\n",MPI_Wtime()-st_time);
 }
 
@@ -469,7 +469,7 @@ void TEST_sparse_laplacian_alsTucker_PP(int N,				// Dimension of the tensor
 	// using hosvd to initialize W and hosvd_core
 	hosvd(V, hosvd_core, W, ranks, dw);
 
-	alsTucker_PP(V, hosvd_core, W, criteria*Vnorm, tol_init, 200000000, 200000, Plot_File, dw);
+	// alsTucker_PP(V, hosvd_core, W, criteria*Vnorm, tol_init, 200000000, 200000, Plot_File, dw);
 
 	if(dw.rank==0) printf ("TEST_sparse_laplacian_alsTucker took %lf seconds\n\n\n",MPI_Wtime()-st_time);
 } 
@@ -502,10 +502,10 @@ void TEST_random_laplacian_alsTucker(int N,				// Dimension of the tensor
 	// using hosvd to initialize W and hosvd_core
 	hosvd(V, hosvd_core, W, ranks, dw);
 	// Tucker decomposition
-	bool finished = false;
-	while (finished == false) {
-		finished = alsTucker_DT(V, hosvd_core, W, criteria*Vnorm, 100000000, 10000, Plot_File, dw);
-	}
+	// bool finished = false;
+	// while (finished == false) {
+	// 	finished = alsTucker_DT(V, hosvd_core, W, criteria*Vnorm, 100000000, 10000, Plot_File, dw);
+	// }
 	if(dw.rank==0) printf ("TEST_sparse_laplacian_alsTucker took %lf seconds\n\n\n",MPI_Wtime()-st_time);
 }
 
@@ -538,7 +538,7 @@ void TEST_random_laplacian_alsTucker_PP(int N,				// Dimension of the tensor
 	// using hosvd to initialize W and hosvd_core
 	hosvd(V, hosvd_core, W, ranks, dw);
 
-	alsTucker_PP(V, hosvd_core, W, criteria*Vnorm, tol_init, 200000000, 200000, Plot_File, dw);
+	// alsTucker_PP(V, hosvd_core, W, criteria*Vnorm, tol_init, 200000000, 200000, Plot_File, dw);
 
 	if(dw.rank==0) printf ("TEST_sparse_laplacian_alsTucker took %lf seconds\n\n\n",MPI_Wtime()-st_time);
 }
@@ -571,10 +571,10 @@ void TEST_random_alsTucker(int N,				// Dimension of the tensor
 	// using hosvd to initialize W and hosvd_core
 	hosvd(V, hosvd_core, W, ranks, dw);
 	// Tucker decomposition
-	bool finished = false;
-	while (finished == false) {
-		finished = alsTucker_DT(V, hosvd_core, W, criteria*Vnorm, 100000000, 10000, Plot_File, dw);
-	}
+	// bool finished = false;
+	// while (finished == false) {
+	// 	finished = alsTucker_DT(V, hosvd_core, W, criteria*Vnorm, 100000000, 10000, Plot_File, dw);
+	// }
 	if(dw.rank==0) printf ("TEST_sparse_laplacian_alsTucker took %lf seconds\n\n\n",MPI_Wtime()-st_time);
 }
 
@@ -607,7 +607,7 @@ void TEST_random_alsTucker_PP(int N,				// Dimension of the tensor
 	// using hosvd to initialize W and hosvd_core
 	hosvd(V, hosvd_core, W, ranks, dw);
 
-	alsTucker_PP(V, hosvd_core, W, criteria*Vnorm, tol_init, 200000000, 200000, Plot_File, dw);
+	// alsTucker_PP(V, hosvd_core, W, criteria*Vnorm, tol_init, 200000000, 200000, Plot_File, dw);
 
 	if(dw.rank==0) printf ("TEST_sparse_laplacian_alsTucker took %lf seconds\n\n\n",MPI_Wtime()-st_time);
 }  
@@ -660,10 +660,10 @@ void TEST_dense_uniform_alsTucker(int s,
 	// using hosvd to initialize W and hosvd_core
 	hosvd(V, hosvd_core, W, ranks, dw);
 	// Tucker decomposition
-	bool finished = false;
-	while (finished == false) {
-		finished = alsTucker_DT(V, hosvd_core, W, criteria*Vnorm, 100000000, 10000, Plot_File, dw);
-	}
+	// bool finished = false;
+	// while (finished == false) {
+	// 	finished = alsTucker_DT(V, hosvd_core, W, criteria*Vnorm, 100000000, 10000, Plot_File, dw);
+	// }
 
 	if (dw.rank==0)printf ("TEST_dense_uniform_alsTucker took %lf seconds\n",MPI_Wtime()-st_time);
 } 
@@ -717,7 +717,7 @@ void TEST_dense_uniform_alsTucker_PP(int s,
 	// using hosvd to initialize W and hosvd_core
 	hosvd(V, hosvd_core, W, ranks, dw);
 
-	alsTucker_PP(V, hosvd_core, W, criteria*Vnorm, tol_init, 200000000, 200000, Plot_File, dw);
+	// alsTucker_PP(V, hosvd_core, W, criteria*Vnorm, tol_init, 200000000, 200000, Plot_File, dw);
 
 	if (dw.rank==0)printf ("TEST_dense_uniform_alsTucker took %lf seconds\n",MPI_Wtime()-st_time);
 } 
@@ -763,10 +763,10 @@ void TEST_3d_poisson_Tucker(int N,				// Dimension of the tensor
 	// using hosvd to initialize W and hosvd_core
 	hosvd(V, hosvd_core, W, ranks, dw);
 	// Tucker decomposition
-	bool finished = false;
-	while (finished == false) {
-		finished = alsTucker_DT(V, hosvd_core, W, criteria*Vnorm, 100000000, 10000, Plot_File, dw);
-	}
+	// bool finished = false;
+	// while (finished == false) {
+	// 	finished = alsTucker_DT(V, hosvd_core, W, criteria*Vnorm, 100000000, 10000, Plot_File, dw);
+	// }
 
 	if (dw.rank==0)printf ("TEST_dense_uniform_alsTucker took %lf seconds\n",MPI_Wtime()-st_time);
 } 
@@ -839,10 +839,10 @@ void TEST_construct_Tucker(int N,				// Dimension of the tensor
 	// using hosvd to initialize W and hosvd_core
 	hosvd(V, hosvd_core, W, ranks, dw);
 	// Tucker decomposition
-	bool finished = false;
-	while (finished == false) {
-		finished = alsTucker_DT(V, hosvd_core, W, criteria*Vnorm, 100000000, 10000, Plot_File, dw);
-	}
+	// bool finished = false;
+	// while (finished == false) {
+	// 	finished = alsTucker_DT(V, hosvd_core, W, criteria*Vnorm, 100000000, 10000, Plot_File, dw);
+	// }
 
 	if (dw.rank==0)printf ("TEST_dense_uniform_alsTucker took %lf seconds\n",MPI_Wtime()-st_time);
 } 
@@ -899,7 +899,7 @@ void TEST_construct_Tucker_pp(int N,				// Dimension of the tensor
 	// using hosvd to initialize W and hosvd_core
 	hosvd(V, hosvd_core, W, ranks, dw);
 
-	alsTucker_PP(V, hosvd_core, W, criteria*Vnorm, tol_init, 200000000, 200000, Plot_File, dw);
+	// alsTucker_PP(V, hosvd_core, W, criteria*Vnorm, tol_init, 200000000, 200000, Plot_File, dw);
 
 	if (dw.rank==0)printf ("TEST_dense_uniform_alsTucker took %lf seconds\n",MPI_Wtime()-st_time);
 } 

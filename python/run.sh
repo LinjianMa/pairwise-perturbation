@@ -26,18 +26,18 @@ mpirun -np 1 ./test_ALS -model CP -tensor c -pp 0 -dim 6 -size 14 -rank 5 -maxit
 mpirun -np 1 ./test_ALS -model CP -tensor c -pp 1 -dim 6 -size 14 -rank 5 -maxiter 2500 -filename CP_c_nodes=1_pp=1_dim=6_size=14_rank=5.csv
 
 
-mpirun -np 1 ./test_ALS -model Tucker -tensor p2 -pp 0 -dim 4 -size 40 -rank 10 -maxiter 2500 -filename Tucker_p2_nodes=1_pp=0_dim=4_size=40_rank=10.csv
-mpirun -np 1 ./test_ALS -model Tucker -tensor p2 -pp 1 -dim 4 -size 40 -rank 10 -maxiter 2500 -filename Tucker_p2_nodes=1_pp=1_dim=4_size=40_rank=10.csv
-mpirun -np 1 ./test_ALS -model Tucker -tensor p2 -pp 0 -dim 6 -size 16 -rank 8 -maxiter 2500 -filename Tucker_p2_nodes=1_pp=0_dim=6_size=16_rank=8.csv
-mpirun -np 1 ./test_ALS -model Tucker -tensor p2 -pp 1 -dim 6 -size 16 -rank 8 -maxiter 2500 -filename Tucker_p2_nodes=1_pp=1_dim=6_size=16_rank=8.csv
-mpirun -np 1 ./test_ALS -model Tucker -tensor p2 -pp 0 -dim 6 -size 16 -rank 5 -maxiter 2500 -filename Tucker_p2_nodes=1_pp=0_dim=6_size=16_rank=5.csv
-mpirun -np 1 ./test_ALS -model Tucker -tensor p2 -pp 1 -dim 6 -size 16 -rank 5 -maxiter 2500 -filename Tucker_p2_nodes=1_pp=1_dim=6_size=16_rank=5.csv
-mpirun -np 1 ./test_ALS -model Tucker -tensor r2 -pp 0 -dim 4 -size 40 -rank 10 -maxiter 2500 -filename Tucker_r2_nodes=1_pp=0_dim=4_size=40_rank=10.csv
-mpirun -np 1 ./test_ALS -model Tucker -tensor r2 -pp 1 -dim 4 -size 40 -rank 10 -maxiter 2500 -filename Tucker_r2_nodes=1_pp=1_dim=4_size=40_rank=10.csv
-mpirun -np 1 ./test_ALS -model Tucker -tensor r2 -pp 0 -dim 6 -size 16 -rank 5 -maxiter 2500 -filename Tucker_r2_nodes=1_pp=0_dim=6_size=16_rank=5.csv
-mpirun -np 1 ./test_ALS -model Tucker -tensor r2 -pp 1 -dim 6 -size 16 -rank 5 -maxiter 2500 -filename Tucker_r2_nodes=1_pp=1_dim=6_size=16_rank=5.csv
-mpirun -np 1 ./test_ALS -model Tucker -tensor r2 -pp 0 -dim 6 -size 16 -rank 8 -maxiter 2500 -filename Tucker_r2_nodes=1_pp=0_dim=6_size=16_rank=8.csv
-mpirun -np 1 ./test_ALS -model Tucker -tensor r2 -pp 1 -dim 6 -size 16 -rank 8 -maxiter 2500 -filename Tucker_r2_nodes=1_pp=1_dim=6_size=16_rank=8.csv
+mpirun -np 1 ./test_ALS -model Tucker -tensor p2 -pp 0 -dim 4 -size 40 -rank 10 -maxiter 2500 -filename Tucker_p2_nodes=1_pp=0_dim=4_size=40_rank=10.csv -pp_res_tol 5e-2
+mpirun -np 1 ./test_ALS -model Tucker -tensor p2 -pp 1 -dim 4 -size 40 -rank 10 -maxiter 2500 -filename Tucker_p2_nodes=1_pp=1_dim=4_size=40_rank=10.csv -pp_res_tol 5e-2
+mpirun -np 1 ./test_ALS -model Tucker -tensor p2 -pp 0 -dim 6 -size 16 -rank 8 -maxiter 2500 -filename Tucker_p2_nodes=1_pp=0_dim=6_size=16_rank=8.csv -pp_res_tol 5e-2
+mpirun -np 1 ./test_ALS -model Tucker -tensor p2 -pp 1 -dim 6 -size 16 -rank 8 -maxiter 2500 -filename Tucker_p2_nodes=1_pp=1_dim=6_size=16_rank=8.csv -pp_res_tol 5e-2
+mpirun -np 1 ./test_ALS -model Tucker -tensor p2 -pp 0 -dim 6 -size 16 -rank 5 -maxiter 2500 -filename Tucker_p2_nodes=1_pp=0_dim=6_size=16_rank=5.csv -pp_res_tol 5e-2
+mpirun -np 1 ./test_ALS -model Tucker -tensor p2 -pp 1 -dim 6 -size 16 -rank 5 -maxiter 2500 -filename Tucker_p2_nodes=1_pp=1_dim=6_size=16_rank=5.csv -pp_res_tol 5e-2
+mpirun -np 1 ./test_ALS -model Tucker -tensor r2 -pp 0 -dim 4 -size 40 -rank 10 -maxiter 2500 -filename Tucker_r2_nodes=1_pp=0_dim=4_size=40_rank=10.csv -pp_res_tol 5e-2
+mpirun -np 1 ./test_ALS -model Tucker -tensor r2 -pp 1 -dim 4 -size 40 -rank 10 -maxiter 2500 -filename Tucker_r2_nodes=1_pp=1_dim=4_size=40_rank=10.csv -pp_res_tol 5e-2
+mpirun -np 1 ./test_ALS -model Tucker -tensor r2 -pp 0 -dim 6 -size 16 -rank 5 -maxiter 2500 -filename Tucker_r2_nodes=1_pp=0_dim=6_size=16_rank=5.csv -pp_res_tol 5e-2
+mpirun -np 1 ./test_ALS -model Tucker -tensor r2 -pp 1 -dim 6 -size 16 -rank 5 -maxiter 2500 -filename Tucker_r2_nodes=1_pp=1_dim=6_size=16_rank=5.csv -pp_res_tol 5e-2
+mpirun -np 1 ./test_ALS -model Tucker -tensor r2 -pp 0 -dim 6 -size 16 -rank 8 -maxiter 2500 -filename Tucker_r2_nodes=1_pp=0_dim=6_size=16_rank=8.csv -pp_res_tol 5e-2
+mpirun -np 1 ./test_ALS -model Tucker -tensor r2 -pp 1 -dim 6 -size 16 -rank 8 -maxiter 2500 -filename Tucker_r2_nodes=1_pp=1_dim=6_size=16_rank=8.csv -pp_res_tol 5e-2
 
 
 mpirun -np 16 ./test_ALS -model CP -tensor p -pp 0 -dim 8 -size 7 -rank 2 -maxiter 2500 -filename CP_p_nodes=16_pp=0_dim=8_size=7_rank=2.csv
@@ -52,18 +52,18 @@ mpirun -np 16 ./test_ALS -model CP -tensor c -pp 0 -dim 6 -size 22 -rank 5 -maxi
 mpirun -np 16 ./test_ALS -model CP -tensor c -pp 1 -dim 6 -size 22 -rank 5 -maxiter 2500 -filename CP_c_nodes=16_pp=1_dim=6_size=22_rank=5.csv
 
 
-mpirun -np 16 ./test_ALS -model Tucker -tensor p2 -pp 0 -dim 4 -size 80 -rank 10 -maxiter 2500 -filename Tucker_p2_nodes=16_pp=0_dim=4_size=80_rank=10.csv
-mpirun -np 16 ./test_ALS -model Tucker -tensor p2 -pp 1 -dim 4 -size 80 -rank 10 -maxiter 2500 -filename Tucker_p2_nodes=16_pp=1_dim=4_size=80_rank=10.csv
-mpirun -np 16 ./test_ALS -model Tucker -tensor p2 -pp 0 -dim 6 -size 25 -rank 8 -maxiter 2500 -filename Tucker_p2_nodes=16_pp=0_dim=6_size=25_rank=8.csv
-mpirun -np 16 ./test_ALS -model Tucker -tensor p2 -pp 1 -dim 6 -size 25 -rank 8 -maxiter 2500 -filename Tucker_p2_nodes=16_pp=1_dim=6_size=25_rank=8.csv
-mpirun -np 16 ./test_ALS -model Tucker -tensor p2 -pp 0 -dim 6 -size 25 -rank 5 -maxiter 2500 -filename Tucker_p2_nodes=16_pp=0_dim=6_size=25_rank=5.csv
-mpirun -np 16 ./test_ALS -model Tucker -tensor p2 -pp 1 -dim 6 -size 25 -rank 5 -maxiter 2500 -filename Tucker_p2_nodes=16_pp=1_dim=6_size=25_rank=5.csv
-mpirun -np 16 ./test_ALS -model Tucker -tensor r2 -pp 0 -dim 4 -size 80 -rank 10 -maxiter 2500 -filename Tucker_r2_nodes=16_pp=0_dim=4_size=80_rank=10.csv
-mpirun -np 16 ./test_ALS -model Tucker -tensor r2 -pp 1 -dim 4 -size 80 -rank 10 -maxiter 2500 -filename Tucker_r2_nodes=16_pp=1_dim=4_size=80_rank=10.csv
-mpirun -np 16 ./test_ALS -model Tucker -tensor r2 -pp 0 -dim 6 -size 25 -rank 5 -maxiter 2500 -filename Tucker_r2_nodes=16_pp=0_dim=6_size=25_rank=5.csv
-mpirun -np 16 ./test_ALS -model Tucker -tensor r2 -pp 1 -dim 6 -size 25 -rank 5 -maxiter 2500 -filename Tucker_r2_nodes=16_pp=1_dim=6_size=25_rank=5.csv
-mpirun -np 16 ./test_ALS -model Tucker -tensor r2 -pp 0 -dim 6 -size 25 -rank 8 -maxiter 2500 -filename Tucker_r2_nodes=16_pp=0_dim=6_size=25_rank=8.csv
-mpirun -np 16 ./test_ALS -model Tucker -tensor r2 -pp 1 -dim 6 -size 25 -rank 8 -maxiter 2500 -filename Tucker_r2_nodes=16_pp=1_dim=6_size=25_rank=8.csv
+mpirun -np 16 ./test_ALS -model Tucker -tensor p2 -pp 0 -dim 4 -size 80 -rank 10 -maxiter 2500 -filename Tucker_p2_nodes=16_pp=0_dim=4_size=80_rank=10.csv -pp_res_tol 5e-2
+mpirun -np 16 ./test_ALS -model Tucker -tensor p2 -pp 1 -dim 4 -size 80 -rank 10 -maxiter 2500 -filename Tucker_p2_nodes=16_pp=1_dim=4_size=80_rank=10.csv -pp_res_tol 5e-2
+mpirun -np 16 ./test_ALS -model Tucker -tensor p2 -pp 0 -dim 6 -size 25 -rank 8 -maxiter 2500 -filename Tucker_p2_nodes=16_pp=0_dim=6_size=25_rank=8.csv -pp_res_tol 5e-2
+mpirun -np 16 ./test_ALS -model Tucker -tensor p2 -pp 1 -dim 6 -size 25 -rank 8 -maxiter 2500 -filename Tucker_p2_nodes=16_pp=1_dim=6_size=25_rank=8.csv -pp_res_tol 5e-2
+mpirun -np 16 ./test_ALS -model Tucker -tensor p2 -pp 0 -dim 6 -size 25 -rank 5 -maxiter 2500 -filename Tucker_p2_nodes=16_pp=0_dim=6_size=25_rank=5.csv -pp_res_tol 5e-2
+mpirun -np 16 ./test_ALS -model Tucker -tensor p2 -pp 1 -dim 6 -size 25 -rank 5 -maxiter 2500 -filename Tucker_p2_nodes=16_pp=1_dim=6_size=25_rank=5.csv -pp_res_tol 5e-2
+mpirun -np 16 ./test_ALS -model Tucker -tensor r2 -pp 0 -dim 4 -size 80 -rank 10 -maxiter 2500 -filename Tucker_r2_nodes=16_pp=0_dim=4_size=80_rank=10.csv -pp_res_tol 5e-2
+mpirun -np 16 ./test_ALS -model Tucker -tensor r2 -pp 1 -dim 4 -size 80 -rank 10 -maxiter 2500 -filename Tucker_r2_nodes=16_pp=1_dim=4_size=80_rank=10.csv -pp_res_tol 5e-2
+mpirun -np 16 ./test_ALS -model Tucker -tensor r2 -pp 0 -dim 6 -size 25 -rank 5 -maxiter 2500 -filename Tucker_r2_nodes=16_pp=0_dim=6_size=25_rank=5.csv -pp_res_tol 5e-2
+mpirun -np 16 ./test_ALS -model Tucker -tensor r2 -pp 1 -dim 6 -size 25 -rank 5 -maxiter 2500 -filename Tucker_r2_nodes=16_pp=1_dim=6_size=25_rank=5.csv -pp_res_tol 5e-2
+mpirun -np 16 ./test_ALS -model Tucker -tensor r2 -pp 0 -dim 6 -size 25 -rank 8 -maxiter 2500 -filename Tucker_r2_nodes=16_pp=0_dim=6_size=25_rank=8.csv -pp_res_tol 5e-2
+mpirun -np 16 ./test_ALS -model Tucker -tensor r2 -pp 1 -dim 6 -size 25 -rank 8 -maxiter 2500 -filename Tucker_r2_nodes=16_pp=1_dim=6_size=25_rank=8.csv -pp_res_tol 5e-2
 
 
 mpirun -np 256 ./test_ALS -model CP -tensor p -pp 0 -dim 8 -size 10 -rank 2 -maxiter 2500 -filename CP_p_nodes=256_pp=0_dim=8_size=10_rank=2.csv
@@ -78,17 +78,17 @@ mpirun -np 256 ./test_ALS -model CP -tensor c -pp 0 -dim 6 -size 35 -rank 5 -max
 mpirun -np 256 ./test_ALS -model CP -tensor c -pp 1 -dim 6 -size 35 -rank 5 -maxiter 2500 -filename CP_c_nodes=256_pp=1_dim=6_size=35_rank=5.csv
 
 
-mpirun -np 256 ./test_ALS -model Tucker -tensor p2 -pp 0 -dim 4 -size 160 -rank 10 -maxiter 2500 -filename Tucker_p2_nodes=256_pp=0_dim=4_size=160_rank=10.csv
-mpirun -np 256 ./test_ALS -model Tucker -tensor p2 -pp 1 -dim 4 -size 160 -rank 10 -maxiter 2500 -filename Tucker_p2_nodes=256_pp=1_dim=4_size=160_rank=10.csv
-mpirun -np 256 ./test_ALS -model Tucker -tensor p2 -pp 0 -dim 6 -size 40 -rank 8 -maxiter 2500 -filename Tucker_p2_nodes=256_pp=0_dim=6_size=40_rank=8.csv
-mpirun -np 256 ./test_ALS -model Tucker -tensor p2 -pp 1 -dim 6 -size 40 -rank 8 -maxiter 2500 -filename Tucker_p2_nodes=256_pp=1_dim=6_size=40_rank=8.csv
-mpirun -np 256 ./test_ALS -model Tucker -tensor p2 -pp 0 -dim 6 -size 40 -rank 5 -maxiter 2500 -filename Tucker_p2_nodes=256_pp=0_dim=6_size=40_rank=5.csv
-mpirun -np 256 ./test_ALS -model Tucker -tensor p2 -pp 1 -dim 6 -size 40 -rank 5 -maxiter 2500 -filename Tucker_p2_nodes=256_pp=1_dim=6_size=40_rank=5.csv
-mpirun -np 256 ./test_ALS -model Tucker -tensor r2 -pp 0 -dim 4 -size 160 -rank 10 -maxiter 2500 -filename Tucker_r2_nodes=256_pp=0_dim=4_size=160_rank=10.csv
-mpirun -np 256 ./test_ALS -model Tucker -tensor r2 -pp 1 -dim 4 -size 160 -rank 10 -maxiter 2500 -filename Tucker_r2_nodes=256_pp=1_dim=4_size=160_rank=10.csv
-mpirun -np 256 ./test_ALS -model Tucker -tensor r2 -pp 0 -dim 6 -size 40 -rank 5 -maxiter 2500 -filename Tucker_r2_nodes=256_pp=0_dim=6_size=40_rank=5.csv
-mpirun -np 256 ./test_ALS -model Tucker -tensor r2 -pp 1 -dim 6 -size 40 -rank 5 -maxiter 2500 -filename Tucker_r2_nodes=256_pp=1_dim=6_size=40_rank=5.csv
-mpirun -np 256 ./test_ALS -model Tucker -tensor r2 -pp 0 -dim 6 -size 40 -rank 8 -maxiter 2500 -filename Tucker_r2_nodes=256_pp=0_dim=6_size=40_rank=8.csv
-mpirun -np 256 ./test_ALS -model Tucker -tensor r2 -pp 1 -dim 6 -size 40 -rank 8 -maxiter 2500 -filename Tucker_r2_nodes=256_pp=1_dim=6_size=40_rank=8.csv
+mpirun -np 256 ./test_ALS -model Tucker -tensor p2 -pp 0 -dim 4 -size 160 -rank 10 -maxiter 2500 -filename Tucker_p2_nodes=256_pp=0_dim=4_size=160_rank=10.csv -pp_res_tol 5e-2
+mpirun -np 256 ./test_ALS -model Tucker -tensor p2 -pp 1 -dim 4 -size 160 -rank 10 -maxiter 2500 -filename Tucker_p2_nodes=256_pp=1_dim=4_size=160_rank=10.csv -pp_res_tol 5e-2
+mpirun -np 256 ./test_ALS -model Tucker -tensor p2 -pp 0 -dim 6 -size 40 -rank 8 -maxiter 2500 -filename Tucker_p2_nodes=256_pp=0_dim=6_size=40_rank=8.csv -pp_res_tol 5e-2
+mpirun -np 256 ./test_ALS -model Tucker -tensor p2 -pp 1 -dim 6 -size 40 -rank 8 -maxiter 2500 -filename Tucker_p2_nodes=256_pp=1_dim=6_size=40_rank=8.csv -pp_res_tol 5e-2
+mpirun -np 256 ./test_ALS -model Tucker -tensor p2 -pp 0 -dim 6 -size 40 -rank 5 -maxiter 2500 -filename Tucker_p2_nodes=256_pp=0_dim=6_size=40_rank=5.csv -pp_res_tol 5e-2
+mpirun -np 256 ./test_ALS -model Tucker -tensor p2 -pp 1 -dim 6 -size 40 -rank 5 -maxiter 2500 -filename Tucker_p2_nodes=256_pp=1_dim=6_size=40_rank=5.csv -pp_res_tol 5e-2
+mpirun -np 256 ./test_ALS -model Tucker -tensor r2 -pp 0 -dim 4 -size 160 -rank 10 -maxiter 2500 -filename Tucker_r2_nodes=256_pp=0_dim=4_size=160_rank=10.csv -pp_res_tol 5e-2
+mpirun -np 256 ./test_ALS -model Tucker -tensor r2 -pp 1 -dim 4 -size 160 -rank 10 -maxiter 2500 -filename Tucker_r2_nodes=256_pp=1_dim=4_size=160_rank=10.csv -pp_res_tol 5e-2
+mpirun -np 256 ./test_ALS -model Tucker -tensor r2 -pp 0 -dim 6 -size 40 -rank 5 -maxiter 2500 -filename Tucker_r2_nodes=256_pp=0_dim=6_size=40_rank=5.csv -pp_res_tol 5e-2
+mpirun -np 256 ./test_ALS -model Tucker -tensor r2 -pp 1 -dim 6 -size 40 -rank 5 -maxiter 2500 -filename Tucker_r2_nodes=256_pp=1_dim=6_size=40_rank=5.csv -pp_res_tol 5e-2
+mpirun -np 256 ./test_ALS -model Tucker -tensor r2 -pp 0 -dim 6 -size 40 -rank 8 -maxiter 2500 -filename Tucker_r2_nodes=256_pp=0_dim=6_size=40_rank=8.csv -pp_res_tol 5e-2
+mpirun -np 256 ./test_ALS -model Tucker -tensor r2 -pp 1 -dim 6 -size 40 -rank 8 -maxiter 2500 -filename Tucker_r2_nodes=256_pp=1_dim=6_size=40_rank=8.csv -pp_res_tol 5e-2
 
 

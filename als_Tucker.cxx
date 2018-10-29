@@ -189,7 +189,7 @@ bool alsTucker(Tensor<> & V,
 			double diffnorm1 = core.norm2();
 			double diffnorm2 = core_prev.norm2();
 			diffnorm = abs(diffnorm1-diffnorm2);
-			if(dw.rank==0) cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [diffnorm]  "<< diffnorm << "  [tol]  " << tol <<  endl;
+			if(dw.rank==0) cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [diffnorm]  "<< diffnorm << "  [tol]  " << tol <<  "\n";
 			if ((diffnorm < tol) || MPI_Wtime()-st_time > timelimit) 
 				break;
 			core_prev[seq] = core[seq];
@@ -324,14 +324,16 @@ bool alsTucker_DT(Tensor<> & V,
 				  double timelimit, 
 				  int maxiter, 
 				  ofstream & Plot_File,
+				  int resprint,
 				  World & dw) {
 	cout.precision(13);
-    Plot_File << "[dim],[iter],[diffnorm],[tol],[pp_update],[diffV],[dtime]" << endl;          //Headings for file
+    Plot_File << "[dim],[iter],[diffnorm],[tol],[pp_update],[diffV],[dtime]" << "\n";          //Headings for file
 
 	double st_time = MPI_Wtime();
 	int iter; 
 	Tensor<> core_prev(core);
-	double diffnorm;
+	double diffnorm = 1000;
+	double diffnorm_V = 1000;
 	// initialize the char
 	char seq[V.order+1];
 	char seq_Y[V.order+1];
@@ -349,39 +351,39 @@ bool alsTucker_DT(Tensor<> & V,
 	for (iter=0; iter<=maxiter; iter++)
 	{
 		// print the difference norm 
-		if ((iter%1==0 && iter!=0) || iter==maxiter) {
+		if ((iter%resprint==0 && iter!=0) || iter==maxiter) {
 			double st_time1 = MPI_Wtime();
-			TTMc(core, V, W, -1, dw);
-			double diffnorm1 = core.norm2();
-			double diffnorm2 = core_prev.norm2();
-			diffnorm = abs(diffnorm1-diffnorm2);
-			// check the residule
-			Matrix<> W_T[V.order];
-			for (int i=0; i<V.order; i++) {
-				W_T[i] = Matrix<>(W[i].ncol,W[i].nrow,dw);
-				W_T[i]["ij"] = W[i]["ji"];
-			}
-			Tensor<> V_check(V.order, V.lens, dw);
-			Tensor<> V_diff(V.order, V.lens, dw);
-			TTMc(V_check, core, W_T, -1, dw);
-			char seq[V.order+1];
-			seq[V.order] = '\0';
-			for (int jj=0; jj<V.order; jj++) {
-				seq[jj] = 'a'+jj;
-			}
-			V_diff[seq] = V_check[seq] - V[seq];
-			double diffnorm_V = V_diff.norm2();
+
+				TTMc(core, V, W, -1, dw);
+				double diffnorm1 = core.norm2();
+				double diffnorm2 = core_prev.norm2();
+				diffnorm = abs(diffnorm1-diffnorm2);
+				// check the residule
+				Matrix<> W_T[V.order];
+				for (int i=0; i<V.order; i++) {
+					W_T[i] = Matrix<>(W[i].ncol,W[i].nrow,dw);
+					W_T[i]["ij"] = W[i]["ji"];
+				}
+				Tensor<> V_check(V.order, V.lens, dw);
+				Tensor<> V_diff(V.order, V.lens, dw);
+				TTMc(V_check, core, W_T, -1, dw);
+				char seq[V.order+1];
+				seq[V.order] = '\0';
+				for (int jj=0; jj<V.order; jj++) {
+					seq[jj] = 'a'+jj;
+				}
+				V_diff[seq] = V_check[seq] - V[seq];
+				diffnorm_V = V_diff.norm2();
+
 			st_time += MPI_Wtime() - st_time1;
 			double dtime = MPI_Wtime() - st_time;
-			if(dw.rank==0) cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [diffnorm]  "<< diffnorm << "  [tol]  " << tol << "  [pp_update]  " << 0  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  endl;
-			if(dw.rank==0){ // plot to file
-				Plot_File << V.lens[0] << ",";  
-				Plot_File << iter << ",";         
-				Plot_File << diffnorm << ",";         
-				Plot_File << tol << ",";         
-				Plot_File << 0 << ",";         
-				Plot_File << diffnorm_V << ",";                 
-				Plot_File << dtime << endl;
+			if(dw.rank==0) {
+				cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [diffnorm]  "<< diffnorm << "  [tol]  " << tol << "  [pp_update]  " << 0  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
+				// plot to file
+				Plot_File << V.lens[0] << "," << iter << "," << diffnorm << "," << tol << "," << 0 << "," << diffnorm_V << "," << dtime << "\n";
+				if(iter%100==0 && iter!=0) {// flush
+					Plot_File << endl;
+				}
 			}
 			// end check the residue
 			if ((diffnorm < tol) || MPI_Wtime()-st_time > timelimit) 
@@ -553,6 +555,7 @@ void alsTucker_DT_sub(Tensor<> & V,
 					  ofstream & Plot_File,
 					  double & diffnorm,
 					  int & iter,
+					  int resprint,
 					  World & dw) {
 
 	// work as the preconditioning of pairwise perturbation
@@ -563,6 +566,7 @@ void alsTucker_DT_sub(Tensor<> & V,
 	// initialize the char
 	char seq[V.order+1];
 	char seq_Y[V.order+1];
+	double diffnorm_V = 1000;
 	seq[V.order] = '\0'; seq_Y[V.order] = '\0';
 	for (int jj=0; jj<V.order; jj++) {
 		seq[jj] = 'a'+jj;
@@ -577,39 +581,39 @@ void alsTucker_DT_sub(Tensor<> & V,
 	for (; iter<=maxiter; iter++)
 	{
 		// print the difference norm 
-		if ((iter%1==0 && iter!=0) || iter==maxiter) {
+		if ((iter%resprint==0 && iter!=0) || iter==maxiter ) {
 			double st_time1 = MPI_Wtime();
-			TTMc(core, V, W, -1, dw);
-			double diffnorm1 = core.norm2();
-			double diffnorm2 = core_prev.norm2();
-			diffnorm = abs(diffnorm1-diffnorm2);
-			// check the residule
-			Matrix<> W_T[V.order];
-			for (int i=0; i<V.order; i++) {
-				W_T[i] = Matrix<>(W[i].ncol,W[i].nrow,dw);
-				W_T[i]["ij"] = W[i]["ji"];
-			}
-			Tensor<> V_check(V.order, V.lens, dw);
-			Tensor<> V_diff(V.order, V.lens, dw);
-			TTMc(V_check, core, W_T, -1, dw);
-			char seq[V.order+1];
-			seq[V.order] = '\0';
-			for (int jj=0; jj<V.order; jj++) {
-				seq[jj] = 'a'+jj;
-			}
-			V_diff[seq] = V_check[seq] - V[seq];
-			double diffnorm_V = V_diff.norm2();
+
+				TTMc(core, V, W, -1, dw);
+				double diffnorm1 = core.norm2();
+				double diffnorm2 = core_prev.norm2();
+				diffnorm = abs(diffnorm1-diffnorm2);
+				// check the residule
+				Matrix<> W_T[V.order];
+				for (int i=0; i<V.order; i++) {
+					W_T[i] = Matrix<>(W[i].ncol,W[i].nrow,dw);
+					W_T[i]["ij"] = W[i]["ji"];
+				}
+				Tensor<> V_check(V.order, V.lens, dw);
+				Tensor<> V_diff(V.order, V.lens, dw);
+				TTMc(V_check, core, W_T, -1, dw);
+				char seq[V.order+1];
+				seq[V.order] = '\0';
+				for (int jj=0; jj<V.order; jj++) {
+					seq[jj] = 'a'+jj;
+				}
+				V_diff[seq] = V_check[seq] - V[seq];
+				diffnorm_V = V_diff.norm2();
+			
 			st_time += (MPI_Wtime() - st_time1);
 			double dtime = MPI_Wtime() - st_time;
-			if(dw.rank==0) cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [diffnorm]  "<< diffnorm << "  [tol]  " << tol << "  [pp_update]  " << "0"  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  endl;
-			if(dw.rank==0){ // plot to file
-				Plot_File << V.lens[0] << ",";  
-				Plot_File << iter << ",";         
-				Plot_File << diffnorm << ",";         
-				Plot_File << tol << ",";         
-				Plot_File << 0 << ",";         
-				Plot_File << diffnorm_V << ",";                 
-				Plot_File << dtime << endl;
+			if(dw.rank==0) { 
+				cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [diffnorm]  "<< diffnorm << "  [tol]  " << tol << "  [pp_update]  " << "0"  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
+				// plot to file
+				Plot_File << V.lens[0] << "," << iter << "," << diffnorm << "," << tol << "," << 0 << "," << diffnorm_V << "," << dtime << "\n";
+				if(iter%100==0 && iter!=0) {// flush
+					Plot_File << endl;
+				}
 			}			
 			// end check the residue
 			if ((diffnorm < tol) || MPI_Wtime()-st_time > timelimit) 
@@ -757,9 +761,11 @@ void alsTucker_PP_sub(Tensor<> & V,
 				  ofstream & Plot_File,
 				  double & diffnorm,
 				  int & iter,
+				  int resprint,
 				  World & dw) {
 
 	int init_iter = iter;
+	double diffnorm_V = 1000;
 	// initialize the char
 	char seq[V.order+1], seq_Y[V.order+1], seq_dW[3];
 	seq[V.order] = '\0';
@@ -814,39 +820,39 @@ void alsTucker_PP_sub(Tensor<> & V,
 			}	
 		}
 		// print the difference norm 
-		if ((iter%1==0 && iter!=0) || iter==maxiter) {
+		if ((iter%resprint==0 && iter!=0) || iter==maxiter || iter==init_iter) {
 			double st_time1 = MPI_Wtime();
-			TTMc(core, V, W, -1, dw);
-			double corenorm = core.norm2();
-			double corenorm_prev = core_prev.norm2();
-			diffnorm = abs(corenorm-corenorm_prev);
-			// check the residule
-			Matrix<> W_T[V.order];
-			for (int i=0; i<V.order; i++) {
-				W_T[i] = Matrix<>(W[i].ncol,W[i].nrow,dw);
-				W_T[i]["ij"] = W[i]["ji"];
-			}
-			Tensor<> V_check(V.order, V.lens, dw);
-			Tensor<> V_diff(V.order, V.lens, dw);
-			TTMc(V_check, core, W_T, -1, dw);
-			char seq[V.order+1];
-			seq[V.order] = '\0';
-			for (int jj=0; jj<V.order; jj++) {
-				seq[jj] = 'a'+jj;
-			}
-			V_diff[seq] = V_check[seq] - V[seq];
-			double diffnorm_V = V_diff.norm2();
+
+				TTMc(core, V, W, -1, dw);
+				double corenorm = core.norm2();
+				double corenorm_prev = core_prev.norm2();
+				diffnorm = abs(corenorm-corenorm_prev);
+				// check the residule
+				Matrix<> W_T[V.order];
+				for (int i=0; i<V.order; i++) {
+					W_T[i] = Matrix<>(W[i].ncol,W[i].nrow,dw);
+					W_T[i]["ij"] = W[i]["ji"];
+				}
+				Tensor<> V_check(V.order, V.lens, dw);
+				Tensor<> V_diff(V.order, V.lens, dw);
+				TTMc(V_check, core, W_T, -1, dw);
+				char seq[V.order+1];
+				seq[V.order] = '\0';
+				for (int jj=0; jj<V.order; jj++) {
+					seq[jj] = 'a'+jj;
+				}
+				V_diff[seq] = V_check[seq] - V[seq];
+				diffnorm_V = V_diff.norm2();
+
 			st_time += (MPI_Wtime() - st_time1);
 			double dtime = MPI_Wtime() - st_time;
-			if(dw.rank==0) cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [diffnorm]  "<< diffnorm << "  [tol]  " << tol << "  [pp_update]  " << 1  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  endl;
-			if(dw.rank==0){ // plot to file
-				Plot_File << V.lens[0] << ",";  
-				Plot_File << iter << ",";         
-				Plot_File << diffnorm << ",";         
-				Plot_File << tol << ",";         
-				Plot_File << 1 << ",";         
-				Plot_File << diffnorm_V << ",";                 
-				Plot_File << dtime << endl;
+			if(dw.rank==0) {
+				cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [diffnorm]  "<< diffnorm << "  [tol]  " << tol << "  [pp_update]  " << 1  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
+				// plot to file
+				Plot_File << V.lens[0] << "," << iter << "," << diffnorm << "," << tol << "," << 1 << "," << diffnorm_V << "," << dtime << "\n";
+				if(iter%100==0 && iter!=0) {// flush
+					Plot_File << endl;
+				}
 			}
 			// end check the residue
 			if ((diffnorm < tol) || MPI_Wtime()-st_time > timelimit) 
@@ -972,9 +978,10 @@ bool alsTucker_PP(Tensor<> & V,
 				  double timelimit, 
 				  int maxiter, 
 				  ofstream & Plot_File,
+				  int resprint,
 				  World & dw) {
 	cout.precision(13);
-    Plot_File << "[dim],[iter],[diffnorm],[tol],[pp_update],[diffV],[dtime],[restart]" << endl;          //Headings for file
+    Plot_File << "[dim],[iter],[diffnorm],[tol],[pp_update],[diffV],[dtime],[restart]" << "\n";          //Headings for file
 
 	double st_time = MPI_Wtime();
 	int iter = 0;
@@ -989,7 +996,7 @@ bool alsTucker_PP(Tensor<> & V,
 		dW[j]["ij"] = 0.;
 	}
 
-	while (diffnorm > tol)
+	while (diffnorm > tol && iter<=maxiter)
 	{
 		
 		if (dw.rank==0) printf("DT starts from %d\n", iter);
@@ -999,7 +1006,7 @@ bool alsTucker_PP(Tensor<> & V,
 					  	 tol, tol_init,	
 					  	 timelimit, maxiter, 
 					  	 st_time, Plot_File,
-					  	 diffnorm, iter, dw);
+					  	 diffnorm, iter, resprint, dw);
 
 		if (dw.rank==0) printf("pairwise perturbation starts from %d\n", iter);
 
@@ -1008,7 +1015,7 @@ bool alsTucker_PP(Tensor<> & V,
 						 tol, tol_init,
 						 timelimit, maxiter,
 						 st_time, Plot_File,
-						 diffnorm, iter, dw);
+						 diffnorm, iter, resprint, dw);
 
 		if (tol_init>1e-3) tol_init *= 0.9;
 

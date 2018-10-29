@@ -57,7 +57,7 @@ bool alsCP(Tensor<> & V,
 				Fnorm += F[i].norm2();
 			}
 			projnorm = sqrt(projnorm);
-			if(dw.rank==0) cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [projnorm]  "<< projnorm << "  [tol]  " << tol << "  [Fnorm]  " << Fnorm <<  endl;
+			if(dw.rank==0) cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [projnorm]  "<< projnorm << "  [tol]  " << tol << "  [Fnorm]  " << Fnorm <<  "\n";
 			if ((projnorm < tol) || MPI_Wtime()-st_time > timelimit) 
 				break;
 		}
@@ -305,9 +305,10 @@ bool alsCP_DT(Tensor<> & V,
 			  int maxiter, 
 			  double lambda,
         	  ofstream & Plot_File,
+        	  int resprint,
 			  World & dw) {
 	cout.precision(13);
-    Plot_File << "[dim],[iter],[gradnorm],[tol],[pp_update],[diffV],[dtime]" << endl;          //Headings for file
+    Plot_File << "[dim],[iter],[gradnorm],[tol],[pp_update],[diffV],[dtime]" << "\n";          //Headings for file
 
     Matrix<> regul =Matrix<>(W[0].ncol,W[0].ncol);
     regul["ii"] =  1.*lambda;
@@ -316,6 +317,7 @@ bool alsCP_DT(Tensor<> & V,
 	int iter; 
 	double projnorm; 
 	double Fnorm; 
+	double diffnorm_V = 1000;
 	Matrix<> * grad_W_proj = new Matrix<>[V.order];
 	//make the char
 	char seq[V.order+1], seq_V[V.order+1];
@@ -336,7 +338,7 @@ bool alsCP_DT(Tensor<> & V,
 	for (iter=0; iter<=maxiter; iter++)
 	{
 		// print the gradient norm 
-		if (iter%1==0 || iter==maxiter) {
+		if (iter%resprint==0 || iter==maxiter) {
 			double st_time1 = MPI_Wtime();
 			//get the gradient
 			gradient_CP(V, W, grad_W, dw);
@@ -355,19 +357,16 @@ bool alsCP_DT(Tensor<> & V,
 			build_V(V_build, W, V.order, dw);
 			Tensor<> diff_V = V;
 			diff_V[seq_V] = V[seq_V] - V_build[seq_V];
-			double diffnorm_V = diff_V.norm2();
+			diffnorm_V = diff_V.norm2();
 			// record time
 			st_time += MPI_Wtime() - st_time1;
 			double dtime = MPI_Wtime() - st_time;
-			if(dw.rank==0) cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [gradnorm]  "<< projnorm << "  [tol]  " << tol << "  [pp_update]  " << 0  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  endl;
-			if(dw.rank==0){ // plot to file
-				Plot_File << V.lens[0] << ",";  
-				Plot_File << iter << ",";         
-				Plot_File << projnorm << ",";         
-				Plot_File << tol << ",";         
-				Plot_File << 0 << ",";         
-				Plot_File << diffnorm_V << ",";                 
-				Plot_File << dtime << endl;
+			if(dw.rank==0) {
+				cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [gradnorm]  "<< projnorm << "  [tol]  " << tol << "  [pp_update]  " << 0  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
+				Plot_File << V.lens[0] << "," << iter << "," << projnorm << "," << tol << "," << 0 << "," << diffnorm_V << "," << dtime << "\n";
+				if(iter%100==0 && iter!=0) {// flush
+					Plot_File << endl;
+				}
 			}
 			// end check the residue
 			if ((projnorm < tol) || MPI_Wtime()-st_time > timelimit) 
@@ -567,6 +566,7 @@ double alsCP_DT_sub(Tensor<> & V,
 					  ofstream & Plot_File,
 					  double & projnorm,
 					  int & iter,
+					  int resprint,
 					  World & dw) {
 
     Matrix<> regul =Matrix<>(W[0].ncol,W[0].ncol);
@@ -579,7 +579,7 @@ double alsCP_DT_sub(Tensor<> & V,
 	}
 
 	double Fnorm = 0.; 
-	double diffnorm_V;
+	double diffnorm_V=1000;
 	Matrix<> grad_W_proj[V.order];
 	//make the char
 	char seq[V.order+1], seq_V[V.order+1];
@@ -601,7 +601,7 @@ double alsCP_DT_sub(Tensor<> & V,
 	for (; iter<=maxiter; iter++)
 	{
 		// print the gradient norm 
-		if (iter%1==0 || iter==maxiter) {
+		if (iter%resprint==0 || iter==maxiter) {
 			double st_time1 = MPI_Wtime();
 			//get the gradient
 			gradient_CP(V, W, grad_W, dw);
@@ -624,15 +624,13 @@ double alsCP_DT_sub(Tensor<> & V,
 			// record time
 			st_time += MPI_Wtime() - st_time1;
 			double dtime = MPI_Wtime() - st_time;
-			if(dw.rank==0) cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [gradnorm]  "<< projnorm << "  [tol]  " << tol << "  [pp_update]  " << 0  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  endl;
-			if(dw.rank==0){ // plot to file
-				Plot_File << V.lens[0] << ",";  
-				Plot_File << iter << ",";         
-				Plot_File << projnorm << ",";         
-				Plot_File << tol << ",";         
-				Plot_File << 0 << ",";         
-				Plot_File << diffnorm_V << ",";                 
-				Plot_File << dtime << endl;
+			if(dw.rank==0) {
+				cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [gradnorm]  "<< projnorm << "  [tol]  " << tol << "  [pp_update]  " << 0  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
+				// plot to file
+				Plot_File << V.lens[0] << "," << iter << "," << projnorm << "," << tol << "," << 0 << "," << diffnorm_V << "," << dtime << "\n";
+				if(iter%100==0 && iter!=0) {// flush
+					Plot_File << endl;
+				}
 			}
 			// end check the residue
 			if ((projnorm < tol) || MPI_Wtime()-st_time > timelimit) 
@@ -752,6 +750,7 @@ double alsCP_PP_sub(Tensor<> & V,
 				  ofstream & Plot_File,
 				  double & projnorm,
 				  int & iter,
+				  int resprint,
 				  World & dw){
 
 	int init_iter = iter;
@@ -760,7 +759,7 @@ double alsCP_PP_sub(Tensor<> & V,
     regul["ii"] =  1.*lambda;
 
 	double Fnorm; 
-	double diffnorm_V;
+	double diffnorm_V=1000;
 	Matrix<> grad_W_proj[V.order];
 	// initialize the dW matrices
 	Matrix<> W_init[V.order];
@@ -790,6 +789,7 @@ double alsCP_PP_sub(Tensor<> & V,
 		}
 		// initialize the MTTKRP
 		if ((iter - init_iter)%15 == 0 || (num_dw_break > 0 ) ) {
+
 			if (num_dw_break>0 || iter!=init_iter ) {
 				return diffnorm_V;
 			}
@@ -819,7 +819,7 @@ double alsCP_PP_sub(Tensor<> & V,
 			}			
 		}
 		// print the gradient norm 
-		if (iter%1==0 || iter==maxiter) {
+		if (iter%resprint==0 || iter==maxiter || iter==init_iter) {
 			double st_time1 = MPI_Wtime();
 			//get the gradient
 			gradient_CP(V, W, grad_W, dw);
@@ -842,15 +842,13 @@ double alsCP_PP_sub(Tensor<> & V,
 			// record time
 			st_time += MPI_Wtime() - st_time1;
 			double dtime = MPI_Wtime() - st_time;
-			if(dw.rank==0) cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [gradnorm]  "<< projnorm << "  [tol]  " << tol << "  [pp_update]  " << 1  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  endl;
-			if(dw.rank==0){ // plot to file
-				Plot_File << V.lens[0] << ",";  
-				Plot_File << iter << ",";         
-				Plot_File << projnorm << ",";         
-				Plot_File << tol << ",";         
-				Plot_File << 1 << ",";         
-				Plot_File << diffnorm_V << ",";                 
-				Plot_File << dtime << endl;
+			if(dw.rank==0) {
+				cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [gradnorm]  "<< projnorm << "  [tol]  " << tol << "  [pp_update]  " << 1  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
+				// plot to file
+				Plot_File << V.lens[0] << "," << iter << "," << projnorm << "," << tol << "," << 1 << "," << diffnorm_V << "," << dtime << "\n";
+				if(iter%100==0 && iter!=0) {// flush
+					Plot_File << endl;
+				}
 			}
 			// end check the residue
 			if ((projnorm < tol) || MPI_Wtime()-st_time > timelimit) 
@@ -950,9 +948,10 @@ bool alsCP_PP(Tensor<> & V,
         	  double lambda,
         	  double ratio_step,
           	  ofstream & Plot_File,
+			  int resprint,
           	  World & dw) {
 	cout.precision(13);
-    Plot_File << "[dim],[iter],[gradnorm],[tol],[pp_update],[diffV],[dtime],[restart]" << endl;          //Headings for file
+    Plot_File << "[dim],[iter],[gradnorm],[tol],[pp_update],[diffV],[dtime],[restart]" << "\n";          //Headings for file
 
 	double st_time = MPI_Wtime();
 	int iter = 0;
@@ -974,7 +973,7 @@ bool alsCP_PP(Tensor<> & V,
 					 tol, tol_init,	
 					 timelimit, maxiter, 
 					 st_time, lambda, Plot_File,
-					 gradnorm, iter, dw);
+					 gradnorm, iter, resprint, dw);
 
 		if (dw.rank==0) printf("pairwise perturbation starts from %d\n", iter);
 
@@ -982,8 +981,7 @@ bool alsCP_PP(Tensor<> & V,
 				    tol, tol_init,
 					timelimit, maxiter,
 					st_time, lambda, ratio_step, Plot_File,
-					gradnorm, iter, dw);
-
+					gradnorm, iter, resprint, dw);
 		// tol_init *= 0.9;
 
 	}

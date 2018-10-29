@@ -49,6 +49,7 @@ int main(int argc, char ** argv){
 	double ratio_noise; // collinearity ratio of noise
 	double timelimit = 5e3;  // time limits
 	int maxiter = 5e3;		// maximum iterations
+	int resprint = 1;
 
 	MPI_Init(&argc, &argv);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -154,6 +155,12 @@ int main(int argc, char ** argv){
 	} else {
 		issparse = 0;
 	}
+	if (getCmdOption(input_str, input_str+in_num, "-resprint")) {
+		resprint = atoi(getCmdOption(input_str, input_str+in_num, "-resprint"));
+    	if (resprint < 0) resprint = 10;
+	} else {
+		resprint = 10;
+	}
 	if (getCmdOption(input_str, input_str+in_num, "-tol")) {
 		tol = atof(getCmdOption(input_str, input_str+in_num, "-tol"));
     	if (tol < 0 || tol > 1) tol = 1e-10;
@@ -201,6 +208,7 @@ int main(int argc, char ** argv){
 	}	
 
 	{
+		double start_time = MPI_Wtime();
 		World dw(argc, argv);
 		srand48(dw.rank*1);
 
@@ -210,7 +218,7 @@ int main(int argc, char ** argv){
 			cout << "  issparse=  " << issparse << "  tolerance=  " << tol << "  restarttol=  " << pp_res_tol << endl;
 			cout << "  lambda=  " << lambda_ << "  magnitude=  " << magni << "  filename=  " << filename << endl;
 			cout << "  col_min=  " << col_min << "  col_max=  " << col_max  << "  rationoise  " << ratio_noise << endl;
-			cout << "  timelimit=  " << timelimit << "  maxiter=  " << maxiter  << endl;
+			cout << "  timelimit=  " << timelimit << "  maxiter=  " << maxiter << "  resprint=  " << resprint  << endl;
 		}
 
 		// initialization of tensor
@@ -300,10 +308,10 @@ int main(int argc, char ** argv){
 
 		if (model[0]=='C') {
 			if (pp==0) {
-				alsCP_DT(V, W, grad_W, F, tol*Vnorm, timelimit, maxiter, lambda_, Plot_File, dw);
+				alsCP_DT(V, W, grad_W, F, tol*Vnorm, timelimit, maxiter, lambda_, Plot_File, resprint, dw);
 			}
 			else if (pp==1) {
-				alsCP_PP(V, W, grad_W, F, tol*Vnorm, pp_res_tol, timelimit, maxiter, lambda_, magni, Plot_File, dw);
+				alsCP_PP(V, W, grad_W, F, tol*Vnorm, pp_res_tol, timelimit, maxiter, lambda_, magni, Plot_File, resprint, dw);
 			}
 		}
 		else if (model[0]=='T') {
@@ -315,11 +323,15 @@ int main(int argc, char ** argv){
 			// using hosvd to initialize W and hosvd_core
 			hosvd(V, hosvd_core, W, ranks, dw);
 			if (pp==0) {
-				alsTucker_DT(V, hosvd_core, W, tol*Vnorm, timelimit, maxiter, Plot_File, dw);
+				alsTucker_DT(V, hosvd_core, W, tol*Vnorm, timelimit, maxiter, Plot_File, resprint, dw);
 			}
 			else if (pp==1) {
-				alsTucker_PP(V, hosvd_core, W, tol*Vnorm, pp_res_tol, timelimit, maxiter, Plot_File, dw);				
+				alsTucker_PP(V, hosvd_core, W, tol*Vnorm, pp_res_tol, timelimit, maxiter, Plot_File, resprint, dw);				
 			}
+		}
+
+		if(dw.rank==0) {
+			printf ("experiment took %lf seconds\n",MPI_Wtime()-start_time);
 		}
 
   // 		ofstream Plot_File("aaa.csv");      

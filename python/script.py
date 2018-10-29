@@ -129,14 +129,15 @@ for node in nodes:
 	dim = 4
 	size = int(40*node**(1./dim))
 	rank = 10
+	pp_res_tol = "5e-2"
 	filename = model+"_"+tensor+"_"+"nodes="+str(node)+"_pp="+str(pp)+"_dim="+str(dim)+"_size="+str(size)+"_rank="+str(rank)+".csv"
-	text_file.write("%s -np %s %s -model %s -tensor %s -pp %s -dim %s -size %s -rank %s -maxiter %s -filename %s\n" \
-		% (mpirun, node, exefile, model, tensor, pp, dim, size, rank, maxiter, filename))
+	text_file.write("%s -np %s %s -model %s -tensor %s -pp %s -dim %s -size %s -rank %s -maxiter %s -filename %s -pp_res_tol %s\n" \
+		% (mpirun, node, exefile, model, tensor, pp, dim, size, rank, maxiter, filename, pp_res_tol))
 
 	pp = 1
 	filename = model+"_"+tensor+"_"+"nodes="+str(node)+"_pp="+str(pp)+"_dim="+str(dim)+"_size="+str(size)+"_rank="+str(rank)+".csv"
-	text_file.write("%s -np %s %s -model %s -tensor %s -pp %s -dim %s -size %s -rank %s -maxiter %s -filename %s\n" \
-		% (mpirun, node, exefile, model, tensor, pp, dim, size, rank, maxiter, filename))
+	text_file.write("%s -np %s %s -model %s -tensor %s -pp %s -dim %s -size %s -rank %s -maxiter %s -filename %s -pp_res_tol %s\n" \
+		% (mpirun, node, exefile, model, tensor, pp, dim, size, rank, maxiter, filename, pp_res_tol))
 
 
 	#2. TEST_sparse_laplacian_alsTucker(6, 16, 8, 0, 1e-10, Plot_File, dw); 
@@ -147,13 +148,13 @@ for node in nodes:
 	size = int(16*node**(1./dim))
 	rank = 8
 	filename = model+"_"+tensor+"_"+"nodes="+str(node)+"_pp="+str(pp)+"_dim="+str(dim)+"_size="+str(size)+"_rank="+str(rank)+".csv"
-	text_file.write("%s -np %s %s -model %s -tensor %s -pp %s -dim %s -size %s -rank %s -maxiter %s -filename %s\n" \
-		% (mpirun, node, exefile, model, tensor, pp, dim, size, rank, maxiter, filename))
+	text_file.write("%s -np %s %s -model %s -tensor %s -pp %s -dim %s -size %s -rank %s -maxiter %s -filename %s -pp_res_tol %s\n" \
+		% (mpirun, node, exefile, model, tensor, pp, dim, size, rank, maxiter, filename, pp_res_tol))
 
 	pp = 1
 	filename = model+"_"+tensor+"_"+"nodes="+str(node)+"_pp="+str(pp)+"_dim="+str(dim)+"_size="+str(size)+"_rank="+str(rank)+".csv"
-	text_file.write("%s -np %s %s -model %s -tensor %s -pp %s -dim %s -size %s -rank %s -maxiter %s -filename %s\n" \
-		% (mpirun, node, exefile, model, tensor, pp, dim, size, rank, maxiter, filename))
+	text_file.write("%s -np %s %s -model %s -tensor %s -pp %s -dim %s -size %s -rank %s -maxiter %s -filename %s -pp_res_tol %s\n" \
+		% (mpirun, node, exefile, model, tensor, pp, dim, size, rank, maxiter, filename, pp_res_tol))
 
 
 	#3. TEST_sparse_laplacian_alsTucker(6, 16, 5, 0, 1e-10, Plot_File, dw); 
@@ -164,13 +165,13 @@ for node in nodes:
 	size = int(16*node**(1./dim))
 	rank = 5
 	filename = model+"_"+tensor+"_"+"nodes="+str(node)+"_pp="+str(pp)+"_dim="+str(dim)+"_size="+str(size)+"_rank="+str(rank)+".csv"
-	text_file.write("%s -np %s %s -model %s -tensor %s -pp %s -dim %s -size %s -rank %s -maxiter %s -filename %s\n" \
-		% (mpirun, node, exefile, model, tensor, pp, dim, size, rank, maxiter, filename))
+	text_file.write("%s -np %s %s -model %s -tensor %s -pp %s -dim %s -size %s -rank %s -maxiter %s -filename %s -pp_res_tol %s\n" \
+		% (mpirun, node, exefile, model, tensor, pp, dim, size, rank, maxiter, filename, pp_res_tol))
 
 	pp = 1
 	filename = model+"_"+tensor+"_"+"nodes="+str(node)+"_pp="+str(pp)+"_dim="+str(dim)+"_size="+str(size)+"_rank="+str(rank)+".csv"
-	text_file.write("%s -np %s %s -model %s -tensor %s -pp %s -dim %s -size %s -rank %s -maxiter %s -filename %s\n" \
-		% (mpirun, node, exefile, model, tensor, pp, dim, size, rank, maxiter, filename))
+	text_file.write("%s -np %s %s -model %s -tensor %s -pp %s -dim %s -size %s -rank %s -maxiter %s -filename %s -pp_res_tol %s\n" \
+		% (mpirun, node, exefile, model, tensor, pp, dim, size, rank, maxiter, filename, pp_res_tol))
 
 
 	#4. TEST_random_alsTucker(4, 40, 10, 0, 1e-10, Plot_File, dw);
@@ -181,13 +182,13 @@ for node in nodes:
 	size = int(40*node**(1./dim))
 	rank = 10
 	filename = model+"_"+tensor+"_"+"nodes="+str(node)+"_pp="+str(pp)+"_dim="+str(dim)+"_size="+str(size)+"_rank="+str(rank)+".csv"
-	text_file.write("%s -np %s %s -model %s -tensor %s -pp %s -dim %s -size %s -rank %s -maxiter %s -filename %s\n" \
-		% (mpirun, node, exefile, model, tensor, pp, dim, size, rank, maxiter, filename))
+	text_file.write("%s -np %s %s -model %s -tensor %s -pp %s -dim %s -size %s -rank %s -maxiter %s -filename %s -pp_res_tol %s\n" \
+		% (mpirun, node, exefile, model, tensor, pp, dim, size, rank, maxiter, filename, pp_res_tol))
 
 	pp = 1
 	filename = model+"_"+tensor+"_"+"nodes="+str(node)+"_pp="+str(pp)+"_dim="+str(dim)+"_size="+str(size)+"_rank="+str(rank)+".csv"
-	text_file.write("%s -np %s %s -model %s -tensor %s -pp %s -dim %s -size %s -rank %s -maxiter %s -filename %s\n" \
-		% (mpirun, node, exefile, model, tensor, pp, dim, size, rank, maxiter, filename))
+	text_file.write("%s -np %s %s -model %s -tensor %s -pp %s -dim %s -size %s -rank %s -maxiter %s -filename %s -pp_res_tol %s\n" \
+		% (mpirun, node, exefile, model, tensor, pp, dim, size, rank, maxiter, filename, pp_res_tol))
 
 
 	#5. TEST_random_alsTucker(6, 16, 5, 0, 1e-10, Plot_File, dw); 
@@ -198,13 +199,13 @@ for node in nodes:
 	size = int(16*node**(1./dim))
 	rank = 5
 	filename = model+"_"+tensor+"_"+"nodes="+str(node)+"_pp="+str(pp)+"_dim="+str(dim)+"_size="+str(size)+"_rank="+str(rank)+".csv"
-	text_file.write("%s -np %s %s -model %s -tensor %s -pp %s -dim %s -size %s -rank %s -maxiter %s -filename %s\n" \
-		% (mpirun, node, exefile, model, tensor, pp, dim, size, rank, maxiter, filename))
+	text_file.write("%s -np %s %s -model %s -tensor %s -pp %s -dim %s -size %s -rank %s -maxiter %s -filename %s -pp_res_tol %s\n" \
+		% (mpirun, node, exefile, model, tensor, pp, dim, size, rank, maxiter, filename, pp_res_tol))
 
 	pp = 1
 	filename = model+"_"+tensor+"_"+"nodes="+str(node)+"_pp="+str(pp)+"_dim="+str(dim)+"_size="+str(size)+"_rank="+str(rank)+".csv"
-	text_file.write("%s -np %s %s -model %s -tensor %s -pp %s -dim %s -size %s -rank %s -maxiter %s -filename %s\n" \
-		% (mpirun, node, exefile, model, tensor, pp, dim, size, rank, maxiter, filename))
+	text_file.write("%s -np %s %s -model %s -tensor %s -pp %s -dim %s -size %s -rank %s -maxiter %s -filename %s -pp_res_tol %s\n" \
+		% (mpirun, node, exefile, model, tensor, pp, dim, size, rank, maxiter, filename, pp_res_tol))
 
 
 	#6. TEST_random_alsTucker(6, 16, 8, 0, 1e-10, Plot_File, dw); 
@@ -215,13 +216,13 @@ for node in nodes:
 	size = int(16*node**(1./dim))
 	rank = 8
 	filename = model+"_"+tensor+"_"+"nodes="+str(node)+"_pp="+str(pp)+"_dim="+str(dim)+"_size="+str(size)+"_rank="+str(rank)+".csv"
-	text_file.write("%s -np %s %s -model %s -tensor %s -pp %s -dim %s -size %s -rank %s -maxiter %s -filename %s\n" \
-		% (mpirun, node, exefile, model, tensor, pp, dim, size, rank, maxiter, filename))
+	text_file.write("%s -np %s %s -model %s -tensor %s -pp %s -dim %s -size %s -rank %s -maxiter %s -filename %s -pp_res_tol %s\n" \
+		% (mpirun, node, exefile, model, tensor, pp, dim, size, rank, maxiter, filename, pp_res_tol))
 
 	pp = 1
 	filename = model+"_"+tensor+"_"+"nodes="+str(node)+"_pp="+str(pp)+"_dim="+str(dim)+"_size="+str(size)+"_rank="+str(rank)+".csv"
-	text_file.write("%s -np %s %s -model %s -tensor %s -pp %s -dim %s -size %s -rank %s -maxiter %s -filename %s\n" \
-		% (mpirun, node, exefile, model, tensor, pp, dim, size, rank, maxiter, filename))
+	text_file.write("%s -np %s %s -model %s -tensor %s -pp %s -dim %s -size %s -rank %s -maxiter %s -filename %s -pp_res_tol %s\n" \
+		% (mpirun, node, exefile, model, tensor, pp, dim, size, rank, maxiter, filename, pp_res_tol))
 
 	text_file.write("\n\n")
 
