@@ -1045,7 +1045,7 @@ bool alsTucker_PP(Tensor<> & V,
 				  int resprint,
 				  World & dw) {
 	cout.precision(13);
-    Plot_File << "[dim],[iter],[diffnorm],[tol],[pp_update],[diffV],[dtime],[restart]" << "\n";          //Headings for file
+    Plot_File << "[dim],[iter],[diffnorm],[tol],[pp_update],[diffV],[dtime]" << "\n";          //Headings for file
 
 	double st_time = MPI_Wtime();
 	int iter = 0;
