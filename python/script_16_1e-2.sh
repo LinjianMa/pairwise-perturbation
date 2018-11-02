@@ -6,7 +6,7 @@
 #SBATCH -p normal
 #SBATCH -N 16
 #SBATCH -n 128
-#SBATCH -t 04:00:00
+#SBATCH -t 02:00:00
 #SBATCH --mail-user=solomon2@illinois.edu
 #SBATCH --mail-type=all    # Send email at begin and end of job
 
@@ -21,12 +21,6 @@ ibrun ./test_ALS -model CP -tensor r -pp 0 -dim 6 -size 47 -rank 5 -maxiter 250 
 ibrun ./test_ALS -model CP -tensor r -pp 1 -dim 6 -size 47 -rank 5 -maxiter 250 -filename CP_r_nodes=16_pp=1_dim=6_size=47_rank=5_restol=1e-2.csv -pp_res_tol 1e-2 -resprint 10
 ibrun ./test_ALS -model CP -tensor c -pp 0 -dim 6 -size 47 -rank 5 -maxiter 250 -filename CP_c_nodes=16_pp=0_dim=6_size=47_rank=5_restol=1e-2.csv -pp_res_tol 1e-2 -resprint 10
 ibrun ./test_ALS -model CP -tensor c -pp 1 -dim 6 -size 47 -rank 5 -maxiter 250 -filename CP_c_nodes=16_pp=1_dim=6_size=47_rank=5_restol=1e-2.csv -pp_res_tol 1e-2 -resprint 10
-ibrun ./test_ALS -model CP -tensor p -pp 0 -dim 8 -size 21 -rank 2 -maxiter 250 -filename CP_p_nodes=16_pp=0_dim=8_size=21_rank=2_restol=1e-2.csv -pp_res_tol 1e-2 -resprint 10
-ibrun ./test_ALS -model CP -tensor p -pp 1 -dim 8 -size 21 -rank 2 -maxiter 250 -filename CP_p_nodes=16_pp=1_dim=8_size=21_rank=2_restol=1e-2.csv -pp_res_tol 1e-2 -resprint 10
-ibrun ./test_ALS -model CP -tensor p -pp 0 -dim 12 -size 7 -rank 2 -maxiter 250 -filename CP_p_nodes=16_pp=0_dim=12_size=7_rank=2_restol=1e-2.csv -pp_res_tol 1e-2 -resprint 10
-ibrun ./test_ALS -model CP -tensor p -pp 1 -dim 12 -size 7 -rank 2 -maxiter 250 -filename CP_p_nodes=16_pp=1_dim=12_size=7_rank=2_restol=1e-2.csv -pp_res_tol 1e-2 -resprint 10
-ibrun ./test_ALS -model CP -tensor p2 -pp 0 -dim 6 -size 47 -rank 8 -maxiter 250 -filename CP_p2_nodes=16_pp=0_dim=6_size=47_rank=8_restol=1e-2.csv -pp_res_tol 1e-2 -resprint 10
-ibrun ./test_ALS -model CP -tensor p2 -pp 1 -dim 6 -size 47 -rank 8 -maxiter 250 -filename CP_p2_nodes=16_pp=1_dim=6_size=47_rank=8_restol=1e-2.csv -pp_res_tol 1e-2 -resprint 10
 
 
 

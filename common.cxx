@@ -228,7 +228,7 @@ Tensor<> Gen_collinearity(int * lens,
 	Tensor<> X(dim, lens, dw);
 	for (int i=0; i<R; i++) {
 		double lambda_;
-		lambda_ = rand()%600 *1./1000 + 0.2;
+		lambda_ = 0.2+0.6/R*(i+1);//rand()%600 *1./1000 + 0.2;
 					if (dw.rank==0) cout << "lambda=" << lambda_ << endl;
 		Tensor<> X_sub;
 		build_V_vec(X_sub, vec[i], dim, dw); 
