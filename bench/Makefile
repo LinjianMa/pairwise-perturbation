@@ -17,4 +17,4 @@ common.o: common.cxx common.h config.mk
 	$(FCXX) -c $< -o $@ $(INCLUDE_PATH) 
 
 clean:
-	rm -f common.o als_CP.o als_Tucker.o test_ALS
+	rm -f common.o als_CP.o als_Tucker.o pp_bench
