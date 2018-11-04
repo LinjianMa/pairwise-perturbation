@@ -290,14 +290,19 @@ int main(int argc, char ** argv){
 		}
 
 		double Vnorm = V.norm2();
-		if (dw.rank==0) cout << "Vnorm= " << Vnorm << endl;
  		ofstream Plot_File(filename); 
-		Matrix<>* W = new Matrix<>[V.order];				// N matrices V will be decomposed into
+ 		Matrix<>* W = new Matrix<>[V.order];
+		Matrix<>* W_DT = new Matrix<>[V.order];				// N matrices V will be decomposed into
+		Matrix<>* W_PP = new Matrix<>[V.order];
 		Matrix<>* grad_W = new Matrix<>[V.order];			// gradients in N dimensions 
 		for (int i=0; i<V.order; i++) {
 			W[i] = Matrix<>(V.lens[i],R,dw);
+			W_DT[i] = Matrix<>(V.lens[i],R,dw);
+			W_PP[i] = Matrix<>(V.lens[i],R,dw);
 			grad_W[i] = Matrix<>(V.lens[i],R,dw);
-			W[i].fill_random(0,1); 
+			W[i].fill_random(0,1);
+			W_DT[i]["ij"] = W[i]["ij"]; 
+			W_PP[i]["ij"] = W[i]["ij"];
 			grad_W[i].fill_random(0,1);  
 		}
 		//construct F matrices (correction terms, F[]=0 initially)
@@ -305,31 +310,51 @@ int main(int argc, char ** argv){
 		for (int i=0; i<V.order; i++) {
 			F[i] = Matrix<>(V.lens[i],R,dw);
 			F[i]["ij"] = 0.;
-		}	
+		}
     Timer_epoch tALS("ALS");
     tALS.begin();
 		if (model[0]=='C') {
-			if (pp==0) {
-				alsCP_DT(V, W, grad_W, F, tol*Vnorm, timelimit, maxiter, lambda_, Plot_File, resprint, dw);
+    		if (dw.rank==0) Plot_File << "[dim],[iter],[gradnorm],[tol],[pp_update],[diffV],[dtime]" << "\n";          //Headings for file
+			for (int i=0; i<maxiter; i++) {
+				alsCP_DT(V, W_DT, grad_W, F, tol*Vnorm, timelimit, 1, lambda_, Plot_File, resprint, dw);
+				for (int j=0; j<V.order; j++) {
+					W_DT[j]["ij"] = W[j]["ij"];
+				}
 			}
-			else if (pp==1) {
-				alsCP_PP(V, W, grad_W, F, tol*Vnorm, pp_res_tol, timelimit, maxiter, lambda_, magni, Plot_File, resprint, dw);
+			if (dw.rank==0) Plot_File << endl;
+			for (int i=0; i<maxiter; i++) {
+				alsCP_PP(V, W_PP, grad_W, F, tol*Vnorm, pp_res_tol, timelimit, 1, lambda_, magni, Plot_File, resprint, dw);
+				for (int j=0; j<V.order; j++) {
+					W_PP[j]["ij"] = W[j]["ij"];
+				}
 			}
+			if (dw.rank==0) Plot_File << endl;
 		}
 		else if (model[0]=='T') {
+    		if (dw.rank==0) Plot_File << "[dim],[iter],[diffnorm],[tol],[pp_update],[diffV],[dtime]" << "\n";          //Headings for file
 			int ranks[V.order];
 			for (int i=0; i<V.order; i++) {
 				ranks[i] = R;
 			}
-			Tensor<> hosvd_core;
 			// using hosvd to initialize W and hosvd_core
+			Tensor<> hosvd_core;
 			hosvd(V, hosvd_core, W, ranks, dw);
-			if (pp==0) {
-				alsTucker_DT(V, hosvd_core, W, tol*Vnorm, timelimit, maxiter, Plot_File, resprint, dw);
+			for (int i=0; i<maxiter; i++) {
+				for (int j=0; j<V.order; j++){
+					W_DT[j]["ij"] = W[j]["ij"];
+				}
+				// Tensor<> hosvdcore_DT(hosvd_core);
+				alsTucker_DT(V, hosvd_core, W_DT, tol*Vnorm, timelimit, 1, Plot_File, resprint, dw);
 			}
-			else if (pp==1) {
-				alsTucker_PP(V, hosvd_core, W, tol*Vnorm, pp_res_tol, timelimit, maxiter, Plot_File, resprint, dw);				
-			}
+			if (dw.rank==0) Plot_File << endl;
+			for (int i=0; i<maxiter; i++) {
+				for (int j=0; j<V.order; j++){
+					W_PP[j]["ij"] = W[j]["ij"];
+				}
+				// Tensor<> hosvdcore_PP(hosvd_core);
+				alsTucker_PP(V, hosvd_core, W_PP, tol*Vnorm, pp_res_tol, timelimit, 1, Plot_File, resprint, dw);	
+			}	
+			if (dw.rank==0) Plot_File << endl;
 		}
     tALS.end();
 
