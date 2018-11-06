@@ -104,6 +104,7 @@ bool alsCP(Tensor<> & V,
 		printf ("\nIter = %d Final proj-grad norm %E \n", iter, projnorm);
 		printf ("tf took %lf seconds\n",MPI_Wtime()-st_time);
 	}
+	delete[] grad_W_proj;
 	if (iter == maxiter+1) return false;
 	else return true;
 }
@@ -319,7 +320,7 @@ bool alsCP_DT(Tensor<> & V,
 	double st_time = MPI_Wtime();
 	int iter; 
 	double projnorm; 
-	double Fnorm; 
+	double Fnorm=0.; 
 	double diffnorm_V = 1000;
 	Matrix<> * grad_W_proj = new Matrix<>[V.order];
 	//make the char
@@ -445,7 +446,7 @@ bool alsCP_DT(Tensor<> & V,
 			seq_V[V.order-1] = seq_V[i];
 			seq_V[i] = temp;
 		}
-		if (Fnorm == 0) Normalize(W, V.order, dw);
+		Normalize(W, V.order, dw);
 		// print .
 		if (iter%10==0 && dw.rank==0) printf(".");
 	}
@@ -454,6 +455,7 @@ bool alsCP_DT(Tensor<> & V,
 		printf ("tf took %lf seconds\n",MPI_Wtime()-st_time);
 	}
 	Plot_File.close();
+	delete[] grad_W_proj;
 	if (iter == maxiter+1) return false;
 	else return true;
 }
@@ -995,6 +997,7 @@ bool alsCP_PP(Tensor<> & V,
 		printf ("tf took %lf seconds\n",MPI_Wtime()-st_time);
 	}
 	Plot_File.close();
+	delete[] dW;
 	if (iter == maxiter+1) return false;
 	else return true;
 }

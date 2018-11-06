@@ -4,7 +4,9 @@
   * @{ 
   * \brief NTF/TF multigrid tests
   */
-#include "testfunc_ALS.cxx"
+#include "als_Tucker.h"
+#include "als_CP.h"
+#include "common.h"
 //#define ERR_REPORT
 
 #ifndef TEST_SUITE
@@ -282,6 +284,7 @@ int main(int argc, char ** argv){
 					W[i].fill_random(-0,1); 
 				}
 				build_V(V, W, dim, dw);
+				delete[] W;
 			}
 		}
 		else if (tensor[0]=='o') {
@@ -361,6 +364,11 @@ int main(int argc, char ** argv){
 		if(dw.rank==0) {
 			printf ("experiment took %lf seconds\n",MPI_Wtime()-start_time);
 		}
+
+ 		delete[] W;
+		delete[] W_DT;				
+		delete[] W_PP;
+		delete[] grad_W;
 
   // 		ofstream Plot_File("aaa.csv");      
 		// TEST_construct_Tucker(6, 10, 2, 0, 1e-10, Plot_File, dw);

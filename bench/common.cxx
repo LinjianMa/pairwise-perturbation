@@ -81,37 +81,6 @@ void Gram_Schmidt(Vector<>& A,
 	A["i"] -= prod/normA * B["i"];
 }
 
-Vector<>** Gen_vector_condition(int * lens,
-						  int dim,
-						  int R,
-						  double condition) {
-	Vector<> ** vec = new Vector<>* [dim];
-	// range over different modes
-	for (int i=0; i< dim; i++) {
-		vec[i] = new Vector<>[R];
-		// range over different ranks
-		for (int j=0; j<R; j++) {
-			vec[i][j] = Vector<>(lens[i]);
-			vec[i][j].fill_random(0,1);
-		}
-	}
-	// orthogonalize them
-	for (int i=0; i< dim; i++) {
-		// initialize the first vector
-		double norm = vec[i][0].norm2();
-		vec[i][0]["i"] = 1.0/norm*vec[i][0]["i"];
-		// other vectors
-		for (int j=1; j<R; j++) {
-			for (int k=0; k<j; k++) {
-				Gram_Schmidt(vec[i][j],vec[i][k]);
-			}
-			double norm = vec[i][j].norm2();
-			vec[i][j]["i"] = 1.0/norm*vec[i][j]["i"];			
-		}
-	}	
-	return vec;
-}
-
 double collinearity(Vector<> v1, Vector<> v2) {
 	double ip = v1["i"]*v2["i"];
 	double nm1 = v1.norm2();
@@ -234,127 +203,13 @@ Tensor<> Gen_collinearity(int * lens,
 		build_V_vec(X_sub, vec[i], dim, dw); 
 		X[arg] = X[arg] + lambda_ * X_sub[arg];
 	}
+	for (int i=0; i< R; i++) {
+		delete[] vec[i];
+	}
+	delete[] vec;
 	return X;
 	
 }
-
-Tensor<> Gen_tensor_condition(int * lens,
-							  int dim,
-							  int R,
-							  int base,
-							  double condition, 
-							  World & dw) {
-	// build chars
-	char chars[] = {'i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','\0'};
-	char arg[dim+1];
-	arg[dim] = '\0';
-	for (int i = 0; i < dim; i++) {
-		arg[i] = chars[i];
-	}
-	// build vectors
-	Vector<>** vec = Gen_vector_condition(lens, dim, R, condition);
-	Tensor<> X(dim, lens, dw);
-	X["abcd"] = 0.;
-	// initialize the sequence
-	int sequence[dim];
-	for (int j=0; j<dim; j++) {
-		sequence[j] = 0;
-	}
-	for (sequence[0]=0; sequence[0]<lens[0]; sequence[0]++) {
-	// for (sequence[1]=0; sequence[1]<lens[1]; sequence[1]++) 
-	// for (sequence[2]=0; sequence[2]<lens[2]; sequence[2]++) 
-	// for (sequence[3]=0; sequence[3]<lens[3]; sequence[3]++) {
-		X["abcd"] += vec[0][sequence[0]]["a"]*vec[1][sequence[0]]["b"]*vec[2][sequence[0]]["c"]*vec[3][sequence[0]]["d"];
-	}
-	// for (sequence[0]=0; sequence[0]<lens[0]; sequence[0]++) 
-	// for (sequence[1]=0; sequence[1]<lens[1]; sequence[1]++) 
-	// for (sequence[2]=0; sequence[2]<lens[2]; sequence[2]++) 
-	// for (sequence[3]=0; sequence[3]<lens[3]; sequence[3]++) 
-	// {
-	// 	Tensor<> X_sub(dim, lens, dw);
-	// 	int lens_sub[] = {lens[0]};
-	// 	// tensors for iteration
-	// 	Tensor<> temp1(1,lens_sub,dw);
-	// 	temp1["i"] = vec[0][sequence[0]]["i"];
-	// 	Tensor<> temp2;
-	// 	for (int i=1; i<dim; i++) {
-	// 		// build sub lens
-	// 		int lens_sub[i];
-	// 		for (int ii=0; ii<=i; ii++) {
-	// 			lens_sub[ii] = lens[ii];
-	// 		}
-	// 		temp2 = Tensor<>(i+1, lens_sub, dw);
-	// 		// build args
-	// 		char args_temp2[i+2];  
-	// 		args_temp2[i+1] = '\0';
-	// 		for (int ii=0; ii<=i; ii++) {
-	// 			args_temp2[ii] = chars[ii];
-	// 		}
-	// 		char args_temp1[i+1];  
-	// 		args_temp1[i] = '\0';
-	// 		for (int ii=0; ii<i; ii++) {
-	// 			args_temp1[ii] = chars[ii];
-	// 		}
-	// 		char args_vec[2];  
-	// 		args_vec[1] = '\0'; 
-	// 		args_vec[0] = chars[i];
-	// 		// contraction
-	// 		temp2[args_temp2] = temp1[args_temp1]*vec[i][sequence[i]][args_vec];
-	// 		temp1 = temp2;
-	// 	}
-	// 	X_sub[arg] = temp2[arg];
-	// 	X[arg] = X[arg] + (1.0+1.*sequence[0]/R*(condition-1.0))*X_sub[arg];
-	// }
-	// initialize the sequence
-	// int sequence[dim];
-	// for (int j=0; j<dim; j++) {
-	// 	sequence[j] = 0;
-	// }
-	// for (int j=0; j<base; j++) {
-	// 	Tensor<> X_sub(dim, lens, dw);
-	// 	int lens_sub[] = {lens[0]};
-	// 	// tensors for iteration
-	// 	Tensor<> temp1(1,lens_sub,dw);
-	// 	temp1["i"] = vec[0][sequence[0]]["i"];
-	// 	Tensor<> temp2;
-	// 	for (int i=1; i<dim; i++) {
-	// 		// build sub lens
-	// 		int lens_sub[i];
-	// 		for (int ii=0; ii<=i; ii++) {
-	// 			lens_sub[ii] = lens[ii];
-	// 		}
-	// 		temp2 = Tensor<>(i+1, lens_sub, dw);
-	// 		// build args
-	// 		char args_temp2[i+2];  
-	// 		args_temp2[i+1] = '\0';
-	// 		for (int ii=0; ii<=i; ii++) {
-	// 			args_temp2[ii] = chars[ii];
-	// 		}
-	// 		char args_temp1[i+1];  
-	// 		args_temp1[i] = '\0';
-	// 		for (int ii=0; ii<i; ii++) {
-	// 			args_temp1[ii] = chars[ii];
-	// 		}
-	// 		char args_vec[2];  
-	// 		args_vec[1] = '\0'; 
-	// 		args_vec[0] = chars[i];
-	// 		// contraction
-	// 		temp2[args_temp2] = temp1[args_temp1]*vec[i][sequence[i]][args_vec];
-	// 		temp1 = temp2;
-	// 	}
-	// 	X_sub[arg] = temp2[arg];
-	// 	X[arg] = X[arg] + (1.0+1.*sequence[0]/R*(condition-1.0))*X_sub[arg];
-	// 	// update the sequence
-	// 	sequence[0]++;
-	// 	if (sequence[0]==R) sequence[0]= 0;
-	// 	for (int jj=1; jj<dim; jj++) {
-	// 		sequence[jj] = rand() % R;
-	// 	}		
-	// }
-	return X;
-	
-}
-
 
 // /**
 //  * \brief Identity tensor: I x I x I x ...

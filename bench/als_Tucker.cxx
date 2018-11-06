@@ -1089,6 +1089,7 @@ bool alsTucker_PP(Tensor<> & V,
 		printf ("tf took %lf seconds\n",MPI_Wtime()-st_time);
 	}
 	// Plot_File.close();
+	delete[] dW;
 	if (iter == maxiter+1) return false;
 	else return true;
 }
