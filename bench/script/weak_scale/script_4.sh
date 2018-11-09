@@ -17,8 +17,8 @@ date
 export CTF_PPN=8
 export OMP_NUM_THREADS=6
 
-ibrun ./pp_bench -model CP -tensor r -dim 6 -size 38 -rank 5 -maxiter 5 -filename CP_r_nodes=4_dim=6_size=38_rank=5_bench.csv 
-ibrun ./pp_bench -model Tucker -tensor r2 -dim 6 -size 25 -rank 5 -maxiter 5 -filename Tucker_r2_nodes=4_dim=6_size=25_rank=5_bench.csv
+# ibrun ./pp_bench -model CP -tensor r -dim 6 -size 38 -rank 5 -maxiter 5 -filename CP_r_nodes=4_dim=6_size=38_rank=5_bench.csv 
+ibrun ./pp_bench -model Tucker -tensor r2 -dim 6 -size 38 -rank 4 -maxiter 5 -filename Tucker_r2_nodes=4_dim=6_size=38_rank=4_bench.csv
 
 
 
