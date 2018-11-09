@@ -370,7 +370,7 @@ bool alsTucker_DT(Tensor<> & V,
 		if ((iter%resprint==0 && iter!=0) || iter==maxiter) {
 			double st_time1 = MPI_Wtime();
 
-				// TTMc(core, V, W, -1, dw);
+				TTMc(core, V, W, -1, dw);
 				double diffnorm1 = core.norm2();
 				double diffnorm2 = core_prev.norm2();
 				diffnorm = abs(diffnorm1-diffnorm2);
@@ -621,7 +621,7 @@ void alsTucker_DT_sub(Tensor<> & V,
 		if ((iter%resprint==0 && iter!=0) || iter==maxiter ) {
 			double st_time1 = MPI_Wtime();
 
-				// TTMc(core, V, W, -1, dw);
+				TTMc(core, V, W, -1, dw);
 				double diffnorm1 = core.norm2();
 				double diffnorm2 = core_prev.norm2();
 				diffnorm = abs(diffnorm1-diffnorm2);
@@ -883,7 +883,7 @@ void alsTucker_PP_sub(Tensor<> & V,
 		if ((iter%resprint==0 && iter!=0) || iter==maxiter || iter==init_iter) {
 			double st_time1 = MPI_Wtime();
 
-				// TTMc(core, V, W, -1, dw);
+				TTMc(core, V, W, -1, dw);
 				double corenorm = core.norm2();
 				double corenorm_prev = core_prev.norm2();
 				diffnorm = abs(corenorm-corenorm_prev);
