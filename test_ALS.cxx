@@ -35,7 +35,7 @@ int main(int argc, char ** argv){
 	c : decomposition of designed tensor with constrained collinearity
 	r : decomposition of tensor made by random matrices
 	r2 : random tensor
-	o : other tensor
+	o1 : coil-100 dataset
 	*/
 	int dim; 			// number of dimensions
 	int s;   			// tensor size in each dimension
@@ -52,10 +52,13 @@ int main(int argc, char ** argv){
 	double timelimit = 5e3;  // time limits
 	int maxiter = 5e3;		// maximum iterations
 	int resprint = 1;
+	char * tensorfile;
 
 	MPI_Init(&argc, &argv);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &np);
+
+    MPI_File fh;
 
 	/*
 	CP test examples: 
@@ -192,6 +195,11 @@ int main(int argc, char ** argv){
 	} else {
 		filename = "out.csv";
 	}	
+	if (getCmdOption(input_str, input_str+in_num, "-tensorfile")) {
+		tensorfile = getCmdOption(input_str, input_str+in_num, "-tensorfile");
+	} else {
+		tensorfile = "test";
+	}	
 	if (getCmdOption(input_str, input_str+in_num, "-colmin")) {
 		col_min = atof(getCmdOption(input_str, input_str+in_num, "-colmin"));
 	} else {
@@ -221,6 +229,7 @@ int main(int argc, char ** argv){
 			cout << "  lambda=  " << lambda_ << "  magnitude=  " << magni << "  filename=  " << filename << endl;
 			cout << "  col_min=  " << col_min << "  col_max=  " << col_max  << "  rationoise  " << ratio_noise << endl;
 			cout << "  timelimit=  " << timelimit << "  maxiter=  " << maxiter << "  resprint=  " << resprint  << endl;
+			cout << "  tensorfile=  " << tensorfile << endl;
 		}
 
 		// initialization of tensor
@@ -272,7 +281,7 @@ int main(int argc, char ** argv){
 				int lens[dim];
 				for (int i=0; i<dim; i++) lens[i]=s;
 				V = Tensor<>(dim, issparse, lens, dw); 
-				V.fill_random(-1,1);				
+				V.fill_random(0,1);				
 			}
 			else {
 				//r : tensor made by random matrices
@@ -281,15 +290,29 @@ int main(int argc, char ** argv){
 				Matrix<>* W = new Matrix<>[dim];				// N matrices V will be decomposed into
 				for (int i=0; i<dim; i++) {
 					W[i] = Matrix<>(s,R,dw);
-					W[i].fill_random(-0,1); 
+					W[i].fill_random(0,1); 
 				}
 				build_V(V, W, dim, dw);
 				delete[] W;
 			}
 		}
 		else if (tensor[0]=='o') {
-			//o : other tensor
-			// TODO
+			//o1 : coil-100 dataset Rank=20 suggested
+			if (strlen(tensor)>1 && tensor[1]=='1') {
+				tensorfile = "coil-100.bin";
+				MPI_File_open(MPI_COMM_WORLD, tensorfile, MPI_MODE_RDWR | MPI_MODE_CREATE , MPI_INFO_NULL, &fh );
+				int lens[dim];
+				lens[0] = 3;
+				lens[1] = 128;
+				lens[2] = 128;
+				lens[3] = 7200;
+				// for (int i=0; i<dim; i++) lens[i]=s;
+				V = Tensor<>(dim, issparse, lens, dw);
+				if (dw.rank==0) cout << "Read the tensor from file coil-100 ...... " << endl;
+				V.read_dense_from_file(fh);
+				if (dw.rank==0) cout << "Read coil-100 dataset finished " << endl;
+				// V.print();
+			}
 		}
 
 		double Vnorm = V.norm2();
@@ -309,8 +332,12 @@ int main(int argc, char ** argv){
 			F[i] = Matrix<>(V.lens[i],R,dw);
 			F[i]["ij"] = 0.;
 		}	
-    Timer_epoch tALS("ALS");
-    tALS.begin();
+
+		// V.write_dense_to_file (fh);	
+
+    	Timer_epoch tALS("ALS");
+    	tALS.begin();
+
 		if (model[0]=='C') {
 			if (pp==0) {
 				alsCP_DT(V, W, grad_W, F, tol*Vnorm, timelimit, maxiter, lambda_, Plot_File, resprint, dw);
@@ -334,7 +361,8 @@ int main(int argc, char ** argv){
 				alsTucker_PP(V, hosvd_core, W, tol*Vnorm, pp_res_tol, timelimit, maxiter, Plot_File, resprint, dw);				
 			}
 		}
-    tALS.end();
+    	
+    	tALS.end();
 
 		if(dw.rank==0) {
 			printf ("experiment took %lf seconds\n",MPI_Wtime()-start_time);
@@ -344,48 +372,10 @@ int main(int argc, char ** argv){
 		delete[] grad_W;
 		delete[] F;
 
-  // 		ofstream Plot_File("aaa.csv");      
-		// TEST_construct_Tucker(6, 10, 2, 0, 1e-10, Plot_File, dw);
-  // 		ofstream Plot_File("aaa.csv");      
-		// TEST_construct_Tucker_pp(6, 10, 3, 0, 1e-10, 5e-1, Plot_File, dw);
+		if (tensor[0]=='o') {
+			MPI_File_close( &fh );
+		}
 
-		// int T_lens[] = {13 ,13, 13, 13, 13, 13};
-		// int ranks[] = {4, 4, 4, 4, 4, 4};
-		//TEST_hosvd(3, T_lens, ranks, dw);
-		//TEST_alsTucker(6, T_lens, ranks, dw);	
-		//TEST_alsTucker_DT(6, T_lens, ranks, dw);	
-		// TEST_alsTucker_mod(6, T_lens, ranks, dw);	
-		// TEST_3d_poisson_Tucker(6, 20, 10, 0, dw);
-  //   	ofstream Plot_File("poisson_DT_4_36_2_ps.csv");         
-		// TEST_3d_poisson_Tucker(8, 6, 2, 0, 1e-10, Plot_File, dw);
-
-  //   	ofstream Plot_File("tucker_dt_4_40_15_rand_ps.csv");      
-		// TEST_random_laplacian_alsTucker(4, 40, 15, 0, 1e-10, Plot_File, dw); 
-  //   	ofstream Plot_File("tucker_pp_4_40_15_rand_ps.csv");       
-		// TEST_random_laplacian_alsTucker_PP(4, 40, 15, 0, 1e-10, 5e-1, Plot_File, dw);
-  //   	ofstream Plot_File("tucker_dt_6_14_8_rand_ps.csv");       
-		// TEST_random_laplacian_alsTucker(6, 14, 8, 0, 1e-10, Plot_File, dw); 
-  //   	ofstream Plot_File("tucker_pp_6_14_8_rand_ps.csv");         
-		// TEST_random_laplacian_alsTucker_PP(6, 14, 8, 0, 1e-10, 1e-2, Plot_File, dw);
-  //   	ofstream Plot_File("tucker_dt_6_16_8_rand_ps.csv");       
-		// TEST_random_laplacian_alsTucker(6, 16, 8, 0, 1e-10, Plot_File, dw); 
-  //   	ofstream Plot_File("tucker_pp_6_16_8_rand_ps.csv");         
-		// TEST_random_laplacian_alsTucker_PP(6, 16, 8, 0, 1e-10, 1e-2, Plot_File, dw);
-  //   	ofstream Plot_File("tucker_dt_6_16_5_rand_ps.csv");       
-		// TEST_random_laplacian_alsTucker(6, 16, 5, 0, 1e-10, Plot_File, dw); 
-  //   	ofstream Plot_File("tucker_pp_6_16_5_rand_ps.csv");         
-		// TEST_random_laplacian_alsTucker_PP(6, 16, 5, 0, 1e-10, 1e-2, Plot_File, dw);
-
-  //   	ofstream Plot_File("tucker_dt_40_10_uniform.csv");      
-		// TEST_dense_uniform_alsTucker(14, 2, 0, 1e-10, Plot_File, dw); 
-  //   	ofstream Plot_File("tucker_pp_40_10_uniform.csv");      
-		// TEST_dense_uniform_alsTucker_PP(14, 2, 0, 1e-10, 1e-2, Plot_File, dw); 
-
-		// TEST_sparse_laplacian_alsTucker_mod(6, 16, 5, 0, dw); 
-		// TEST_sparse_laplacian_alsTucker_mod(6, 20, 7, 0, dw); 
-		// 6 16 5 
-		// 4 40 10
-		// 6, 14, 5, 0, 1e-10, 1e-2
 	}
 
 	MPI_Finalize();
