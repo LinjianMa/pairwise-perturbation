@@ -281,7 +281,7 @@ int main(int argc, char ** argv){
 				int lens[dim];
 				for (int i=0; i<dim; i++) lens[i]=s;
 				V = Tensor<>(dim, issparse, lens, dw); 
-				V.fill_random(0,1);				
+				V.fill_random(0.5,1);		  // Why?   when V is (-1,1), low rank Tucker has no accurate decomposition		
 			}
 			else {
 				//r : tensor made by random matrices
@@ -290,7 +290,7 @@ int main(int argc, char ** argv){
 				Matrix<>* W = new Matrix<>[dim];				// N matrices V will be decomposed into
 				for (int i=0; i<dim; i++) {
 					W[i] = Matrix<>(s,R,dw);
-					W[i].fill_random(0,1); 
+					W[i].fill_random(-1,1); 
 				}
 				build_V(V, W, dim, dw);
 				delete[] W;

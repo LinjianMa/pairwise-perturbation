@@ -56,10 +56,17 @@ void get_factor_matrices(Tensor<>& T,
 		Matrix<> U;
 		Matrix<> VT;
 		Vector<> S;
-		M.svd(U, S, VT, ranks[i]);
-
+		Matrix<> MTM(M.nrow,M.nrow);
+		MTM["ij"] = M["ik"]*M["jk"];
+		MTM.svd(U, S, VT, ranks[i]);
 	    factor_matrices[i] = U;
-  }
+		// // svd of M
+		// Matrix<> U2;
+		// Matrix<> VT2;
+		// Vector<> S2;
+		// M.svd(U2, S2, VT2, ranks[i]);	
+		// U2.print();	
+	}
 }
 
 Tensor<> get_core_tensor(Tensor<>& T, 

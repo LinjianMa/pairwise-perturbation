@@ -764,7 +764,7 @@ double alsCP_PP_sub(Tensor<> & V,
     Matrix<> regul =Matrix<>(W[0].ncol,W[0].ncol);
     regul["ii"] =  1.*lambda;
 
-	double Fnorm; 
+	double Fnorm = 0.; 
 	double diffnorm_V=1000;
 	Matrix<> grad_W_proj[V.order];
 	// initialize the dW matrices
