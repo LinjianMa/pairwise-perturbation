@@ -313,6 +313,22 @@ int main(int argc, char ** argv){
 				if (dw.rank==0) cout << "Read coil-100 dataset finished " << endl;
 				// V.print();
 			}
+			//o2 : time-lapse dataset Rank=32 suggested
+			else if (strlen(tensor)>1 && tensor[1]=='2') {
+				tensorfile = "time-lapse.bin";
+				MPI_File_open(MPI_COMM_WORLD, tensorfile, MPI_MODE_RDWR | MPI_MODE_CREATE , MPI_INFO_NULL, &fh );
+				int lens[dim];
+				lens[0] = 33;
+				lens[1] = 1344;
+				lens[2] = 1024;
+				lens[3] = 9;
+				// for (int i=0; i<dim; i++) lens[i]=s;
+				V = Tensor<>(dim, issparse, lens, dw);
+				if (dw.rank==0) cout << "Read the tensor from file time-lapse ...... " << endl;
+				V.read_dense_from_file(fh);
+				if (dw.rank==0) cout << "Read time-lapse dataset finished " << endl;
+				// V.print();
+			}
 		}
 
 		double Vnorm = V.norm2();

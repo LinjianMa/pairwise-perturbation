@@ -21,7 +21,7 @@ folder = "/Users/linjian/Documents/coil-100/"
 pix_val = load_images_from_folder(folder)
 
 pix = np.asarray(pix_val)
-# print(pix[0])
+print(pix.shape)
 
 pix_out = np.reshape(pix,(7200,128,128,3)).astype(float)
 
