@@ -365,6 +365,7 @@ int main(int argc, char ** argv){
 			printf ("experiment took %lf seconds\n",MPI_Wtime()-start_time);
 		}
 
+		delete[] F;
  		delete[] W;
 		delete[] W_DT;				
 		delete[] W_PP;
