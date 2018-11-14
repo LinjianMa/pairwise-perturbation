@@ -558,8 +558,8 @@ void fold_unfold(Tensor<>& X, Tensor<>& Y){
 	//if global index ordering is preserved between the two tensors, we can fold simply
 	X.read_local(&n_X, &inds_X, &vals_X);
 	Y.write(n_X, inds_X, vals_X);
-	free(inds_X);
-	free(vals_X);
+  delete [] vals_X;
+  free(inds_X);
 }
 
 /**
