@@ -7,6 +7,26 @@
 #include "common.h"
 //#define ERR_REPORT
 
+Matrix<> unroll_tensor_contraction(Tensor<>& T,
+									int i) {
+
+	char chars[] = {'i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','\0'};
+	char arg[T.order+1];
+	char arg2[T.order+1];
+	for (int i = 0; i < T.order; i++) {
+		arg[i] = chars[i];
+		arg2[i] = chars[i];
+	}
+	arg[T.order] = '\0';
+	arg2[T.order] = '\0';
+
+	Matrix<> MTM = Matrix<>(T.lens[i], T.lens[i]);
+	arg[i] = '^';
+	arg2[i] = '&';
+	MTM["^&"] = T[arg]*T[arg2];
+	return MTM;
+}
+
 void Construct_Dimension_Tree(map<string, string>& parent,
 							  map<string, string>& sibling, 
 							  int start, 

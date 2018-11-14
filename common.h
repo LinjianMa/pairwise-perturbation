@@ -4,6 +4,9 @@
 #include <ctf.hpp>
 using namespace CTF;
 
+
+Matrix<> unroll_tensor_contraction(Tensor<>& T, int i);
+
 void Construct_Dimension_Tree(map<string, string>& parent,
                 map<string, string>& sibling, 
                 int start, 

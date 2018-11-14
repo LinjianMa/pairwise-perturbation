@@ -13,59 +13,14 @@ void get_factor_matrices(Tensor<>& T,
 						 Matrix<>* factor_matrices,
 						 int ranks[], 
 						 World& dw) {
-  
-	char chars[] = {'i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','\0'};
-	char arg[T.order+1];
-	int transformed_lens[T.order];
-	char transformed_arg[T.order+1];
-	transformed_arg[T.order] = '\0';
-	for (int i = 0; i < T.order; i++) {
-		arg[i] = chars[i];
-		transformed_arg[i] = chars[i];
-		transformed_lens[i] = T.lens[i];
-	}
-	arg[T.order] = '\0';
 
 	for (int i = 0; i < T.order; i++) {
-		for (int j = i; j > 0; j--) { 
-			transformed_lens[j] = T.lens[j-1];
-		}
-
-		transformed_lens[0] = T.lens[i];
-		for (int j = 0; j < i; j++) {
-			transformed_arg[j] = arg[j+1];
-		}
-		transformed_arg[i] = arg[0];
-
-		int unfold_lens [2];
-		unfold_lens[0] = T.lens[i];
-		int ncol = 1;
-
-		for (int j = 0; j < T.order; j++) {  
-			if (j != i) ncol *= T.lens[j];  
-    	}
-    	unfold_lens[1] = ncol;
-
-		Tensor<double> transformed_T(T.order, transformed_lens, dw);
-		transformed_T[arg] = T[transformed_arg];
-
-		Tensor<double> cur_unfold(2, unfold_lens, dw);
-		fold_unfold(transformed_T, cur_unfold);
-
-		Matrix<double> M(cur_unfold);
+		Matrix<> MTM = unroll_tensor_contraction(T,i);
 		Matrix<> U;
 		Matrix<> VT;
 		Vector<> S;
-		Matrix<> MTM(M.nrow,M.nrow);
-		MTM["ij"] = M["ik"]*M["jk"];
 		MTM.svd(U, S, VT, ranks[i]);
 	    factor_matrices[i] = U;
-		// // svd of M
-		// Matrix<> U2;
-		// Matrix<> VT2;
-		// Vector<> S2;
-		// M.svd(U2, S2, VT2, ranks[i]);	
-		// U2.print();	
 	}
 }
 
@@ -208,43 +163,10 @@ bool alsTucker(Tensor<> & V,
 			*/
 			Tensor<> Y;
 			TTMc(Y, V, W, i, dw);
-			/* transpose Y
-			*/
-			// seq setup
-			char transformed_seq[Y.order+1];
-			strncpy(transformed_seq,seq, strlen(seq)+1);
-			transformed_seq[0] = seq[i];
-			strncpy(transformed_seq+1,seq, i);
-			// lens setup
-			int lens_transform_Y[Y.order];
-			for (int ii = 0; ii <Y.order; ii++) {
-				lens_transform_Y[ii] = Y.lens[ii];
-			}  
-			for (int jj = i; jj > 0; jj--) { 
-				lens_transform_Y[jj] = Y.lens[jj-1];
-			}
-			lens_transform_Y[0] = Y.lens[i];
-			// build transformed_Y
-			Tensor<> transformed_Y(Y.order, lens_transform_Y, dw);
-			transformed_Y[transformed_seq] = Y[seq];
-			/* unfold transformed_Y
-			*/
-			int unfold_lens[2];
-			unfold_lens[0] = Y.lens[i];
-			int unfold_ncol = 1;
-			for (int jj = 0; jj < Y.order; jj++) {  
-				if (jj != i) unfold_ncol *= Y.lens[jj];  
-			}
-			unfold_lens[1] = unfold_ncol;
-			Tensor<> Y_unfold(2, unfold_lens, dw);
-			fold_unfold(transformed_Y, Y_unfold);
-			/* get leading singular vectors
-			*/
-			Matrix<> M(Y_unfold);
+
 			Matrix<> U, VT;
 			Vector<> S;
-			Matrix<> MTM(M.nrow,M.nrow);
-			MTM["ij"] = M["ik"]*M["jk"];
+			Matrix<> MTM = unroll_tensor_contraction(Y,i);
 			MTM.svd(U, S, VT, core.lens[i]);
 			double norm_U = U.norm2();
 			if (norm_U<0) U["ij"] = -U["ij"];
@@ -466,43 +388,10 @@ bool alsTucker_DT(Tensor<> & V,
 			if (i==V.order-1) {
 				Y_end[seq_Y] = Y[seq_Y];
 			}
-			/* transpose Y
-			*/
-			// seq setup
-			char transformed_seq[Y.order+1];
-			strncpy(transformed_seq,seq, strlen(seq)+1);
-			transformed_seq[0] = seq[i];
-			strncpy(transformed_seq+1,seq, i);
-			// lens setup
-			int lens_transform_Y[Y.order];
-			for (int ii = 0; ii <Y.order; ii++) {
-				lens_transform_Y[ii] = Y.lens[ii];
-			}  
-			for (int jj = i; jj > 0; jj--) { 
-				lens_transform_Y[jj] = Y.lens[jj-1];
-			}
-			lens_transform_Y[0] = Y.lens[i];
-			// build transformed_Y
-			Tensor<> transformed_Y(Y.order, lens_transform_Y, dw);
-			transformed_Y[transformed_seq] = Y[seq];
-			/* unfold transformed_Y
-			*/
-			int unfold_lens[2];
-			unfold_lens[0] = Y.lens[i];
-			int unfold_ncol = 1;
-			for (int jj = 0; jj < Y.order; jj++) {  
-				if (jj != i) unfold_ncol *= Y.lens[jj];  
-			}
-			unfold_lens[1] = unfold_ncol;
-			Tensor<> Y_unfold(2, unfold_lens, dw);
-			fold_unfold(transformed_Y, Y_unfold);
-			/* get leading singular vectors
-			*/
-			Matrix<> M(Y_unfold);
+
 			Matrix<> U, VT;
 			Vector<> S;
-			Matrix<> MTM(M.nrow,M.nrow);
-			MTM["ij"] = M["ik"]*M["jk"];
+			Matrix<> MTM = unroll_tensor_contraction(Y,i);
 			MTM.svd(U, S, VT, core.lens[i]);
 			double norm_U = U.norm2();
 			if (norm_U<0) U["ij"] = -U["ij"];
@@ -716,43 +605,10 @@ void alsTucker_DT_sub(Tensor<> & V,
 			if (i==V.order-1) {
 				Y_end[seq_Y] = Y[seq_Y];
 			}
-			/* transpose Y
-			*/
-			// seq setup
-			char transformed_seq[Y.order+1];
-			strncpy(transformed_seq,seq, strlen(seq)+1);
-			transformed_seq[0] = seq[i];
-			strncpy(transformed_seq+1,seq, i);
-			// lens setup
-			int lens_transform_Y[Y.order];
-			for (int ii = 0; ii <Y.order; ii++) {
-				lens_transform_Y[ii] = Y.lens[ii];
-			}  
-			for (int jj = i; jj > 0; jj--) { 
-				lens_transform_Y[jj] = Y.lens[jj-1];
-			}
-			lens_transform_Y[0] = Y.lens[i];
-			// build transformed_Y
-			Tensor<> transformed_Y(Y.order, lens_transform_Y, dw);
-			transformed_Y[transformed_seq] = Y[seq];
-			/* unfold transformed_Y
-			*/
-			int unfold_lens[2];
-			unfold_lens[0] = Y.lens[i];
-			int unfold_ncol = 1;
-			for (int jj = 0; jj < Y.order; jj++) {  
-				if (jj != i) unfold_ncol *= Y.lens[jj];  
-			}
-			unfold_lens[1] = unfold_ncol;
-			Tensor<> Y_unfold(2, unfold_lens, dw);
-			fold_unfold(transformed_Y, Y_unfold);
-			/* get leading singular vectors
-			*/
-			Matrix<> M(Y_unfold);
+
 			Matrix<> U, VT;
 			Vector<> S;
-			Matrix<> MTM(M.nrow,M.nrow);
-			MTM["ij"] = M["ik"]*M["jk"];
+			Matrix<> MTM = unroll_tensor_contraction(Y,i);
 			MTM.svd(U, S, VT, core.lens[i]);
 			double norm_U = U.norm2();
 			if (norm_U<0) U["ij"] = -U["ij"];
@@ -967,43 +823,10 @@ void alsTucker_PP_sub(Tensor<> & V,
 			if (i==V.order-1) {
 				Y_end[seq_Y] = Y[seq_Y];
 			}
-			/* transpose Y
-			*/
-			// seq setup
-			char transformed_seq[Y.order+1];
-			strncpy(transformed_seq,seq, strlen(seq)+1);
-			transformed_seq[0] = seq[i];
-			strncpy(transformed_seq+1,seq, i);
-			// lens setup
-			int lens_transform_Y[Y.order];
-			for (int ii = 0; ii <Y.order; ii++) {
-				lens_transform_Y[ii] = Y.lens[ii];
-			}  
-			for (int jj = i; jj > 0; jj--) { 
-				lens_transform_Y[jj] = Y.lens[jj-1];
-			}
-			lens_transform_Y[0] = Y.lens[i];
-			// build transformed_Y
-			Tensor<> transformed_Y(Y.order, lens_transform_Y, dw);
-			transformed_Y[transformed_seq] = Y[seq];
-			/* unfold transformed_Y
-			*/
-			int unfold_lens[2];
-			unfold_lens[0] = Y.lens[i];
-			int unfold_ncol = 1;
-			for (int jj = 0; jj < Y.order; jj++) {  
-				if (jj != i) unfold_ncol *= Y.lens[jj];  
-			}
-			unfold_lens[1] = unfold_ncol;
-			Tensor<> Y_unfold(2, unfold_lens, dw);
-			fold_unfold(transformed_Y, Y_unfold);
-			/* get leading singular vectors
-			*/
-			Matrix<> M(Y_unfold);
+
 			Matrix<> U, VT;
 			Vector<> S;
-			Matrix<> MTM(M.nrow,M.nrow);
-			MTM["ij"] = M["ik"]*M["jk"];
+			Matrix<> MTM = unroll_tensor_contraction(Y,i);
 			MTM.svd(U, S, VT, core.lens[i]);
 			double norm_U = U.norm2();
 			if (norm_U<0) U["ij"] = -U["ij"];

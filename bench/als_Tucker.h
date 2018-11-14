@@ -31,22 +31,6 @@ void TTMc(Tensor<>& Y,
       int i, 
       World & dw);
 
-/**
- * \brief ALS method for Tucker decomposition
- *  W: output matrices
- *  core: output core tensor
- *  V: input tensor
- *  tol: tolerance for a relative stopping condition
- *  timelimit, maxiter: limit of time and iterations
- */
-bool alsTucker(Tensor<> & V, 
-         Tensor<> & core, 
-         Matrix<> * W, 
-         double tol, 
-         double timelimit, 
-         int maxiter, 
-         World & dw);
-
 void ttmc_map_DT(map<string,Tensor<>>& ttmc_map, 
          map<string,string>& parent, 
          map<string,string>& sibling, 
