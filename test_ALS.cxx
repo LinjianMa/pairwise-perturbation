@@ -364,8 +364,25 @@ int main(int argc, char ** argv){
 		}
 		else if (model[0]=='T') {
 			int ranks[V.order];
-			for (int i=0; i<V.order; i++) {
-				ranks[i] = R;
+			if (tensor[0]=='o') {
+				//o1 : coil-100 dataset 
+				if (strlen(tensor)>1 && tensor[1]=='1') {	
+					ranks[0] = 3;
+					ranks[1] = 10;
+					ranks[2] = 10;
+					ranks[3] = 70;						
+				}
+				//o2 : time-lapse dataset
+				else if (strlen(tensor)>1 && tensor[1]=='2') {	
+					ranks[0] = 10;
+					ranks[1] = 100;
+					ranks[2] = 100;
+					ranks[3] = 5;	
+				}
+			} else {
+				for (int i=0; i<V.order; i++) {
+					ranks[i] = R;
+				}
 			}
 			Tensor<> hosvd_core;
 			// using hosvd to initialize W and hosvd_core
