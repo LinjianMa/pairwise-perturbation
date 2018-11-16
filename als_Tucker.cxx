@@ -296,7 +296,7 @@ bool alsTucker_DT(Tensor<> & V,
 	for (iter=0; iter<=maxiter; iter++)
 	{
 		// print the difference norm 
-		if ((iter%resprint==0 ) || iter==maxiter) {
+		if ((iter%resprint==0 && iter!=0) || iter==1 || iter==maxiter) {
 			double st_time1 = MPI_Wtime();
 
 				TTMc(core, V, W, -1, dw);
@@ -514,7 +514,7 @@ void alsTucker_DT_sub(Tensor<> & V,
 	for (; iter<=maxiter; iter++)
 	{
 		// print the difference norm 
-		if ((iter%resprint==0) || iter==maxiter ) {
+		if ((iter%resprint==0 && iter!=0) || iter==1 || iter==maxiter) {
 			double st_time1 = MPI_Wtime();
 
 				TTMc(core, V, W, -1, dw);
@@ -743,7 +743,7 @@ void alsTucker_PP_sub(Tensor<> & V,
 			}	
 		}
 		// print the difference norm 
-		if ((iter%resprint==0) || iter==maxiter || iter==init_iter) {
+		if ((iter%resprint==0 && iter!=0) || iter==1 || iter==maxiter || iter==init_iter) {
 			double st_time1 = MPI_Wtime();
 
 				TTMc(core, V, W, -1, dw);
