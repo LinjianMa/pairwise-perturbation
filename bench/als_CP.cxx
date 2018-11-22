@@ -860,7 +860,7 @@ double alsCP_PP_sub(Tensor<> & V,
 				cout << "  [PP first time]  " << dtime_first <<  "\n";
 				Plot_File << "  [PPfirst]  " << "," << dtime_first << "\n";
 				cout << "  [PP second time]  " << dtime <<  "\n";
-				Plot_File << "  [PPfirst]  " << "," << dtime << "\n";
+				Plot_File << "  [PPsecond]  " << "," << dtime << "\n";
 			}
 			// end check the residue
 			if ((projnorm < tol) || MPI_Wtime()-st_time > timelimit || iter==maxiter) 
