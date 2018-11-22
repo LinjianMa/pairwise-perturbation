@@ -317,7 +317,7 @@ int main(int argc, char ** argv){
     Timer_epoch tALS("ALS");
     tALS.begin();
 		if (model[0]=='C') {
-    		if (dw.rank==0) Plot_File << "[dim],[iter],[gradnorm],[tol],[pp_update],[diffV],[dtime]" << "\n";          //Headings for file
+    		if (dw.rank==0) Plot_File << "[timetype],[dtime]" << "\n";          //Headings for file
 			for (int i=0; i<maxiter; i++) {
 				alsCP_DT(V, W_DT, grad_W, F, tol*Vnorm, timelimit, 1, lambda_, Plot_File, resprint, dw);
 				for (int j=0; j<V.order; j++) {
@@ -334,7 +334,7 @@ int main(int argc, char ** argv){
 			if (dw.rank==0) Plot_File << endl;
 		}
 		else if (model[0]=='T') {
-    		if (dw.rank==0) Plot_File << "[dim],[iter],[diffnorm],[tol],[pp_update],[diffV],[dtime]" << "\n";          //Headings for file
+    		if (dw.rank==0) Plot_File << "[timetype],[dtime]" << "\n";          //Headings for file
 			int ranks[V.order];
 			for (int i=0; i<V.order; i++) {
 				ranks[i] = R;

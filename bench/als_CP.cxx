@@ -365,8 +365,10 @@ bool alsCP_DT(Tensor<> & V,
 			st_time += MPI_Wtime() - st_time1;
 			double dtime = MPI_Wtime() - st_time ;
 			if(dw.rank==0 && iter!=0) {
-				cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [gradnorm]  "<< projnorm << "  [tol]  " << tol << "  [pp_update]  " << 0  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
-				Plot_File << V.lens[0] << "," << iter << "," << projnorm << "," << tol << "," << 0 << "," << diffnorm_V << "," << dtime << "\n";
+				// cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [diffnorm]  "<< diffnorm << "  [tol]  " << tol << "  [pp_update]  " << 0  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
+				cout << "  [dimension tree step time]  " << dtime <<  "\n";
+				// plot to file
+				Plot_File << "[DTtime]" << "," << dtime << "\n";
 				// if(iter%100==0 && iter!=0) {// flush
 				// 	Plot_File << endl;
 				// }
@@ -758,6 +760,8 @@ double alsCP_PP_sub(Tensor<> & V,
 				  int resprint,
 				  World & dw){
 
+	double dtime_first = 0;
+
 	int init_iter = iter;
 
     Matrix<> regul =Matrix<>(W[0].ncol,W[0].ncol);
@@ -847,13 +851,16 @@ double alsCP_PP_sub(Tensor<> & V,
 			// record time
 			st_time += MPI_Wtime() - st_time1;
 			double dtime = MPI_Wtime() - st_time;
-			if(dw.rank==0) {
-				cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [gradnorm]  "<< projnorm << "  [tol]  " << tol << "  [pp_update]  " << 1  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
-				// plot to file
-				Plot_File << V.lens[0] << "," << iter << "," << projnorm << "," << tol << "," << 1 << "," << diffnorm_V << "," << dtime << "\n";
-				// if(iter%100==0 && iter!=0) {// flush
-				// 	Plot_File << endl;
-				// }
+			if(dw.rank==0 && iter != maxiter) {
+				dtime_first = dtime;
+				st_time = MPI_Wtime();
+			} 
+			else if (dw.rank==0 && iter == maxiter) {
+				dtime_first = dtime_first+dtime;
+				cout << "  [PP first time]  " << dtime_first <<  "\n";
+				Plot_File << "  [PPfirst]  " << "," << dtime_first << "\n";
+				cout << "  [PP second time]  " << dtime <<  "\n";
+				Plot_File << "  [PPfirst]  " << "," << dtime << "\n";
 			}
 			// end check the residue
 			if ((projnorm < tol) || MPI_Wtime()-st_time > timelimit || iter==maxiter) 
