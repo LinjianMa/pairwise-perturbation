@@ -340,8 +340,8 @@ int main(int argc, char ** argv){
 				ranks[i] = R;
 			}
 			// using hosvd to initialize W and hosvd_core
-			Tensor<> hosvd_core;
-			hosvd(V, hosvd_core, W, ranks, dw);
+			Tensor<> hosvd_core = Tensor<>(dim, issparse, ranks, dw); 
+			// hosvd(V, hosvd_core, W, ranks, dw);
 			for (int i=0; i<maxiter; i++) {
 				for (int j=0; j<V.order; j++){
 					W_DT[j]["ij"] = W[j]["ij"];
