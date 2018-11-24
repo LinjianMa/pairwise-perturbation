@@ -324,48 +324,6 @@ int main(int argc, char ** argv){
 		delete[] W_PP;
 		delete[] grad_W;
 
-  // 		ofstream Plot_File("aaa.csv");      
-		// TEST_construct_Tucker(6, 10, 2, 0, 1e-10, Plot_File, dw);
-  // 		ofstream Plot_File("aaa.csv");      
-		// TEST_construct_Tucker_pp(6, 10, 3, 0, 1e-10, 5e-1, Plot_File, dw);
-
-		// int T_lens[] = {13 ,13, 13, 13, 13, 13};
-		// int ranks[] = {4, 4, 4, 4, 4, 4};
-		//TEST_hosvd(3, T_lens, ranks, dw);
-		//TEST_alsTucker(6, T_lens, ranks, dw);	
-		//TEST_alsTucker_DT(6, T_lens, ranks, dw);	
-		// TEST_alsTucker_mod(6, T_lens, ranks, dw);	
-		// TEST_3d_poisson_Tucker(6, 20, 10, 0, dw);
-  //   	ofstream Plot_File("poisson_DT_4_36_2_ps.csv");         
-		// TEST_3d_poisson_Tucker(8, 6, 2, 0, 1e-10, Plot_File, dw);
-
-  //   	ofstream Plot_File("tucker_dt_4_40_15_rand_ps.csv");      
-		// TEST_random_laplacian_alsTucker(4, 40, 15, 0, 1e-10, Plot_File, dw); 
-  //   	ofstream Plot_File("tucker_pp_4_40_15_rand_ps.csv");       
-		// TEST_random_laplacian_alsTucker_PP(4, 40, 15, 0, 1e-10, 5e-1, Plot_File, dw);
-  //   	ofstream Plot_File("tucker_dt_6_14_8_rand_ps.csv");       
-		// TEST_random_laplacian_alsTucker(6, 14, 8, 0, 1e-10, Plot_File, dw); 
-  //   	ofstream Plot_File("tucker_pp_6_14_8_rand_ps.csv");         
-		// TEST_random_laplacian_alsTucker_PP(6, 14, 8, 0, 1e-10, 1e-2, Plot_File, dw);
-  //   	ofstream Plot_File("tucker_dt_6_16_8_rand_ps.csv");       
-		// TEST_random_laplacian_alsTucker(6, 16, 8, 0, 1e-10, Plot_File, dw); 
-  //   	ofstream Plot_File("tucker_pp_6_16_8_rand_ps.csv");         
-		// TEST_random_laplacian_alsTucker_PP(6, 16, 8, 0, 1e-10, 1e-2, Plot_File, dw);
-  //   	ofstream Plot_File("tucker_dt_6_16_5_rand_ps.csv");       
-		// TEST_random_laplacian_alsTucker(6, 16, 5, 0, 1e-10, Plot_File, dw); 
-  //   	ofstream Plot_File("tucker_pp_6_16_5_rand_ps.csv");         
-		// TEST_random_laplacian_alsTucker_PP(6, 16, 5, 0, 1e-10, 1e-2, Plot_File, dw);
-
-  //   	ofstream Plot_File("tucker_dt_40_10_uniform.csv");      
-		// TEST_dense_uniform_alsTucker(14, 2, 0, 1e-10, Plot_File, dw); 
-  //   	ofstream Plot_File("tucker_pp_40_10_uniform.csv");      
-		// TEST_dense_uniform_alsTucker_PP(14, 2, 0, 1e-10, 1e-2, Plot_File, dw); 
-
-		// TEST_sparse_laplacian_alsTucker_mod(6, 16, 5, 0, dw); 
-		// TEST_sparse_laplacian_alsTucker_mod(6, 20, 7, 0, dw); 
-		// 6 16 5 
-		// 4 40 10
-		// 6, 14, 5, 0, 1e-10, 1e-2
 	}
 
 	MPI_Finalize();
