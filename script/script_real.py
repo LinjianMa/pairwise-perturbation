@@ -5,7 +5,7 @@ jobname = "ctf_pp_real"
 queue = "normal"        
 #nodes = 16        
 mpitask = 16                
-time = "10:00:00"           
+time = "4:00:00"           
 mail = "solomon2@illinois.edu"           
 mailtype = "all"
 
