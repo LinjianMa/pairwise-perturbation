@@ -254,9 +254,13 @@ bool alsTucker_DT(Tensor<> & V,
 				  int maxiter, 
 				  ofstream & Plot_File,
 				  int resprint,
+				  bool bench,
 				  World & dw) {
 	cout.precision(13);
-    Plot_File << "[dim],[iter],[diffnorm],[tol],[pp_update],[diffV],[dtime]" << "\n";          //Headings for file
+
+	if (bench==false) {
+    	Plot_File << "[dim],[iter],[diffnorm],[tol],[pp_update],[diffV],[dtime]" << "\n";          //Headings for file
+	}
 
 	double st_time = MPI_Wtime();
 	int iter; 
@@ -322,13 +326,20 @@ bool alsTucker_DT(Tensor<> & V,
 
 			st_time += MPI_Wtime() - st_time1;
 			double dtime = MPI_Wtime() - st_time;
-			if(dw.rank==0) {
-				cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [diffnorm]  "<< diffnorm << "  [tol]  " << tol << "  [pp_update]  " << 0  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
-				// plot to file
-				Plot_File << V.lens[0] << "," << iter << "," << diffnorm << "," << tol << "," << 0 << "," << diffnorm_V << "," << dtime << "\n";
-				if(iter%100==0 && iter!=0) {// flush
-					Plot_File << endl;
+			if (bench==false) {
+				if(dw.rank==0) {
+					cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [diffnorm]  "<< diffnorm << "  [tol]  " << tol << "  [pp_update]  " << 0  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
+					// plot to file
+					Plot_File << V.lens[0] << "," << iter << "," << diffnorm << "," << tol << "," << 0 << "," << diffnorm_V << "," << dtime << "\n";
+					if(iter%100==0 && iter!=0) {// flush
+						Plot_File << endl;
+					}
 				}
+			} else {
+				if(dw.rank==0) {
+					cout << "  [dimension tree step time]  " << dtime <<  "\n";
+					Plot_File << "[DTtime]" << "," << dtime << "\n";
+				}				
 			}
 			// end check the residue
 			if ((diffnorm < tol) || MPI_Wtime()-st_time > timelimit) 
@@ -405,7 +416,9 @@ bool alsTucker_DT(Tensor<> & V,
 		printf ("\nIter = %d Final Diff norm %E \n", iter, diffnorm);
 		printf ("tf took %lf seconds\n",MPI_Wtime()-st_time);
 	}
-	Plot_File.close();
+	if (bench==false) {
+		Plot_File.close();
+	}	
 	if (iter == maxiter+1) return false;
 	else return true;
 }
@@ -667,7 +680,10 @@ void alsTucker_PP_sub(Tensor<> & V,
 				  double & diffnorm,
 				  int & iter,
 				  int resprint,
+				  bool bench,
 				  World & dw) {
+
+	double dtime_first = 0;
 
 	int init_iter = iter;
 	double diffnorm_V = 1000;
@@ -706,10 +722,12 @@ void alsTucker_PP_sub(Tensor<> & V,
 	{
 		// work as the preconditioning of pairwise perturbation
 		int num_dw_break = 0;
-		for (int i=0; i<V.order; i++) {
-			double norm_dW = dW[i].norm2();
-			double norm_W = W[i].norm2();
-			if (abs(norm_dW/norm_W)>tol_init) num_dw_break++;
+		if (bench==false) {
+			for (int i=0; i<V.order; i++) {
+				double norm_dW = dW[i].norm2();
+				double norm_W = W[i].norm2();
+				if (abs(norm_dW/norm_W)>tol_init) num_dw_break++;
+			}
 		}
 		// initialize the TTMc
 		// if (iter==0 || iter == (iter_prev+pp_update)) {
@@ -769,16 +787,30 @@ void alsTucker_PP_sub(Tensor<> & V,
 
 			st_time += (MPI_Wtime() - st_time1);
 			double dtime = MPI_Wtime() - st_time;
-			if(dw.rank==0) {
-				cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [diffnorm]  "<< diffnorm << "  [tol]  " << tol << "  [pp_update]  " << 1  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
-				// plot to file
-				Plot_File << V.lens[0] << "," << iter << "," << diffnorm << "," << tol << "," << 1 << "," << diffnorm_V << "," << dtime << "\n";
-				if(iter%100==0 && iter!=0) {// flush
-					Plot_File << endl;
+			if (bench==false) {
+				if(dw.rank==0) {
+					cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [diffnorm]  "<< diffnorm << "  [tol]  " << tol << "  [pp_update]  " << 1  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
+					// plot to file
+					Plot_File << V.lens[0] << "," << iter << "," << diffnorm << "," << tol << "," << 1 << "," << diffnorm_V << "," << dtime << "\n";
+					if(iter%100==0 && iter!=0) {// flush
+						Plot_File << endl;
+					}
 				}
+			} else {
+				if(dw.rank==0 && iter != maxiter) {
+					dtime_first = dtime;
+					st_time = MPI_Wtime();
+				} 
+				else if (dw.rank==0 && iter == maxiter) {
+					dtime_first = dtime_first+dtime;
+					cout << "  [PP first time]  " << dtime_first <<  "\n";
+					Plot_File << "  [PPfirst]  " << "," << dtime_first << "\n";
+					cout << "  [PP second time]  " << dtime <<  "\n";
+					Plot_File << "  [PPsecond]  " << "," << dtime << "\n";
+				}				
 			}
 			// end check the residue
-			if ((diffnorm < tol) || MPI_Wtime()-st_time > timelimit) 
+			if ((diffnorm < tol) || MPI_Wtime()-st_time > timelimit || iter==maxiter) 
 				break;
 			core_prev[seq] = core[seq];
 		}
@@ -845,14 +877,9 @@ void alsTucker_PP_sub(Tensor<> & V,
 			double norm_dW = dW[i].norm2();
 		}
 		core[seq] = Y_end[seq_Y_end] * W[V.order-1][seq_W_end];
-		// print .
-		// if (iter%10==0 && dw.rank==0) printf(".");
+
 	}
-	// if(dw.rank==0) {
-	// 	printf ("\nIter = %d Final Diff norm %E \n", iter, diffnorm);
-	// 	printf ("tf took %lf seconds\n",MPI_Wtime()-st_time);
-	// }
-	// Plot_File.close();
+	if (bench==true) iter++;
 	return;
 }
 
@@ -873,14 +900,16 @@ bool alsTucker_PP(Tensor<> & V,
 				  int maxiter, 
 				  ofstream & Plot_File,
 				  int resprint,
+				  bool bench,
 				  World & dw) {
 	cout.precision(13);
-    Plot_File << "[dim],[iter],[diffnorm],[tol],[pp_update],[diffV],[dtime]" << "\n";          //Headings for file
+
+	if (bench==false){
+    	if (dw.rank==0) Plot_File << "[dim],[iter],[diffnorm],[tol],[pp_update],[diffV],[dtime]" << "\n";          //Headings for file
+	}
 
 	double st_time = MPI_Wtime();
 	int iter = 0;
-	// if (dw.rank==0) printf("pairwise perturbation starts from %d\n", iter);
-	// if (dw.rank==0) printf("pairwise perturbation restarts from %d\n", iter);
 	Tensor<> core_prev(core);
 	double diffnorm = 10.;
 	// initialize dW
@@ -893,14 +922,18 @@ bool alsTucker_PP(Tensor<> & V,
 	while (diffnorm > tol && iter<=maxiter)
 	{
 		
-		if (dw.rank==0) printf("DT starts from %d\n", iter);
+		if (bench==false){
 
-		alsTucker_DT_sub(V, core, core_prev,
-					  	 W, dW,
-					  	 tol, tol_init,	
-					  	 timelimit, maxiter, 
-					  	 st_time, Plot_File,
-					  	 diffnorm, iter, resprint, dw);
+			if (dw.rank==0) printf("DT starts from %d\n", iter);
+
+			alsTucker_DT_sub(V, core, core_prev,
+						  	 W, dW,
+						  	 tol, tol_init,	
+						  	 timelimit, maxiter, 
+						  	 st_time, Plot_File,
+						  	 diffnorm, iter, resprint, dw);
+
+		}
 
 		if (dw.rank==0) printf("pairwise perturbation starts from %d\n", iter);
 
@@ -909,7 +942,7 @@ bool alsTucker_PP(Tensor<> & V,
 						 tol, tol_init,
 						 timelimit, maxiter,
 						 st_time, Plot_File,
-						 diffnorm, iter, resprint, dw);
+						 diffnorm, iter, resprint, bench, dw);
 
 		if (tol_init>5e-3) tol_init *= 0.9;
 
@@ -918,7 +951,9 @@ bool alsTucker_PP(Tensor<> & V,
 		printf ("\nIter = %d Final Diff norm %E \n", iter, diffnorm);
 		printf ("tf took %lf seconds\n",MPI_Wtime()-st_time);
 	}
-	Plot_File.close();
+	if (bench==false){
+		Plot_File.close();
+	}	
 	delete[] dW;
 	if (iter == maxiter+1) return false;
 	else return true;

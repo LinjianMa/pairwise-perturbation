@@ -71,6 +71,7 @@ bool alsTucker_DT(Tensor<> & V,
           int maxiter, 
           ofstream & Plot_File,
           int resprint,
+          bool bench,
           World & dw);
 
 void Build_ttmc_map(map<string, Tensor<>> & ttmc_map, 
@@ -125,6 +126,7 @@ void alsTucker_PP_sub(Tensor<> & V,
 				  	  double & diffnorm,
 				  	  int & iter,
               int resprint,
+              bool bench,
 				  	  World & dw);
 
 /**
@@ -144,6 +146,7 @@ bool alsTucker_PP(Tensor<> & V,
           		  int maxiter, 
           		  ofstream & Plot_File,
                 int resprint,
+                bool bench,
           		  World & dw) ;
 
 

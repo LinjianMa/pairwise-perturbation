@@ -51,6 +51,7 @@ bool alsCP_DT(Tensor<> & V,
 			  double lambda,
         	  ofstream & Plot_File,
         	  int resprint,
+        	  bool bench,
 			  World & dw) ;
 
 // [cd] --> [ab*]
@@ -131,6 +132,7 @@ double alsCP_PP_sub(Tensor<> & V,
 				  	  double & projnorm,
 				  	  int & iter,
 				  	  int resprint,
+				  	  bool bench,
 				  	  World & dw);
 
 /**
@@ -152,6 +154,7 @@ bool alsCP_PP(Tensor<> & V,
         	  double ratio_step,
           	  ofstream & Plot_File,
           	  int resprint,
+          	  bool bench,
           	  World & dw) ;
 
 

@@ -60,53 +60,6 @@ int main(int argc, char ** argv){
 
     MPI_File fh;
 
-	/*
-	CP test examples: 
- 	1: TEST_3d_poisson_CP(8, 5, 2, 0, 1e-10, 1e-3, 0.00, 1, Plot_File, dw); 
-  		-model CP -tensor p -pp 0 -dim 8 -size 5 -rank 2 -maxiter 5000   
- 		-model CP -tensor p -pp 1 -dim 8 -size 5 -rank 2 -maxiter 5000
-	2: TEST_3d_poisson_CP(12, 4, 2, 0, 1e-10, 1e-3, 0.00, 1.0, Plot_File, dw);
- 		-model CP -tensor p -pp 0 -dim 12 -size 4 -rank 2 
- 		-model CP -tensor p -pp 1 -dim 12 -size 4 -rank 2 
-	3: TEST_poisson_CP(6, 10, 8, 0, 1e-3, 0.00, 0.8, Plot_File, dw);
- 		-model CP -tensor p2 -pp 0 -dim 6 -size 10 -rank 8 
- 		-model CP -tensor p2 -pp 1 -dim 6 -size 10 -rank 8 
-	4: TEST_randmat_CP(6, 14, 5, false, 1e-10, 1e-3, 0.00, 1., Plot_File, dw);
- 		-model CP -tensor r -pp 0 -dim 6 -size 14 -rank 5 
- 		-model CP -tensor r -pp 1 -dim 6 -size 14 -rank 5 
-	5: TEST_collinearity_CP(6, 14,	5, false, 1e-10, 1e-3, 0.00, 1., 0.5, 0.9, 0.05, Plot_File, dw);
- 		-model CP -tensor c -pp 0 -dim 6 -size 14 -rank 5 
- 		-model CP -tensor c -pp 1 -dim 6 -size 14 -rank 5 
-	*/
-
-	/*
-	Tucker test examples:
-	1. TEST_sparse_laplacian_alsTucker(4, 40, 10, 0, 1e-10, Plot_File, dw); 
- 		-model Tucker -tensor p2 -pp 0 -dim 4 -size 40 -rank 10
- 		-model Tucker -tensor p2 -pp 1 -dim 4 -size 40 -rank 10 -pp_res_tol 1e-1
-	2. TEST_sparse_laplacian_alsTucker(6, 14, 5, 0, 1e-10, Plot_File, dw); 
- 		-model Tucker -tensor p2 -pp 0 -dim 6 -size 14 -rank 5
- 		-model Tucker -tensor p2 -pp 1 -dim 6 -size 14 -rank 5 -pp_res_tol 1e-1
-	3. TEST_sparse_laplacian_alsTucker(6, 16, 8, 0, 1e-10, Plot_File, dw); 
- 		-model Tucker -tensor p2 -pp 0 -dim 6 -size 16 -rank 8
- 		-model Tucker -tensor p2 -pp 1 -dim 6 -size 16 -rank 8 -pp_res_tol 1e-1
-	4. TEST_sparse_laplacian_alsTucker(6, 16, 5, 0, 1e-10, Plot_File, dw); 
- 		-model Tucker -tensor p2 -pp 0 -dim 6 -size 16 -rank 5
- 		-model Tucker -tensor p2 -pp 1 -dim 6 -size 16 -rank 5 -pp_res_tol 1e-1
-	5. TEST_random_alsTucker(4, 40, 10, 0, 1e-10, Plot_File, dw);
- 		-model Tucker -tensor r2 -pp 0 -dim 4 -size 40 -rank 10
- 		-model Tucker -tensor r2 -pp 1 -dim 4 -size 40 -rank 10 -pp_res_tol 1e-1
-	6. TEST_random_alsTucker(6, 14, 5, 0, 1e-10, Plot_File, dw); 
- 		-model Tucker -tensor r2 -pp 0 -dim 6 -size 14 -rank 5
- 		-model Tucker -tensor r2 -pp 1 -dim 6 -size 14 -rank 5 -pp_res_tol 1e-1		
-	7. TEST_random_alsTucker(6, 16, 5, 0, 1e-10, Plot_File, dw); 
- 		-model Tucker -tensor r2 -pp 0 -dim 6 -size 16 -rank 5
- 		-model Tucker -tensor r2 -pp 1 -dim 6 -size 16 -rank 5 -pp_res_tol 1e-1		
-	8. TEST_random_alsTucker(6, 16, 8, 0, 1e-10, Plot_File, dw); 
- 		-model Tucker -tensor r2 -pp 0 -dim 6 -size 16 -rank 8
- 		-model Tucker -tensor r2 -pp 1 -dim 6 -size 16 -rank 8 -pp_res_tol 1e-1				
-	*/
-
 	if (getCmdOption(input_str, input_str+in_num, "-model")) {
 		model = getCmdOption(input_str, input_str+in_num, "-model");
     	if (model[0] != 'C' && model[0] != 'T') model = "CP";
@@ -356,10 +309,10 @@ int main(int argc, char ** argv){
 
 		if (model[0]=='C') {
 			if (pp==0) {
-				alsCP_DT(V, W, grad_W, F, tol*Vnorm, timelimit, maxiter, lambda_, Plot_File, resprint, dw);
+				alsCP_DT(V, W, grad_W, F, tol*Vnorm, timelimit, maxiter, lambda_, Plot_File, resprint, false, dw);
 			}
 			else if (pp==1) {
-				alsCP_PP(V, W, grad_W, F, tol*Vnorm, pp_res_tol, timelimit, maxiter, lambda_, magni, Plot_File, resprint, dw);
+				alsCP_PP(V, W, grad_W, F, tol*Vnorm, pp_res_tol, timelimit, maxiter, lambda_, magni, Plot_File, resprint, false, dw);
 			}
 		}
 		else if (model[0]=='T') {
@@ -388,10 +341,10 @@ int main(int argc, char ** argv){
 			// using hosvd to initialize W and hosvd_core
 			hosvd(V, hosvd_core, W, ranks, dw);
 			if (pp==0) {
-				alsTucker_DT(V, hosvd_core, W, tol*Vnorm, timelimit, maxiter, Plot_File, resprint, dw);
+				alsTucker_DT(V, hosvd_core, W, tol*Vnorm, timelimit, maxiter, Plot_File, resprint, false, dw);
 			}
 			else if (pp==1) {
-				alsTucker_PP(V, hosvd_core, W, tol*Vnorm, pp_res_tol, timelimit, maxiter, Plot_File, resprint, dw);				
+				alsTucker_PP(V, hosvd_core, W, tol*Vnorm, pp_res_tol, timelimit, maxiter, Plot_File, resprint, false, dw);				
 			}
 		}
     	

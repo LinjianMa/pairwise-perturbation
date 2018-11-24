@@ -2,7 +2,10 @@ include config.mk
 
 FCXX=$(CXX) $(CXXFLAGS)
 
-all: test_ALS
+all: test_ALS pp_bench
+
+pp_bench: pp_bench.cxx als_CP.o als_Tucker.o common.o Makefile config.mk
+	$(FCXX) $< als_CP.o als_Tucker.o common.o  -o $@ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
 test_ALS: test_ALS.cxx als_CP.o als_Tucker.o common.o Makefile config.mk
 	$(FCXX) $< als_CP.o als_Tucker.o common.o  -o $@ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
@@ -17,4 +20,4 @@ common.o: common.cxx common.h config.mk
 	$(FCXX) -c $< -o $@ $(INCLUDE_PATH) 
 
 clean:
-	rm -f common.o als_CP.o als_Tucker.o test_ALS
+	rm -f common.o als_CP.o als_Tucker.o test_ALS pp_bench
