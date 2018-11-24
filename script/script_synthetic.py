@@ -43,19 +43,19 @@ for nodes in [1, 16, 256]:
     size = int(32*nodes**(1./6))
     rank = int(4*nodes**(1./6))
 
-    text_file.write("ibrun %s -model CP -tensor r -pp 0 -dim 6 -size %s - rank %s -maxiter 250 -filename CP_r_nodes=%s_pp=0_dim=6_size=%s_rank=5.csv -resprint 10\n" % (exe,size,rank,nodes,size))
-    text_file.write("ibrun %s -model CP -tensor r -pp 1 -dim 6 -size %s - rank %s -maxiter 250 -filename CP_r_nodes=%s_pp=1_dim=6_size=%s_rank=5_restol=0.01.csv -pp_res_tol 0.01 -resprint 10\n" % (exe,size,rank,nodes,size))
-    text_file.write("ibrun %s -model CP -tensor r -pp 1 -dim 6 -size %s - rank %s -maxiter 250 -filename CP_r_nodes=%s_pp=1_dim=6_size=%s_rank=5_restol=0.05.csv -pp_res_tol 0.05 -resprint 10\n\n" % (exe,size,rank,nodes,size))
+    text_file.write("ibrun %s -model CP -tensor r -pp 0 -dim 6 -size %s -rank %s -maxiter 250 -filename CP_r_nodes=%s_pp=0_dim=6_size=%s_rank=5.csv -resprint 10\n" % (exe,size,rank,nodes,size))
+    text_file.write("ibrun %s -model CP -tensor r -pp 1 -dim 6 -size %s -rank %s -maxiter 250 -filename CP_r_nodes=%s_pp=1_dim=6_size=%s_rank=5_restol=0.01.csv -pp_res_tol 0.01 -resprint 10\n" % (exe,size,rank,nodes,size))
+    text_file.write("ibrun %s -model CP -tensor r -pp 1 -dim 6 -size %s -rank %s -maxiter 250 -filename CP_r_nodes=%s_pp=1_dim=6_size=%s_rank=5_restol=0.05.csv -pp_res_tol 0.05 -resprint 10\n\n" % (exe,size,rank,nodes,size))
 
-    text_file.write("ibrun %s -model CP -tensor c -pp 0 -dim 6 -size %s - rank %s -maxiter 250 -filename CP_c_nodes=%s_pp=0_dim=6_size=%s_rank=5.csv -resprint 10\n" % (exe,size,rank,nodes,size))
-    text_file.write("ibrun %s -model CP -tensor c -pp 1 -dim 6 -size %s - rank %s -maxiter 250 -filename CP_c_nodes=%s_pp=1_dim=6_size=%s_rank=5_restol=0.01.csv -pp_res_tol 0.01 -resprint 10\n" % (exe,size,rank,nodes,size))
-    text_file.write("ibrun %s -model CP -tensor c -pp 1 -dim 6 -size %s - rank %s -maxiter 250 -filename CP_c_nodes=%s_pp=1_dim=6_size=%s_rank=5_restol=0.05.csv -pp_res_tol 0.05 -resprint 10\n\n" % (exe,size,rank,nodes,size))
+    text_file.write("ibrun %s -model CP -tensor c -pp 0 -dim 6 -size %s -rank %s -maxiter 250 -filename CP_c_nodes=%s_pp=0_dim=6_size=%s_rank=5.csv -resprint 10\n" % (exe,size,rank,nodes,size))
+    text_file.write("ibrun %s -model CP -tensor c -pp 1 -dim 6 -size %s -rank %s -maxiter 250 -filename CP_c_nodes=%s_pp=1_dim=6_size=%s_rank=5_restol=0.01.csv -pp_res_tol 0.01 -resprint 10\n" % (exe,size,rank,nodes,size))
+    text_file.write("ibrun %s -model CP -tensor c -pp 1 -dim 6 -size %s -rank %s -maxiter 250 -filename CP_c_nodes=%s_pp=1_dim=6_size=%s_rank=5_restol=0.05.csv -pp_res_tol 0.05 -resprint 10\n\n" % (exe,size,rank,nodes,size))
 
     size = int(13.5*nodes**(1./8))
 
-    text_file.write("ibrun %s -model CP -tensor p -pp 0 -dim 8 -size %s - rank %s -maxiter 250 -filename CP_p_nodes=%s_pp=0_dim=8_size=%s_rank=2.csv -resprint 10\n" % (exe,size,rank,nodes,size))
-    text_file.write("ibrun %s -model CP -tensor p -pp 1 -dim 8 -size %s - rank %s -maxiter 250 -filename CP_p_nodes=%s_pp=1_dim=8_size=%s_rank=2_restol=0.01.csv -pp_res_tol 0.01 -resprint 10\n" % (exe,size,rank,nodes,size))
-    text_file.write("ibrun %s -model CP -tensor p -pp 1 -dim 8 -size %s - rank %s -maxiter 250 -filename CP_p_nodes=%s_pp=1_dim=8_size=%s_rank=2_restol=0.05.csv -pp_res_tol 0.05 -resprint 10\n\n" % (exe,size,rank,nodes,size))
+    text_file.write("ibrun %s -model CP -tensor p -pp 0 -dim 8 -size %s -rank %s -maxiter 250 -filename CP_p_nodes=%s_pp=0_dim=8_size=%s_rank=2.csv -resprint 10\n" % (exe,size,rank,nodes,size))
+    text_file.write("ibrun %s -model CP -tensor p -pp 1 -dim 8 -size %s -rank %s -maxiter 250 -filename CP_p_nodes=%s_pp=1_dim=8_size=%s_rank=2_restol=0.01.csv -pp_res_tol 0.01 -resprint 10\n" % (exe,size,rank,nodes,size))
+    text_file.write("ibrun %s -model CP -tensor p -pp 1 -dim 8 -size %s -rank %s -maxiter 250 -filename CP_p_nodes=%s_pp=1_dim=8_size=%s_rank=2_restol=0.05.csv -pp_res_tol 0.05 -resprint 10\n\n" % (exe,size,rank,nodes,size))
 
 
     text_file.close()
