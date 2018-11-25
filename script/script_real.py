@@ -40,20 +40,20 @@ for nodes in [1, 16]:
     text_file.write("export OMP_NUM_THREADS=%s\n\n" % OMP_NUM_THREADS)
 
     text_file.write("ibrun %s -model CP -tensor o1 -pp 0 -dim 4 -rank 10 -maxiter 250 -filename CP_o1_nodes=%s_pp=0_rank=10.csv -resprint 10\n" % (exe,nodes))
-    text_file.write("ibrun %s -model CP -tensor o1 -pp 1 -dim 4 -rank 10 -maxiter 250 -filename CP_o1_nodes=%s_pp=1_rank=10_restol=0.05.csv -restol 0.05 -resprint 10\n" % (exe,nodes))
-    text_file.write("ibrun %s -model CP -tensor o1 -pp 1 -dim 4 -rank 10 -maxiter 250 -filename CP_o1_nodes=%s_pp=1_rank=10_restol=0.1.csv -restol 0.1 -resprint 10\n\n" % (exe,nodes))
+    text_file.write("ibrun %s -model CP -tensor o1 -pp 1 -dim 4 -rank 10 -maxiter 250 -filename CP_o1_nodes=%s_pp=1_rank=10_restol=0.05.csv -pp_res_tol 0.05 -resprint 10\n" % (exe,nodes))
+    text_file.write("ibrun %s -model CP -tensor o1 -pp 1 -dim 4 -rank 10 -maxiter 250 -filename CP_o1_nodes=%s_pp=1_rank=10_restol=0.1.csv -pp_res_tol 0.1 -resprint 10\n\n" % (exe,nodes))
 
     text_file.write("ibrun %s -model CP -tensor o2 -pp 0 -dim 4 -rank 10 -maxiter 250 -filename CP_o2_nodes=%s_pp=0_rank=10.csv -resprint 10\n" % (exe,nodes))
-    text_file.write("ibrun %s -model CP -tensor o2 -pp 1 -dim 4 -rank 10 -maxiter 250 -filename CP_o2_nodes=%s_pp=1_rank=10_restol=0.05.csv -restol 0.05 -resprint 10\n" % (exe,nodes))
-    text_file.write("ibrun %s -model CP -tensor o2 -pp 1 -dim 4 -rank 10 -maxiter 250 -filename CP_o2_nodes=%s_pp=1_rank=10_restol=0.1.csv -restol 0.1 -resprint 10\n\n" % (exe,nodes))
+    text_file.write("ibrun %s -model CP -tensor o2 -pp 1 -dim 4 -rank 10 -maxiter 250 -filename CP_o2_nodes=%s_pp=1_rank=10_restol=0.05.csv -pp_res_tol 0.05 -resprint 10\n" % (exe,nodes))
+    text_file.write("ibrun %s -model CP -tensor o2 -pp 1 -dim 4 -rank 10 -maxiter 250 -filename CP_o2_nodes=%s_pp=1_rank=10_restol=0.1.csv -pp_res_tol 0.1 -resprint 10\n\n" % (exe,nodes))
 
-    text_file.write("ibrun %s -model Tucker -tensor o1 -pp 0 -dim 4 -maxiter 250 -filename Tucker_o1_nodes=%s_pp=0.csv -resprint 10\n" % (exe,nodes))
-    text_file.write("ibrun %s -model Tucker -tensor o1 -pp 1 -dim 4 -maxiter 250 -filename Tucker_o1_nodes=%s_pp=1_restol=0.5.csv -restol 0.5 -resprint 10\n" % (exe,nodes))
-    text_file.write("ibrun %s -model Tucker -tensor o1 -pp 1 -dim 4 -maxiter 250 -filename Tucker_o1_nodes=%s_pp=1_restol=0.1.csv -restol 0.1 -resprint 10\n\n" % (exe,nodes))
+    text_file.write("ibrun %s -model Tucker -tensor o1 -pp 0 -dim 4 -maxiter 250 -filename Tucker_o1_nodes=%s_pp=0.csv -resprint 1\n" % (exe,nodes))
+    text_file.write("ibrun %s -model Tucker -tensor o1 -pp 1 -dim 4 -maxiter 250 -filename Tucker_o1_nodes=%s_pp=1_restol=0.5.csv -pp_res_tol 0.5 -resprint 1\n" % (exe,nodes))
+    text_file.write("ibrun %s -model Tucker -tensor o1 -pp 1 -dim 4 -maxiter 250 -filename Tucker_o1_nodes=%s_pp=1_restol=0.1.csv -pp_res_tol 0.1 -resprint 1\n\n" % (exe,nodes))
 
-    text_file.write("ibrun %s -model Tucker -tensor o2 -pp 0 -dim 4 -maxiter 250 -filename Tucker_o2_nodes=%s_pp=0.csv -resprint 10\n" % (exe,nodes))
-    text_file.write("ibrun %s -model Tucker -tensor o2 -pp 1 -dim 4 -maxiter 250 -filename Tucker_o2_nodes=%s_pp=1_restol=0.5.csv -restol 0.5 -resprint 10\n" % (exe,nodes))
-    text_file.write("ibrun %s -model Tucker -tensor o2 -pp 1 -dim 4 -maxiter 250 -filename Tucker_o2_nodes=%s_pp=1_restol=0.1.csv -restol 0.1 -resprint 10\n\n" % (exe,nodes))
+    text_file.write("ibrun %s -model Tucker -tensor o2 -pp 0 -dim 4 -maxiter 250 -filename Tucker_o2_nodes=%s_pp=0.csv -resprint 1\n" % (exe,nodes))
+    text_file.write("ibrun %s -model Tucker -tensor o2 -pp 1 -dim 4 -maxiter 250 -filename Tucker_o2_nodes=%s_pp=1_restol=0.5.csv -pp_res_tol 0.5 -resprint 1\n" % (exe,nodes))
+    text_file.write("ibrun %s -model Tucker -tensor o2 -pp 1 -dim 4 -maxiter 250 -filename Tucker_o2_nodes=%s_pp=1_restol=0.1.csv -pp_res_tol 0.1 -resprint 1\n\n" % (exe,nodes))
 
 
     text_file.close()
