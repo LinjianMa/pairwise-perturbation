@@ -42,8 +42,8 @@ for nodes in [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]:
     rank = int(4*nodes**(1./6))
 
     text_file.write("ibrun test_suite\n")
-    text_file.write("ibrun %s -model CP -tensor r -dim 6 -size %s -rank %s -maxiter 5 -filename CP_r_nodes=%s_processes=%s_dim=6_size=%s_rank=5_bench.csv -resprint 1\n" % (exe,size,rank,nodes,mpitask,size))
-    text_file.write("ibrun %s -model Tucker -tensor r2 -dim 6 -size %s -rank %s -maxiter 5 -filename Tucker_r2_nodes=%s_processes=%s_dim=6_size=%s_rank=4_bench.csv -resprint 1\n" % (exe,size,rank,nodes,mpitask,size))
+    text_file.write("ibrun %s -model CP -tensor r -dim 6 -size %s -rank %s -maxiter 5 -filename CP_r_nodes=%s_processes=%s_dim=6_size=%s_rank=%s_bench.csv -resprint 1\n" % (exe,size,rank,nodes,mpitask,size,rank))
+    text_file.write("ibrun %s -model Tucker -tensor r2 -dim 6 -size %s -rank %s -maxiter 5 -filename Tucker_r2_nodes=%s_processes=%s_dim=6_size=%s_rank=%s_bench.csv -resprint 1\n" % (exe,size,rank,nodes,mpitask,size,rank))
 
 
     text_file.close()

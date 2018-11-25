@@ -42,8 +42,8 @@ for nodes in [16, 32, 64, 128, 256]:
     # dim = 6
     # size = int(30*nodes**(1./dim))
 
-    text_file.write("ibrun %s -model CP -tensor r -dim 6 -size 50 -rank 5 -maxiter 5 -filename CP_r_nodes=%s_processes=%s_dim=6_size=50_rank=5_bench.csv -resprint 1\n" % (exe,nodes,mpitask))
-    text_file.write("ibrun %s -model Tucker -tensor r2 -dim 6 -size 50 -rank 4 -maxiter 5 -filename Tucker_r2_nodes=%s_processes=%s_dim=6_size=50_rank=4_bench.csv -resprint 1\n" % (exe,nodes,mpitask))
+    text_file.write("ibrun %s -model CP -tensor r -dim 6 -size 50 -rank 6 -maxiter 5 -filename CP_r_nodes=%s_processes=%s_dim=6_size=50_rank=6_bench.csv -resprint 1\n" % (exe,nodes,mpitask))
+    text_file.write("ibrun %s -model Tucker -tensor r2 -dim 6 -size 50 -rank 6 -maxiter 5 -filename Tucker_r2_nodes=%s_processes=%s_dim=6_size=50_rank=6_bench.csv -resprint 1\n" % (exe,nodes,mpitask))
 
 
     text_file.close()
