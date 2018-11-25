@@ -23,8 +23,8 @@ for nodes in [1, 16, 256]:
     text_file.write("#!/bin/bash\n")
     text_file.write("#----------------------------------------------------\n\n\n")
     text_file.write("#SBATCH -J %s\n" % jobname)
-    text_file.write("#SBATCH -o pp.bench.real_data.N%s.n%s.o%%j.out\n" % (nodes,mpitask))
-    text_file.write("#SBATCH -e pp.bench.real_data.N%s.n%s.o%%j.err\n" % (nodes,mpitask))
+    text_file.write("#SBATCH -o pp.bench.syn_data.N%s.n%s.o%%j.out\n" % (nodes,mpitask))
+    text_file.write("#SBATCH -e pp.bench.syn_data.N%s.n%s.o%%j.err\n" % (nodes,mpitask))
     text_file.write("#SBATCH -p %s\n" % queue)
     text_file.write("#SBATCH -N %s\n" % nodes)
     text_file.write("#SBATCH -n %s\n" % mpitask)
@@ -55,7 +55,7 @@ for nodes in [1, 16, 256]:
     text_file.write("ibrun %s -model CP -tensor c -pp 1 -dim 6 -size %s -rank %s -maxiter 250 -filename CP_c_nodes=%s_pp=1_dim=6_size=%s_rank=5_restol=0.005.csv -pp_res_tol 0.005 -resprint 10\n\n" % (exe,size,rank,nodes,size))
 
 
-    size = int(13.5*nodes**(1./8))
+    size = int(13*nodes**(1./8))
     rank = 2
 
     text_file.write("ibrun %s -model CP -tensor p -pp 0 -dim 8 -size %s -rank %s -maxiter 250 -filename CP_p_nodes=%s_pp=0_dim=8_size=%s_rank=2.csv -resprint 10\n" % (exe,size,rank,nodes,size))
