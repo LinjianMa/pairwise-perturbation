@@ -39,3 +39,9 @@ mpirun n -model CP -tensor o2 -pp 0 -dim 4 -rank 10 -maxiter 250
 ## Benchmark experiments and tests on synthetic data
 
 Commands for these tests are in `script_strongscaling.py`, `script_weakscaling.py`, `script_synthetic.py`, `script_real.py` in the script folder. 
+
+## Acknowledging Usage
+
+The source code is available to everyone. If you would like to acknowledge the usage of the code, please cite the [following paper](https://arxiv.org/abs/1811.10573):
+
+Linjian Ma and Edgar Solomonik; Accelerating Alternating Least Squares for Tensor Decomposition by Pairwise Perturbation; arXiv:1811.10573 \[math.NA\], November 2018.
