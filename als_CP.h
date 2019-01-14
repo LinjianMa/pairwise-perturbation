@@ -3,6 +3,7 @@
 
 #include <ctf.hpp>
 #include <fstream>
+#include <tuple>
 using namespace CTF;
 
 /**
@@ -14,20 +15,20 @@ using namespace CTF;
  *  tol: tolerance for a relative stopping condition
  *  timelimit, maxiter: limit of time and iterations
  */
-bool alsCP(Tensor<> & V, 
-       Matrix<> * W, 
-       Matrix<> * grad_W, 
+bool alsCP(Tensor<> & V,
+       Matrix<> * W,
+       Matrix<> * grad_W,
        Matrix<> * F,
-       double tol, 
-       double timelimit, 
-       int maxiter, 
+       double tol,
+       double timelimit,
+       int maxiter,
        World & dw);
 
-void mttkrp_map_DT(map<string,Tensor<>>& mttkrp_map, 
-           map<string,string>& parent, 
-           map<string,string>& sibling, 
-           Tensor<>& V, 
-           Matrix<> * W, 
+void mttkrp_map_DT(map<string,Tensor<>>& mttkrp_map,
+           map<string,string>& parent,
+           map<string,string>& sibling,
+           Tensor<>& V,
+           Matrix<> * W,
            string args,
            World& dw) ;
 
@@ -41,13 +42,13 @@ void mttkrp_map_DT(map<string,Tensor<>>& mttkrp_map,
  *  timelimit, maxiter: limit of time and iterations
  *  V.order should be >=4
  */
-bool alsCP_DT(Tensor<> & V, 
-			  Matrix<> * W, 
-			  Matrix<> * grad_W, 
+bool alsCP_DT(Tensor<> & V,
+			  Matrix<> * W,
+			  Matrix<> * grad_W,
 			  Matrix<> * F,
-			  double tol, 
-			  double timelimit, 
-			  int maxiter, 
+			  double tol,
+			  double timelimit,
+			  int maxiter,
 			  double lambda,
         	  ofstream & Plot_File,
         	  int resprint,
@@ -55,13 +56,13 @@ bool alsCP_DT(Tensor<> & V,
 			  World & dw) ;
 
 // [cd] --> [ab*]
-void stringbuilder_mttkrp(char* seq, 
+void stringbuilder_mttkrp(char* seq,
            char* seq_return,
-           int N, 
+           int N,
            World & dw);
 
-void Build_mttkrp_map(map<string, Tensor<>> & mttkrp_map, 
-            Tensor<> & V, 
+void Build_mttkrp_map(map<string, Tensor<>> & mttkrp_map,
+            Tensor<> & V,
             Matrix<> * W,
             char* seq,
             World & dw);
@@ -79,13 +80,13 @@ void build_V(Tensor<> & V,
  *  tol: tolerance for a relative stopping condition
  *  timelimit, maxiter: limit of time and iterations
  */
-// bool alsCP_mod(Tensor<> & V, 
-//          Matrix<> * W, 
-//          Matrix<> * grad_W, 
+// bool alsCP_mod(Tensor<> & V,
+//          Matrix<> * W,
+//          Matrix<> * grad_W,
 //          Matrix<> * F,
-//          double tol, 
-//          double timelimit, 
-//          int maxiter, 
+//          double tol,
+//          double timelimit,
+//          int maxiter,
 //          World & dw) ;
 
 /**
@@ -95,15 +96,15 @@ void build_V(Tensor<> & V,
  *  tol: tolerance for a relative stopping condition
  *  timelimit, maxiter: limit of time and iterations
  */
-double alsCP_DT_sub(Tensor<> & V, 
-					  Matrix<> * W, 
-        	  		  Matrix<> * grad_W, 
+double alsCP_DT_sub(Tensor<> & V,
+					  Matrix<> * W,
+        	  		  Matrix<> * grad_W,
 					  Matrix<> * dW,
 					  Matrix<> * F,
-					  double tol, 
+					  double tol,
 					  double tol_init,
-					  double timelimit, 
-					  int maxiter, 
+					  double timelimit,
+					  int maxiter,
 					  double & st_time,
 					  ofstream & Plot_File,
 					  double & projnorm,
@@ -118,15 +119,15 @@ double alsCP_DT_sub(Tensor<> & V,
  *  tol: tolerance for a relative stopping condition
  *  timelimit, maxiter: limit of time and iterations
  */
-double alsCP_PP_sub(Tensor<> & V, 
-				  	  Matrix<> * W, 
-        	  		  Matrix<> * grad_W, 
+double alsCP_PP_sub(Tensor<> & V,
+				  	  Matrix<> * W,
+        	  		  Matrix<> * grad_W,
 				  	  Matrix<> * dW,
 				  	  Matrix<> * F,
-				  	  double tol, 
+				  	  double tol,
 				  	  double tol_init,
-				  	  double timelimit, 
-				  	  int maxiter, 
+				  	  double timelimit,
+				  	  int maxiter,
 				  	  double & st_time,
 				  	  ofstream & Plot_File,
 				  	  double & projnorm,
@@ -142,14 +143,14 @@ double alsCP_PP_sub(Tensor<> & V,
  *  tol: tolerance for a relative stopping condition
  *  timelimit, maxiter: limit of time and iterations
  */
-bool alsCP_PP(Tensor<> & V, 
-        	  Matrix<> * W, 
-        	  Matrix<> * grad_W, 
+bool alsCP_PP(Tensor<> & V,
+        	  Matrix<> * W,
+        	  Matrix<> * grad_W,
         	  Matrix<> * F,
-        	  double tol, 
+        	  double tol,
         	  double tol_init,
-        	  double timelimit, 
-        	  int maxiter, 
+        	  double timelimit,
+        	  int maxiter,
         	  double lambda,
         	  double ratio_step,
           	  ofstream & Plot_File,
@@ -158,4 +159,12 @@ bool alsCP_PP(Tensor<> & V,
           	  World & dw) ;
 
 
+bool alsCP_rank1(Tensor<> & V,
+		   Matrix<> * W,
+		   Matrix<> * grad_W,
+		   double tol,
+       double tol_rank1,
+		   double timelimit,
+		   int maxiter,
+		   World & dw);
 #endif
