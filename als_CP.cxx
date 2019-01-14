@@ -1096,8 +1096,8 @@ bool alsCP_rank1(Tensor<> & V,
 	int tensor1_len[V.order];
 	int tensor2_len[V.order];
 	for (int i=0; i<V.order; i++){
-		tensor1_len[i] = V.len[i];
-		tensor2_len[i] = V.len[i];
+		tensor1_len[i] = V.lens[i];
+		tensor2_len[i] = V.lens[i];
 	}
 	tensor1_len[0] = W[0].ncol;
 	tensor2_len[V.order/2+1] = W[0].ncol;
@@ -1108,26 +1108,32 @@ bool alsCP_rank1(Tensor<> & V,
 	update_cached_tensor(V, W, cached_tensor2, seq, V.order/2+1);
 
 	build_1st_level(mttkrp_map, V, W, cached_tensor1, cached_tensor2, dw);
-	fill_mttkrp_tree(mttkrp_map, W, seq, 0, V.order/2);
-	fill_mttkrp_tree(mttkrp_map, W, seq, V.order/2+1, V.order-1);
+	fill_mttkrp_tree(mttkrp_map, W, seq, 0, V.order/2, dw);
+	fill_mttkrp_tree(mttkrp_map, W, seq, V.order/2+1, V.order-1, dw);
 
 	double tempnorm;
 	tuple<int, int> interval;
 	int start, end;
 	Tensor<> res_tensor;
-	Matrix<> gamma;
+	Matrix<> gamma, M, A_old;
 	// Perform ALS for CP with dimension tree. The loop will be broke out if maximum iterations or maximum time is exceeded.
-	while (iter<maxiter && projnorm>tol){
+	while (iter<maxiter && gradnorm>tol){
 		gradnorm = 0;
 
 		for (int i = 0; i<V.order; i++){
 			// first compute the mttkrp and S via dimension tree
+			A_old = W[i]; // to compute G
 			interval = find_interval(i, 0, V.order-1);
 			start = get<0>(interval); end = get<1>(interval);
 			char name[4]; name[2] = '\0'; name[3]='\0';
 			for (int i=start; i<=end; i++){name[i-start]=seq[i];}
 			res_tensor = mttkrp_map[name];
 			gamma = gamma_map[name];
+			M = Matrix<>(W[0].nrow, W[0].ncol);
+			compute_gamma(gamma, W, i, start, end);
+			compute_M(M, res_tensor, W, i, start, end, dw);
+
+			SVD_solve(M, W[i], gamma);
 
 			// If i is one of the special index, we need to update the cached_tensors
 			if (i==0){
@@ -1138,12 +1144,12 @@ bool alsCP_rank1(Tensor<> & V,
 				update_cached_tensor(V,W, cached_tensor2, seq, V.order/2+1);
 				build_left_child(mttkrp_map, V, W, cached_tensor2, dw);
 			}
-			update_mttkrp_tree(mttkrp_map, W, seq, i, 0, V.order-1)
+			update_mttkrp_tree(mttkrp_map, W, seq, i, 0, V.order-1);
 			update_gamma_tree(gamma_map, S, seq, i, 0, V.order-1);
 			tempnorm = grad_W[i].norm2(); // gradient 2-norm squared
 			gradnorm += tempnorm*tempnorm;
 		}
-		projnorm = sqrt(projnorm);
+		gradnorm = sqrt(gradnorm);
 		iter++;
 		if (MPI_Wtime()-start_time > timelimit) {exceedsMaxTime = true; break;}
 	}
@@ -1279,7 +1285,7 @@ void update_cached_tensor(Tensor<> &V, Matrix<> *W, Tensor<>* cached_tensor, cha
 /** Fill in the mttkrp map. Starting from the 1st level down.
 */
 
-void fill_mttkrp_tree(unordered_map<string, Tensor<>>mttkrp_map, Matrix<> *W, char *seq, int start, int end){
+void fill_mttkrp_tree(unordered_map<string, Tensor<>>mttkrp_map, Matrix<> *W, char *seq, int start, int end, World &dw){
 	if (end==start+1 || end==start+2) return;
 	int mid = (start+end)/2;
 	int child1_len = mid-start+1;
@@ -1305,7 +1311,7 @@ void fill_mttkrp_tree(unordered_map<string, Tensor<>>mttkrp_map, Matrix<> *W, ch
 	// compute M(3,4) i.e. the second child
 	char seq2[prev.order+1]; seq2[prev.order]='\0';
 	for (int i=0; i<prev.order; i++){seq2[i]='a'+i;}
-	char seq_w[3]; seq_w[2]='\0'; seq_w[1] = seq_prev[prev.order-1];
+	char seq_w[3]; seq_w[2]='\0'; seq_w[1] = seq2[prev.order-1];
 	int len[prev.order]; for (int i=0; i<prev.order; i++) len[i]=prev.lens[i];
 	int ndim = prev.order-1;
 	for (int i=start;i<=mid; i++){
@@ -1424,4 +1430,47 @@ tuple<int, int> find_interval(int index, int start, int end){
 	int mid = (start+end)/2;
 	if (start<=index && index<=mid) return find_interval(index, start, mid);
 	else return find_interval(index, mid+1, end);
+}
+
+/** Compute the result gamma matrix. res is imported as a partial result.
+	*/
+void compute_gamma(Matrix<> &res, Matrix<> *W, int index, int start, int end){
+	for (int i=start; i<=end; i++){
+		if (i!=index){
+			res["ij"] = W[i]["ij"]*res["ij"];
+		}
+	}
+}
+
+void compute_M(Matrix<> &M, Tensor<> &res, Matrix<> *W, int index, int start, int end, World &dw){
+	if (start+1==end){
+		//Tensor<> temp;
+		if (index==start){
+			//int len[] = {res.lens[1], res.lens[2]};
+			//temp = Tensor<>(2, len, dw);
+			M["ik"] = res["ijk"]*W[end]["jk"];
+		}
+		else {M["jk"] = res["ijk"]*W[start]["ik"];}
+	}
+	else if (start+2==end){
+		Tensor<> temp;
+		if (start==index){
+			int len[] = {res.lens[0], res.lens[2], res.lens[3]};
+			temp = Tensor<>(3, len, dw);
+			temp["ikl"] = res["ijkl"]*W[start+1]["jl"];
+			M["il"] = temp["ikl"]*W[end]["kl"];
+		}
+		else if (end==index){
+			int len[] = {res.lens[1], res.lens[2], res.lens[3]};
+			temp = Tensor<>(3, len, dw);
+			temp["jkl"] = res["ijkl"]*W[start+1]["il"];
+			M["kl"] = temp["jkl"]*W[end]["jl"];
+		}
+		else {
+			int len[] = {res.lens[1], res.lens[2], res.lens[3]};
+			temp = Tensor<>(3, len, dw);
+			temp["jkl"] = res["ijkl"]*W[start+1]["il"];
+			M["jl"] = temp["jkl"]*W[end]["kl"];
+		}
+	}
 }

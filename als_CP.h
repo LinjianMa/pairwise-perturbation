@@ -4,6 +4,7 @@
 #include <ctf.hpp>
 #include <fstream>
 #include <tuple>
+#include <unordered_map>
 using namespace CTF;
 
 /**
@@ -167,4 +168,31 @@ bool alsCP_rank1(Tensor<> & V,
 		   double timelimit,
 		   int maxiter,
 		   World & dw);
+
+
+void build_BDT(unordered_map<string, string> &parent_map, char* seq, int start, int end);
+
+void build_1st_level(unordered_map<string, Tensor<>> &mttkrp_map, Tensor<> &V, Matrix<>*W, Tensor<> *cached_tensor1, Tensor<> *cached_tensor2, World &dw);
+
+void build_left_child(unordered_map<string, Tensor<>> &mttkrp_map, Tensor<> &V, Matrix<>*W, Tensor<> *cached_tensor2, World &dw);
+
+void build_right_child(unordered_map<string, Tensor<>> &mttkrp_map, Tensor<> &V, Matrix<>*W, Tensor<> *cached_tensor1, World &dw);
+
+void update_cached_tensor(Tensor<> &V, Matrix<> *W, Tensor<>* cached_tensor, char* seq, int i);
+
+void fill_mttkrp_tree(unordered_map<string, Tensor<>>mttkrp_map, Matrix<> *W, char *seq, int start, int end, World &dw);
+
+void fill_gamma_tree(unordered_map<string, Matrix<>> &gamma_map, Matrix<> *S, char* seq, int start, int end);
+
+void update_gamma_tree(unordered_map<string, Matrix<>> &gamma_map, Matrix<>* S, char* seq, int index, int start, int end);
+
+tuple<int, int> find_interval(int index, int start, int end);
+
+void compute_gamma(Matrix<> &res, Matrix<> *W, int index, int start, int end);
+
+void compute_M(Matrix<> &M, Tensor<> &res, Matrix<> *W, int index, int start, int end, World &dw);
+
+
+
+
 #endif
