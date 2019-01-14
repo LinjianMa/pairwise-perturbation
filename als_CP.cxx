@@ -1138,13 +1138,14 @@ bool alsCP_rank1(Tensor<> & V,
 			// If i is one of the special index, we need to update the cached_tensors
 			if (i==0){
 				update_cached_tensor(V, W, cached_tensor1, seq, 0);
-				build_right_child(mttkrp_map, V, W, cached_tensor1, dw);
+				build_1st_level_right_child(mttkrp_map, V, W, cached_tensor1, dw);
 			}
 			else if (i==V.order/2+1) {
 				update_cached_tensor(V,W, cached_tensor2, seq, V.order/2+1);
-				build_left_child(mttkrp_map, V, W, cached_tensor2, dw);
+				build_1st_level_left_child(mttkrp_map, V, W, cached_tensor2, dw);
 			}
-			update_mttkrp_tree(mttkrp_map, W, seq, i, 0, V.order-1);
+			update_mttkrp_tree(mttkrp_map, W, seq, i, 0, V.order-1, dw);
+			S[i]["ij"] = W[i]["ki"]*W[i]["kj"];
 			update_gamma_tree(gamma_map, S, seq, i, 0, V.order-1);
 			tempnorm = grad_W[i].norm2(); // gradient 2-norm squared
 			gradnorm += tempnorm*tempnorm;
@@ -1190,11 +1191,11 @@ void build_BDT(unordered_map<string, string> &parent_map, char* seq, int start, 
 }
 
 void build_1st_level(unordered_map<string, Tensor<>> &mttkrp_map, Tensor<> &V, Matrix<>*W, Tensor<> *cached_tensor1, Tensor<> *cached_tensor2, World &dw){
-	build_left_child(mttkrp_map, V, W, cached_tensor2, dw);
-	build_right_child(mttkrp_map, V, W, cached_tensor1, dw);
+	build_1st_level_left_child(mttkrp_map, V, W, cached_tensor2, dw);
+	build_1st_level_right_child(mttkrp_map, V, W, cached_tensor1, dw);
 }
 
-void build_left_child(unordered_map<string, Tensor<>> &mttkrp_map, Tensor<> &V, Matrix<>*W, Tensor<> *cached_tensor2, World &dw){
+void build_1st_level_left_child(unordered_map<string, Tensor<>> &mttkrp_map, Tensor<> &V, Matrix<>*W, Tensor<> *cached_tensor2, World &dw){
 	// compute the first level tree nodes
 	// first compute M(1,2) (if the original tensor is M(1,2,3,4)) which is M(1,2,3,4) *W[3] *W[4]
 	// This is the easier of the two because there is no change of order of modes.
@@ -1226,7 +1227,7 @@ void build_left_child(unordered_map<string, Tensor<>> &mttkrp_map, Tensor<> &V, 
 	mttkrp_map[child1_name] = prev;
 }
 
-void build_right_child(unordered_map<string, Tensor<>> &mttkrp_map, Tensor<> &V, Matrix<>*W, Tensor<> *cached_tensor1, World &dw){
+void build_1st_level_right_child(unordered_map<string, Tensor<>> &mttkrp_map, Tensor<> &V, Matrix<>*W, Tensor<> *cached_tensor1, World &dw){
 	int child1_name_len = V.order/2+1;
 	int child2_name_len = V.order - V.order/2-1; //V.order-1- (V.order/2+1)+1;
 	char child2_name[child2_name_len+1]; child2_name[child2_name_len]='\0';
@@ -1269,7 +1270,6 @@ void build_right_child(unordered_map<string, Tensor<>> &mttkrp_map, Tensor<> &V,
 	//char seq_prev[V.order+1]; seq_prev[V.order]='\0';
 	//for (int i=0; i<prev.order; i++) {seq_prev[i] = 'a'+i; seq_temp[i] = seq_prev[i];}
 	//seq_temp[V.order-1]='\0';
-
 }
 
 void update_cached_tensor(Tensor<> &V, Matrix<> *W, Tensor<>* cached_tensor, char* seq, int i){
@@ -1285,11 +1285,64 @@ void update_cached_tensor(Tensor<> &V, Matrix<> *W, Tensor<>* cached_tensor, cha
 /** Fill in the mttkrp map. Starting from the 1st level down.
 */
 
-void fill_mttkrp_tree(unordered_map<string, Tensor<>>mttkrp_map, Matrix<> *W, char *seq, int start, int end, World &dw){
+void fill_mttkrp_tree(unordered_map<string, Tensor<>> &mttkrp_map, Matrix<> *W, char *seq, int start, int end, World &dw){
 	if (end==start+1 || end==start+2) return;
+
 	int mid = (start+end)/2;
-	int child1_len = mid-start+1;
-	char child1[child1_len+1];
+	build_left_child(mttkrp_map, W, seq, start, end, dw);
+	build_right_child(mttkrp_map, W, seq, start, end, dw);
+
+	fill_mttkrp_tree(mttkrp_map, W, seq, start, mid, dw);
+	fill_mttkrp_tree(mttkrp_map, W, seq, mid+1, end, dw);
+}
+
+void build_left_child(unordered_map<string, Tensor<>> &mttkrp_map, Matrix<> *W, char *seq, int start, int end, World &dw){
+		int mid = (start+end)/2;
+		int child1_len = mid-start+1;
+		char child1[child1_len+1];
+		int parent_len = end-start+1;
+		char parent[parent_len+1];
+		for (int i = 0; i<parent_len; i++){
+			parent[i] = seq[start+i];
+		}
+		parent[end-start+1] = '\0';
+		for (int i = 0; i<child1_len; i++){
+			child1[i] = seq[start+i];
+		}
+		child1[child1_len+1] = '\0';
+
+		//compute M(1,2), the first child
+		Tensor<> prev = mttkrp_map[parent];
+		int ndim = prev.order-1;
+		char seq2[prev.order+1]; seq2[prev.order]='\0';
+		for (int i=0; i<prev.order; i++){seq2[i]='a'+i;}
+		char seq3[prev.order+1]; seq3[prev.order]='\0';
+		for (int i=0; i<prev.order; i++) {seq3[i]='a'+i;}
+		int len[prev.order];
+		for (int i=0; i<prev.order; i++){len[i]=prev.lens[i];}
+		int pos = prev.order-1-1; // position of the last mode
+		int last_len = len[prev.order-1];
+		char last_char = 'a'+prev.order;
+		char seq_w[3]; seq_w[2]='\0';
+		seq_w[1] = last_char;
+		Tensor<> temp;
+		for (int i=end; i>mid; i--){
+			seq3[pos]=last_char; seq3[pos+1]='\0';
+			seq2[pos-1] = last_char; seq3[pos]='\0';
+			seq_w[0] = seq3[pos-1];
+			len[pos] = last_len;
+			temp = Tensor<>(ndim, len, dw);
+			temp[seq2] = prev[seq3]*W[i][seq_w];
+			prev = temp;
+			ndim--;
+			pos--;
+		}
+		mttkrp_map[child1] = prev;
+}
+
+
+void build_right_child(unordered_map<string, Tensor<>> &mttkrp_map, Matrix<> *W, char *seq, int start, int end, World &dw){
+	int mid = (start+end)/2;
 	int child2_len = end-mid;
 	char child2[child2_len+1]; // end-(mid+1)+2
 	int parent_len = end-start+1;
@@ -1298,10 +1351,6 @@ void fill_mttkrp_tree(unordered_map<string, Tensor<>>mttkrp_map, Matrix<> *W, ch
 		parent[i] = seq[start+i];
 	}
 	parent[end-start+1] = '\0';
-	for (int i = 0; i<child1_len; i++){
-		child1[i] = seq[start+i];
-	}
-	child1[child1_len+1] = '\0';
 	for (int i = 0; i<child2_len; i++){
 		child2[i] = seq[mid+1+i];
 	}
@@ -1314,35 +1363,26 @@ void fill_mttkrp_tree(unordered_map<string, Tensor<>>mttkrp_map, Matrix<> *W, ch
 	char seq_w[3]; seq_w[2]='\0'; seq_w[1] = seq2[prev.order-1];
 	int len[prev.order]; for (int i=0; i<prev.order; i++) len[i]=prev.lens[i];
 	int ndim = prev.order-1;
+	Tensor<> temp;
 	for (int i=start;i<=mid; i++){
 		seq_w[0]= seq2[i-start];
-		Tensor<> temp = Tensor<>(ndim, len+1+i-start, dw);
+		temp = Tensor<>(ndim, len+1+i-start, dw);
 		temp[seq2+1+i-start] = prev[seq2+i-start]*W[i][seq_w];
 		prev = temp;
 		ndim--;
 	}
 	mttkrp_map[child2] = prev;
+}
 
-	//compute M(1,2), the first child
-	prev = mttkrp_map[parent];
-	ndim = prev.order-1;
-	char seq3[prev.order+1]; seq3[prev.order]='\0';
-	for (int i=0; i<prev.order; i++) {seq3[i]='a'+i;}
-	int pos = prev.order-1-1; // position of the last mode
-	int last_len = len[prev.order-1];
-	char last_char = 'a'+prev.order;
-	seq_w[1] = last_char;
-	for (int i=end; i>mid; i--){
-		seq3[pos]=last_char; seq3[pos+1]='\0';
-		seq2[pos-1] = last_char; seq3[pos]='\0';
-		len[pos] = last_len;
-		Tensor<> temp = Tensor<>(ndim, len, dw);
-		temp[seq2] = prev[seq3]*W[i][seq_w];
-		prev = temp;
-		ndim--;
-		pos--;
-	}
-	mttkrp_map[child1] = prev;
+void update_mttkrp_tree(unordered_map<string, Tensor<>>&mttkrp_map, Matrix<> *W, char* seq, int index, int start, int end, World &dw){
+	if (end==start+1 || end==start+2) return;
+
+	int mid = (start+end)/2;
+	if (!(start<=index && index<=mid))	build_left_child(mttkrp_map, W, seq, start, end, dw);
+	if (!(mid+1<=index && index<=end)) 	build_right_child(mttkrp_map, W, seq, start, end, dw);
+
+	update_mttkrp_tree(mttkrp_map, W, seq, index, start, mid, dw);
+	update_mttkrp_tree(mttkrp_map, W, seq, index, mid+1, end, dw);
 }
 
 void fill_gamma_tree(unordered_map<string, Matrix<>> &gamma_map, Matrix<> *S, char* seq, int start, int end){
