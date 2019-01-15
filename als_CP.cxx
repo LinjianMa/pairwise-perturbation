@@ -1084,6 +1084,9 @@ bool alsCP_rank1(Tensor<> & V,
 	for (int i = 0; i<V.order; i++){S[i] = Matrix<>(W[0].ncol, W[0].ncol);}
 	for (int i = 1; i<V.order; i++){S[i]["ij"] = W[i]["ki"]*W[i]["kj"];}
 
+	Matrix<>* dA = new Matrix<>[V.order];
+	for (int i = 0; i<V.order; i++){dA[i] = Matrix<>(W[0].nrow, W[0].ncol);}
+
 	unordered_map<string, Tensor<>>mttkrp_map;
 	unordered_map<string, Matrix<>>gamma_map;
 	unordered_map<string, string>parent;
@@ -1134,6 +1137,9 @@ bool alsCP_rank1(Tensor<> & V,
 			compute_M(M, res_tensor, W, i, start, end, dw);
 
 			SVD_solve(M, W[i], gamma);
+			dA[i]["ij"] = A_old["ij"] - W[i]["ij"];
+
+			grad_W[i]["ij"] = dA[i]["ik"]*gamma["kj"];
 
 			// If i is one of the special index, we need to update the cached_tensors
 			if (i==0){
@@ -1155,6 +1161,7 @@ bool alsCP_rank1(Tensor<> & V,
 		if (MPI_Wtime()-start_time > timelimit) {exceedsMaxTime = true; break;}
 	}
 	delete[] S;
+	delete[] dA;
 	delete cached_tensor1;
 	delete cached_tensor2;
 	if (iter==maxiter || exceedsMaxTime) return false;

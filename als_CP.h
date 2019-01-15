@@ -198,7 +198,4 @@ void compute_gamma(Matrix<> &res, Matrix<> *W, int index, int start, int end);
 
 void compute_M(Matrix<> &M, Tensor<> &res, Matrix<> *W, int index, int start, int end, World &dw);
 
-
-
-
 #endif
