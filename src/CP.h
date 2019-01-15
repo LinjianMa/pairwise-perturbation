@@ -12,6 +12,7 @@ class CPD : public Decomposition<dtype> {
 
 		// grad_W: gradient in each dimension
 		Matrix<> * grad_W = NULL;
+		double gradnorm = 0.;
 
 		CPD(int order, int size, int r, World & dw);
 
@@ -22,6 +23,8 @@ class CPD : public Decomposition<dtype> {
 		~CPD();
 
 		void print_grad(int i) const;
+
+		void update_gradnorm();
 
 
 		/**

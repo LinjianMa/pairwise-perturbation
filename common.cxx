@@ -7,6 +7,12 @@
 #include "common.h"
 //#define ERR_REPORT
 
+void swap_char(char* seq, int i, int j) {
+	char temp = seq[j];
+	seq[j] = seq[i];
+	seq[i] = temp;
+}
+
 Matrix<> unroll_tensor_contraction(Tensor<>& T,
 									int i) {
 

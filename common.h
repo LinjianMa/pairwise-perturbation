@@ -4,6 +4,7 @@
 #include <ctf.hpp>
 using namespace CTF;
 
+void swap_char(char* seq, int i, int j);
 
 Matrix<> unroll_tensor_contraction(Tensor<>& T, int i);
 

@@ -50,6 +50,15 @@ CPD<dtype>::~CPD() {
 	}
 }
 
+template<typename dtype>
+void CPD<dtype>::update_gradnorm() {
+	gradnorm = 0;
+	for (int i=0; i<this->order; i++) { 
+		gradnorm += this->grad_W[i].norm2() * this->grad_W[i].norm2();
+	}
+	gradnorm = sqrt(gradnorm);
+}
+
 template<typename dtype>  
 bool CPD<dtype>::als(double tol, double timelimit, int maxiter) {
 
@@ -57,18 +66,17 @@ bool CPD<dtype>::als(double tol, double timelimit, int maxiter) {
 	int order = this->order;
 	int rank = this->rank[0];
 	double st_time = MPI_Wtime();
-	int iter; double projnorm; 
+	int iter;  
 	//make the char
-	char seq[order+1], seq_V[order+1];
-	seq[order] = '\0'; seq_V[order] = '\0'; 
+	char seq_V[order+1];
+	seq_V[order] = '\0'; 
 	for (int j=0; j<order; j++) {
-		seq[j] = 'a'+j;
-		seq_V[j] = seq[j];
+		seq_V[j] = 'a'+j;
 	}
 	/*  initialize matrix S
 	*	S["ij"] = W[0]["ki"]*W[0]["kj"]*W[1]["ki"]*W[1]["kj"]*W[2]["ki"]*W[2]["kj"]*W[3]["ki"]*...
 	*/
-	Matrix<> S = Matrix<>(rank,rank);
+	Matrix<dtype> S = Matrix<>(rank,rank);
 
 	for (iter=0; iter<=maxiter; iter++)
 	{
@@ -76,21 +84,15 @@ bool CPD<dtype>::als(double tol, double timelimit, int maxiter) {
 		if (iter%100==0 || iter==maxiter) {
 			//get the gradient
 			gradient_CP(*(this->V), this->W, this->grad_W, *dw);
-			projnorm = 0;
-			for (int i=0; i<order; i++) { 
-				projnorm += grad_W[i].norm2()*grad_W[i].norm2();
-			}
-			projnorm = sqrt(projnorm);
-			if(dw->rank==0) cout << "  [dim]=  " << this->size[0] << "  [iter]=  " << iter << "  [projnorm]  "<< projnorm << "  [tol]  " << tol  <<  "\n";
-			if ((projnorm < tol) || MPI_Wtime()-st_time > timelimit) 
+			update_gradnorm();
+			if(dw->rank==0) cout << "  [dim]=  " << this->size[0] << "  [iter]=  " << iter << "  [gradnorm]  "<< gradnorm << "  [tol]  " << tol  <<  "\n";
+			if ((gradnorm < tol) || MPI_Wtime()-st_time > timelimit) 
 				break;
 		}
 		// iteration on W[i]
 		for (int i=0; i<order; i++) { 
 			//make the char
-			char temp = seq_V[order-1];
-			seq_V[order-1] = seq_V[i];
-			seq_V[i] = temp;
+			swap_char(seq_V, i, order-1);
 			/*  construct Matrix M
 			*	M["dk"] = V["abcd"]*W1["ak"]*W2["bk"]*W3["ck"]
 			*/
@@ -114,384 +116,382 @@ bool CPD<dtype>::als(double tol, double timelimit, int maxiter) {
 			// subproblem M=W*S
 			SVD_solve(M, this->W[i], S);
 			// recover the char
-			temp = seq_V[order-1];
-			seq_V[order-1] = seq_V[i];
-			seq_V[i] = temp;
+			swap_char(seq_V, i, order-1);
 		}
 		Normalize(this->W, order, *dw);
 		// print .
 		if (iter%10==0 && dw->rank==0) printf(".");
 	}
 	if(dw->rank==0) {
-		printf ("\nIter = %d Final proj-grad norm %E \n", iter, projnorm);
+		printf ("\nIter = %d Final proj-grad norm %E \n", iter, gradnorm);
 		printf ("tf took %lf seconds\n",MPI_Wtime()-st_time);
 	}
 	if (iter == maxiter+1) return false;
 	else return true;
 }
 
-// void mttkrp_map_DT(map<string,Tensor<>>& mttkrp_map, 
-// 				   map<string,string>& parent, 
-// 				   map<string,string>& sibling, 
-// 				   Tensor<>& V, 
-// 				   Matrix<> * W, 
-// 				   string args,
-// 				   World& dw) {
-// 	int K = W[0].ncol;
-// 	if(mttkrp_map.find(args)!=mttkrp_map.end()) return;
-// 	char seq_w[3];
-// 	seq_w[2] = '\0'; seq_w[1] = '*'; 
-// 	if(args.length()==V.order/2 || args.length()==V.order/2+1) {
-// 		Tensor<> V_front = V;
-// 		Tensor<> V_temp; 
-// 		/* initial condition
-// 		*/
-// 		char seq[V_front.order+1], seq_f[V_front.order+1];
-// 		seq[V_front.order] = '\0';
-// 		char_string_copy(seq,0,parent[args],0,parent[args].length());
-// 		seq_f[V_front.order] = '\0';
-// 		seq_w[0] = sibling[args][0];
-// 		// make seq_f
-// 		int index_start = int(sibling[args][0]-'a');
-// 		char_string_copy(seq_f,0,parent[args],0,index_start);
-// 		char_string_copy(seq_f,index_start,parent[args],index_start+1,V.order-index_start-1);
-// 		seq_f[V.order-1] = '*';
-// 		// build len for V_temp
-// 		int lens_V[V.order];
-// 		for (int m=0; m<index_start; m++) {
-// 			lens_V[m] = V.lens[m];
-// 		}
-// 		for (int m=index_start+1; m<V.order; m++) {
-// 			lens_V[m-1] = V.lens[m];
-// 		}
-// 		lens_V[V.order-1] = K;
-// 		V_temp = Tensor<>(V.order, lens_V, dw);
-// 		// contraction
-// 		V_temp[seq_f] = V_front[seq]*W[index_start][seq_w];
-// 		V_front = V_temp;
-// 		/* loops
-// 		*/
-// 		for (int j=1; j<sibling[args].length(); j++) {     // iterate on [ab]
-// 			// make seq
-// 			seq[V_front.order] = '\0';
-// 			strncpy(seq,seq_f, strlen(seq_f));
-// 			// make seq_w
-// 			seq_w[0] = sibling[args][j];
-// 			// make seq_f
-// 			seq_f[V_front.order-1] = '\0';
-// 			seq_f[V_front.order-2] = '*';
-// 			char_string_copy(seq_f,0,parent[args],0,index_start);
-// 			char_string_copy(seq_f,index_start,parent[args],index_start+j+1,V.order-index_start-j-1);		
-// 			// build len for V_temp
-// 			int lens_V[V.order-j];
-// 			for (int m=0; m<index_start; m++) {
-// 				lens_V[m] = V.lens[m];
-// 			}
-// 			for (int m=index_start+j+1; m<V.order; m++) {
-// 				lens_V[m-j-1] = V.lens[m];
-// 			}
-// 			lens_V[V.order-j-1] = K;
-// 			V_temp = Tensor<>(V.order-j, lens_V, dw);
-// 			// contraction
-// 			V_temp[seq_f] = V_front[seq]*W[index_start+j][seq_w];
-// 			V_front = V_temp;
-// 		}
-// 		mttkrp_map[args] = V_front;
-// 		return;
-// 	}
-// 	if(mttkrp_map.find(parent[args])==mttkrp_map.end()) {
-// 		mttkrp_map_DT(mttkrp_map, parent, sibling, V, W, parent[args], dw);
-// 	}
-// 	/* Else
-// 	*/
-// 	Tensor<> V_temp; 
-// 	Tensor<> V_front = mttkrp_map[parent[args]];
-// 	Tensor<> V_parent = mttkrp_map[parent[args]];
-// 	int index_start = int(sibling[args][0]-parent[args][0]);
-// 	// make seq_f
-// 	char seq[V_front.order+1];
-// 	char seq_f[V_front.order+1];
-// 	seq_f[V_front.order] = '\0';
-// 	seq_f[V_front.order-1] = '*';
-// 	char_string_copy(seq_f,0,parent[args],0,parent[args].length());
-// 	/* loops */
-// 	for (int j=0; j<sibling[args].length(); j++) {     // iterate on [ab]
-// 		// make seq
-// 		seq[V_front.order] = '\0';
-// 		strncpy(seq,seq_f, strlen(seq_f));
-// 		// make seq_w
-// 		seq_w[0] = sibling[args][j];
-// 		// make seq_f
-// 		seq_f[V_front.order-1] = '\0';
-// 		seq_f[V_front.order-2] = '*';
-// 		char_string_copy(seq_f,0,parent[args],0,index_start);
-// 		char_string_copy(seq_f,index_start,parent[args],index_start+j+1,V_parent.order-index_start-j-2);				
-// 		// build len for V_temp
-// 		int lens_V[V_parent.order-j-1];
-// 		for (int m=0; m<index_start; m++) {
-// 			lens_V[m] = V_parent.lens[m];
-// 		}
-// 		for (int m=index_start+j+1; m<V_parent.order; m++) {
-// 			lens_V[m-j-1] = V_parent.lens[m];
-// 		}
-// 		lens_V[V_parent.order-j-2] = K;
-// 		V_temp = Tensor<>(V_parent.order-j-1, lens_V, dw);
-// 		// contraction
-// 		V_temp[seq_f] = V_front[seq]*W[seq_w[0]-'a'][seq_w];				
-// 		V_front = V_temp;
-// 	}
-// 	mttkrp_map[args] = V_front;
-// 	return;
-// }
+void mttkrp_map_DT(map<string,Tensor<>>& mttkrp_map, 
+				   map<string,string>& parent, 
+				   map<string,string>& sibling, 
+				   Tensor<>& V, 
+				   Matrix<> * W, 
+				   string args,
+				   World& dw) {
+	int K = W[0].ncol;
+	if(mttkrp_map.find(args)!=mttkrp_map.end()) return;
+	char seq_w[3];
+	seq_w[2] = '\0'; seq_w[1] = '*'; 
+	if(args.length()==V.order/2 || args.length()==V.order/2+1) {
+		Tensor<> V_front = V;
+		Tensor<> V_temp; 
+		/* initial condition
+		*/
+		char seq[V_front.order+1], seq_f[V_front.order+1];
+		seq[V_front.order] = '\0';
+		char_string_copy(seq,0,parent[args],0,parent[args].length());
+		seq_f[V_front.order] = '\0';
+		seq_w[0] = sibling[args][0];
+		// make seq_f
+		int index_start = int(sibling[args][0]-'a');
+		char_string_copy(seq_f,0,parent[args],0,index_start);
+		char_string_copy(seq_f,index_start,parent[args],index_start+1,V.order-index_start-1);
+		seq_f[V.order-1] = '*';
+		// build len for V_temp
+		int lens_V[V.order];
+		for (int m=0; m<index_start; m++) {
+			lens_V[m] = V.lens[m];
+		}
+		for (int m=index_start+1; m<V.order; m++) {
+			lens_V[m-1] = V.lens[m];
+		}
+		lens_V[V.order-1] = K;
+		V_temp = Tensor<>(V.order, lens_V, dw);
+		// contraction
+		V_temp[seq_f] = V_front[seq]*W[index_start][seq_w];
+		V_front = V_temp;
+		/* loops
+		*/
+		for (int j=1; j<sibling[args].length(); j++) {     // iterate on [ab]
+			// make seq
+			seq[V_front.order] = '\0';
+			strncpy(seq,seq_f, strlen(seq_f));
+			// make seq_w
+			seq_w[0] = sibling[args][j];
+			// make seq_f
+			seq_f[V_front.order-1] = '\0';
+			seq_f[V_front.order-2] = '*';
+			char_string_copy(seq_f,0,parent[args],0,index_start);
+			char_string_copy(seq_f,index_start,parent[args],index_start+j+1,V.order-index_start-j-1);		
+			// build len for V_temp
+			int lens_V[V.order-j];
+			for (int m=0; m<index_start; m++) {
+				lens_V[m] = V.lens[m];
+			}
+			for (int m=index_start+j+1; m<V.order; m++) {
+				lens_V[m-j-1] = V.lens[m];
+			}
+			lens_V[V.order-j-1] = K;
+			V_temp = Tensor<>(V.order-j, lens_V, dw);
+			// contraction
+			V_temp[seq_f] = V_front[seq]*W[index_start+j][seq_w];
+			V_front = V_temp;
+		}
+		mttkrp_map[args] = V_front;
+		return;
+	}
+	if(mttkrp_map.find(parent[args])==mttkrp_map.end()) {
+		mttkrp_map_DT(mttkrp_map, parent, sibling, V, W, parent[args], dw);
+	}
+	/* Else
+	*/
+	Tensor<> V_temp; 
+	Tensor<> V_front = mttkrp_map[parent[args]];
+	Tensor<> V_parent = mttkrp_map[parent[args]];
+	int index_start = int(sibling[args][0]-parent[args][0]);
+	// make seq_f
+	char seq[V_front.order+1];
+	char seq_f[V_front.order+1];
+	seq_f[V_front.order] = '\0';
+	seq_f[V_front.order-1] = '*';
+	char_string_copy(seq_f,0,parent[args],0,parent[args].length());
+	/* loops */
+	for (int j=0; j<sibling[args].length(); j++) {     // iterate on [ab]
+		// make seq
+		seq[V_front.order] = '\0';
+		strncpy(seq,seq_f, strlen(seq_f));
+		// make seq_w
+		seq_w[0] = sibling[args][j];
+		// make seq_f
+		seq_f[V_front.order-1] = '\0';
+		seq_f[V_front.order-2] = '*';
+		char_string_copy(seq_f,0,parent[args],0,index_start);
+		char_string_copy(seq_f,index_start,parent[args],index_start+j+1,V_parent.order-index_start-j-2);				
+		// build len for V_temp
+		int lens_V[V_parent.order-j-1];
+		for (int m=0; m<index_start; m++) {
+			lens_V[m] = V_parent.lens[m];
+		}
+		for (int m=index_start+j+1; m<V_parent.order; m++) {
+			lens_V[m-j-1] = V_parent.lens[m];
+		}
+		lens_V[V_parent.order-j-2] = K;
+		V_temp = Tensor<>(V_parent.order-j-1, lens_V, dw);
+		// contraction
+		V_temp[seq_f] = V_front[seq]*W[seq_w[0]-'a'][seq_w];				
+		V_front = V_temp;
+	}
+	mttkrp_map[args] = V_front;
+	return;
+}
 
-// void build_V(Tensor<> & V,
-// 			 Matrix<> * W,
-// 			 int order,
-// 			 World & dw) {
-//   Timer tbuild_V("build_V");
-//   tbuild_V.start();
-// 	char chars[] = {'i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','\0'};
-// 	// int lens_V[2];
-// 	// lens_V[0] = W[0].nrow;
-// 	// lens_V[1] = W[0].ncol;
-// 	V = W[0];
-// 	char seq_W[3] = {'i', '*', '\0'};
-// 	// char seq = {'i','*','\0'};
-// 	for (int i=1; i<order-1; i++) {
-// 		// build V_temp
-// 		int lens_V[i+2];
-// 		for (int j=0; j<i+1; j++) {
-// 			lens_V[j] = W[j].nrow;
-// 		}		
-// 		lens_V[i+1] = W[0].ncol;
-// 		Tensor<> V_temp = Tensor<>(i+2, lens_V, dw);
-// 		// seq_temp
-// 		char seq_temp[i+3];
-// 		seq_temp[i+2] = '\0';
-// 		seq_temp[i+1] = '*';
-// 		for (int j=0; j<i+1; j++) {
-// 			seq_temp[j] = chars[j];
-// 		}
-// 		// seq
-// 		char seq[i+2];
-// 		seq[i+1] = '\0';
-// 		seq[i] = '*';
-// 		for (int j=0; j<i; j++) {
-// 			seq[j] = chars[j];
-// 		}
-// 		// seq_W		
-// 		seq_W[0] = chars[i];
-// 		V_temp[seq_temp] = V[seq] * W[i][seq_W];
-// 		V = V_temp;
-// 		// char seq[i+3];
-// 		// for (int j=0; j<i+3; j++) {
-// 		// 	seq[j] = seq_temp[j];
-// 		// }
-// 	}
-// 	// build V_temp
-// 	int lens_V[order];
-// 	for (int j=0; j<order; j++) {
-// 		lens_V[j] = W[j].nrow;
-// 	}		
-// 	Tensor<> V_temp = Tensor<>(order, lens_V, dw);
-// 	char seq_temp[order+1];
-// 	char seq[order+2];
-// 	seq_temp[order] = '\0';
-// 	seq_temp[order] = '\0';
-// 	for (int j=0; j<order; j++) {
-// 		seq_temp[j] = chars[j];
-// 		seq[j] = chars[j];
-// 	}
-// 	seq[order-1] = '*';
-// 	seq_W[0] = chars[order-1];
+void build_V(Tensor<> & V,
+			 Matrix<> * W,
+			 int order,
+			 World & dw) {
+	Timer tbuild_V("build_V");
+	tbuild_V.start();
+	char chars[] = {'i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','\0'};
+	// int lens_V[2];
+	// lens_V[0] = W[0].nrow;
+	// lens_V[1] = W[0].ncol;
+	V = W[0];
+	char seq_W[3] = {'i', '*', '\0'};
+	// char seq = {'i','*','\0'};
+	for (int i=1; i<order-1; i++) {
+		// build V_temp
+		int lens_V[i+2];
+		for (int j=0; j<i+1; j++) {
+			lens_V[j] = W[j].nrow;
+		}		
+		lens_V[i+1] = W[0].ncol;
+		Tensor<> V_temp = Tensor<>(i+2, lens_V, dw);
+		// seq_temp
+		char seq_temp[i+3];
+		seq_temp[i+2] = '\0';
+		seq_temp[i+1] = '*';
+		for (int j=0; j<i+1; j++) {
+			seq_temp[j] = chars[j];
+		}
+		// seq
+		char seq[i+2];
+		seq[i+1] = '\0';
+		seq[i] = '*';
+		for (int j=0; j<i; j++) {
+			seq[j] = chars[j];
+		}
+		// seq_W		
+		seq_W[0] = chars[i];
+		V_temp[seq_temp] = V[seq] * W[i][seq_W];
+		V = V_temp;
+		// char seq[i+3];
+		// for (int j=0; j<i+3; j++) {
+		// 	seq[j] = seq_temp[j];
+		// }
+	}
+	// build V_temp
+	int lens_V[order];
+	for (int j=0; j<order; j++) {
+		lens_V[j] = W[j].nrow;
+	}		
+	Tensor<> V_temp = Tensor<>(order, lens_V, dw);
+	char seq_temp[order+1];
+	char seq[order+2];
+	seq_temp[order] = '\0';
+	seq_temp[order] = '\0';
+	for (int j=0; j<order; j++) {
+		seq_temp[j] = chars[j];
+		seq[j] = chars[j];
+	}
+	seq[order-1] = '*';
+	seq_W[0] = chars[order-1];
 
-// 	V_temp[seq_temp] = V[seq] * W[order-1][seq_W];
-// 	V = V_temp;
-//   tbuild_V.stop();
+	V_temp[seq_temp] = V[seq] * W[order-1][seq_W];
+	V = V_temp;
+	tbuild_V.stop();
 
-// }
+}
 
-// /**
-//  * \brief ALS method for CP decomposition with decision tree
-//  *  W: output solutions
-//  *  V: input tensor
-//  *  grad_W: gradient in each dimension
-//  *	F: correction terms, F[]=0 initially
-//  *  tol: tolerance for a relative stopping condition
-//  *  timelimit, maxiter: limit of time and iterations
-//  *  V.order should be >=4
-//  */
-// bool alsCP_DT(Tensor<> & V, 
-// 			  Matrix<> * W, 
-// 			  Matrix<> * grad_W, 
-// 			  Matrix<> * F,
-// 			  double tol, 
-// 			  double timelimit, 
-// 			  int maxiter, 
-// 			  double lambda,
-//         	  ofstream & Plot_File,
-//         	  int resprint,
-//         	  bool bench,
-// 			  World & dw) {
-// 	cout.precision(13);
-// 	if (bench==false) {
-//     	if (dw.rank==0) Plot_File << "[dim],[iter],[gradnorm],[tol],[pp_update],[diffV],[dtime]" << "\n";          //Headings for file
-// 	}
+/**
+ * \brief ALS method for CP decomposition with dimension tree
+ *  W: output solutions
+ *  V: input tensor
+ *  grad_W: gradient in each dimension
+ *	F: correction terms, F[]=0 initially
+ *  tol: tolerance for a relative stopping condition
+ *  timelimit, maxiter: limit of time and iterations
+ *  V.order should be >=4
+ */
+bool alsCP_DT(Tensor<> & V, 
+			  Matrix<> * W, 
+			  Matrix<> * grad_W, 
+			  Matrix<> * F,
+			  double tol, 
+			  double timelimit, 
+			  int maxiter, 
+			  double lambda,
+        	  ofstream & Plot_File,
+        	  int resprint,
+        	  bool bench,
+			  World & dw) {
+	cout.precision(13);
+	if (bench==false) {
+    	if (dw.rank==0) Plot_File << "[dim],[iter],[gradnorm],[tol],[pp_update],[diffV],[dtime]" << "\n";          //Headings for file
+	}
 
-//     Matrix<> regul =Matrix<>(W[0].ncol,W[0].ncol);
-//     regul["ii"] =  1.*lambda;
+    Matrix<> regul =Matrix<>(W[0].ncol,W[0].ncol);
+    regul["ii"] =  1.*lambda;
 
-// 	double st_time = MPI_Wtime();
-// 	int iter; 
-// 	double projnorm; 
-// 	double Fnorm=0.; 
-// 	double diffnorm_V = 1000;
-// 	Matrix<> * grad_W_proj = new Matrix<>[V.order];
-// 	//make the char
-// 	char seq[V.order+1], seq_V[V.order+1];
-// 	seq[V.order] = '\0'; seq_V[V.order] = '\0'; 
-// 	for (int j=0; j<V.order; j++) {
-// 		seq[j] = 'a'+j;
-// 		seq_V[j] = seq[j];
-// 	}
-// 	/*  initialize matrix S
-// 	*	S["ij"] = W[0]["ki"]*W[0]["kj"]*W[1]["ki"]*W[1]["kj"]*W[2]["ki"]*W[2]["kj"]*W[3]["ki"]*...
-// 	*/
-// 	Matrix<> S = Matrix<>(W[0].ncol,W[0].ncol);
-// 	// maps 
-// 	map<string, Tensor<>> mttkrp_map;
-// 	map<string, string> parent;
-// 	map<string, string> sibling;
-// 	Construct_Dimension_Tree(parent, sibling, 0, V.order-1);
-// 	for (iter=0; iter<=maxiter; iter++)
-// 	{
-// 		// print the gradient norm 
-// 		if (iter%resprint==0 || iter==maxiter) {
-// 			double st_time1 = MPI_Wtime();
-// 			//get the gradient
-// 			// gradient_CP(V, W, grad_W, dw);
-// 			// for (int i=0; i<V.order; i++) { 
-// 			// 	grad_W_proj[i] = Matrix<>(W[i].nrow,W[i].ncol);
-// 			// 	grad_W_proj[i]["ij"] = grad_W[i]["ij"]-F[i]["ij"];
-// 			// }
-// 			projnorm = 0; //Fnorm = 0;
-// 			for (int i=0; i<V.order; i++) { 
-// 				projnorm += grad_W[i].norm2()*grad_W[i].norm2();//grad_W_proj[i].norm2()*grad_W_proj[i].norm2();
-// 				//Fnorm += F[i].norm2();
-// 			}
-// 			projnorm = sqrt(projnorm);
-// 			// diffnorm
-// 			Tensor<> V_build;
-// 			build_V(V_build, W, V.order, dw);
-// 			Tensor<> diff_V = V;
-// 			diff_V[seq_V] = V[seq_V] - V_build[seq_V];
-// 			diffnorm_V = diff_V.norm2();
-// 			// record time
-// 			st_time += MPI_Wtime() - st_time1;
-// 			double dtime = MPI_Wtime() - st_time;
-// 			if (bench==false) {
-// 				if(dw.rank==0) {
-// 					cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [gradnorm]  "<< projnorm << "  [tol]  " << tol << "  [pp_update]  " << 0  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
-// 					Plot_File << V.lens[0] << "," << iter << "," << projnorm << "," << tol << "," << 0 << "," << diffnorm_V << "," << dtime << "\n";
-// 					if(iter%100==0 && iter!=0) {// flush
-// 						Plot_File << endl;
-// 					}
-// 				}
-// 			} else {
-// 				if(dw.rank==0 && iter!=0) {
-// 					cout << "  [dimension tree step time]  " << dtime <<  "\n";
-// 					Plot_File << "[DTtime]" << "," << dtime << "\n";
-// 				}				
-// 			}
-// 			// end check the residue
-// 			if ((projnorm < tol) || MPI_Wtime()-st_time > timelimit) 
-// 				break;
-// 		}
-// 		// clear the Hash Table
-// 		mttkrp_map.clear();
-// 		// iteration on W[i]
-// 		for (int i=0; i<V.order; i++) { 
-// 			//make the char
-// 			char temp = seq_V[V.order-1];
-// 			seq_V[V.order-1] = seq_V[i];
-// 			seq_V[i] = temp;
-// 			/*  construct Matrix M
-// 			*	M["dk"] = V["abcd"]*W1["ak"]*W2["bk"]*W3["ck"]
-// 			*/
-// 			int lens_H[V.order];
-// 			int index[V.order];
-// 			for (int j=0; j<V.order-1; j++) {
-// 				index[j] = (int)(seq_V[j]-'a');
-// 				lens_H[j] = V.lens[index[j]];
-// 			}
-// 			index[V.order-1] = (int)(seq_V[V.order-1]-'a');
-// 			lens_H[V.order-1] = W[i].ncol;
-// 			/* initialize matrix M
-// 			*/
-// 			// make args
-// 			char args[2];
-// 			args[1] = '\0';
-// 			args[0] = i+'a';
-// 			if (mttkrp_map.find(parent[args])==mttkrp_map.end()) {
-// 				mttkrp_map_DT(mttkrp_map, parent, sibling, V , W, parent[args], dw);
-// 			}
-// 			Matrix<> M = Matrix<>(W[i].nrow,W[i].ncol);
-// 			if (sibling[args].length()==1) {
-// 				char seq[3],seq_A[3],seq_p[4];
-// 				seq[2] = '\0'; seq_A[2] = '\0'; seq_p[3] = '\0';
-// 				seq[1] = '*'; seq_A[1] = '*'; seq_p[2] = '*';
-// 				seq[0] = args[0]; seq_p[0] = parent[args][0]; seq_p[1] = parent[args][1];
-// 				if (seq_p[0]==seq[0]) seq_A[0] = seq_p[1];
-// 				else seq_A[0] = seq_p[0];
-// 				M[seq] = mttkrp_map[parent[args]][seq_p]*W[int(seq_A[0]-'a')][seq_A];
-// 			} else {
-// 				char seq[3],seq_A1[3],seq_A2[3],seq_p[5];
-// 				seq[2] = '\0'; seq_A1[2] = '\0'; seq_A2[2] = '\0'; seq_p[4] = '\0';
-// 				seq[1] = '*'; seq_A1[1] = '*'; seq_A2[1] = '*'; seq_p[3] = '*';
-// 				seq[0] = args[0]; seq_p[0] = parent[args][0]; seq_p[1] = parent[args][1]; seq_p[2] = parent[args][2];
-// 				if (seq_p[0]==seq[0]) {
-// 					seq_A1[0] = seq_p[1];
-// 					seq_A2[0] = seq_p[2];
-// 				}
-// 				else {
-// 					seq_A1[0] = seq_p[0];
-// 					seq_A2[0] = seq_p[1];
-// 				}
-// 				M[seq] = mttkrp_map[parent[args]][seq_p]*W[int(seq_A1[0]-'a')][seq_A1]*W[int(seq_A2[0]-'a')][seq_A2];				
-// 			}
-// 			// Khatri-Rao Product C[I,J,K]= A[I,K](op)B[J,K]
-// 			// KhatriRao_contract(M2, V, W, index, lens_H, dw);
-// 			// calculating S
-// 			S["ij"] = W[index[0]]["ki"]*W[index[0]]["kj"];
-// 			for (int ii=1; ii<V.order-1; ii++) {
-// 				S["ij"] = S["ij"]*(W[index[ii]]["ki"]*W[index[ii]]["kj"]);
-// 			}
-// 			S["ij"] += regul["ij"]; 
-// 			// subproblem M=W*S
-// 			M["ij"] += F[i]["ij"];
-// 			// calculate gradient
-// 			grad_W[i]["ij"] = -M["ij"]+W[i]["ik"]*S["kj"]; 
-// 			SVD_solve(M, W[i], S);
-// 			// recover the char
-// 			temp = seq_V[V.order-1];
-// 			seq_V[V.order-1] = seq_V[i];
-// 			seq_V[i] = temp;
-// 		}
-// 		Normalize(W, V.order, dw);
-// 		// print .
-// 		if (iter%10==0 && dw.rank==0) printf(".");
-// 	}
-// 	if(dw.rank==0) {
-// 		printf ("\nIter = %d Final proj-grad norm %E \n", iter, projnorm);
-// 		printf ("tf took %lf seconds\n",MPI_Wtime()-st_time);
-// 	}
-// 	if (bench==false) {
-// 		Plot_File.close();
-// 	}
-// 	delete[] grad_W_proj;
-// 	if (iter == maxiter+1) return false;
-// 	else return true;
-// }
+	double st_time = MPI_Wtime();
+	int iter; 
+	double projnorm; 
+	double Fnorm=0.; 
+	double diffnorm_V = 1000;
+	Matrix<> * grad_W_proj = new Matrix<>[V.order];
+	//make the char
+	char seq[V.order+1], seq_V[V.order+1];
+	seq[V.order] = '\0'; seq_V[V.order] = '\0'; 
+	for (int j=0; j<V.order; j++) {
+		seq[j] = 'a'+j;
+		seq_V[j] = seq[j];
+	}
+	/*  initialize matrix S
+	*	S["ij"] = W[0]["ki"]*W[0]["kj"]*W[1]["ki"]*W[1]["kj"]*W[2]["ki"]*W[2]["kj"]*W[3]["ki"]*...
+	*/
+	Matrix<> S = Matrix<>(W[0].ncol,W[0].ncol);
+	// maps 
+	map<string, Tensor<>> mttkrp_map;
+	map<string, string> parent;
+	map<string, string> sibling;
+	Construct_Dimension_Tree(parent, sibling, 0, V.order-1);
+	for (iter=0; iter<=maxiter; iter++)
+	{
+		// print the gradient norm 
+		if (iter%resprint==0 || iter==maxiter) {
+			double st_time1 = MPI_Wtime();
+			//get the gradient
+			// gradient_CP(V, W, grad_W, dw);
+			// for (int i=0; i<V.order; i++) { 
+			// 	grad_W_proj[i] = Matrix<>(W[i].nrow,W[i].ncol);
+			// 	grad_W_proj[i]["ij"] = grad_W[i]["ij"]-F[i]["ij"];
+			// }
+			projnorm = 0; //Fnorm = 0;
+			for (int i=0; i<V.order; i++) { 
+				projnorm += grad_W[i].norm2()*grad_W[i].norm2();//grad_W_proj[i].norm2()*grad_W_proj[i].norm2();
+				//Fnorm += F[i].norm2();
+			}
+			projnorm = sqrt(projnorm);
+			// diffnorm
+			Tensor<> V_build;
+			build_V(V_build, W, V.order, dw);
+			Tensor<> diff_V = V;
+			diff_V[seq_V] = V[seq_V] - V_build[seq_V];
+			diffnorm_V = diff_V.norm2();
+			// record time
+			st_time += MPI_Wtime() - st_time1;
+			double dtime = MPI_Wtime() - st_time;
+			if (bench==false) {
+				if(dw.rank==0) {
+					cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [gradnorm]  "<< projnorm << "  [tol]  " << tol << "  [pp_update]  " << 0  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
+					Plot_File << V.lens[0] << "," << iter << "," << projnorm << "," << tol << "," << 0 << "," << diffnorm_V << "," << dtime << "\n";
+					if(iter%100==0 && iter!=0) {// flush
+						Plot_File << endl;
+					}
+				}
+			} else {
+				if(dw.rank==0 && iter!=0) {
+					cout << "  [dimension tree step time]  " << dtime <<  "\n";
+					Plot_File << "[DTtime]" << "," << dtime << "\n";
+				}				
+			}
+			// end check the residue
+			if ((projnorm < tol) || MPI_Wtime()-st_time > timelimit) 
+				break;
+		}
+		// clear the Hash Table
+		mttkrp_map.clear();
+		// iteration on W[i]
+		for (int i=0; i<V.order; i++) { 
+			//make the char
+			char temp = seq_V[V.order-1];
+			seq_V[V.order-1] = seq_V[i];
+			seq_V[i] = temp;
+			/*  construct Matrix M
+			*	M["dk"] = V["abcd"]*W1["ak"]*W2["bk"]*W3["ck"]
+			*/
+			int lens_H[V.order];
+			int index[V.order];
+			for (int j=0; j<V.order-1; j++) {
+				index[j] = (int)(seq_V[j]-'a');
+				lens_H[j] = V.lens[index[j]];
+			}
+			index[V.order-1] = (int)(seq_V[V.order-1]-'a');
+			lens_H[V.order-1] = W[i].ncol;
+			/* initialize matrix M
+			*/
+			// make args
+			char args[2];
+			args[1] = '\0';
+			args[0] = i+'a';
+			if (mttkrp_map.find(parent[args])==mttkrp_map.end()) {
+				mttkrp_map_DT(mttkrp_map, parent, sibling, V , W, parent[args], dw);
+			}
+			Matrix<> M = Matrix<>(W[i].nrow,W[i].ncol);
+			if (sibling[args].length()==1) {
+				char seq[3],seq_A[3],seq_p[4];
+				seq[2] = '\0'; seq_A[2] = '\0'; seq_p[3] = '\0';
+				seq[1] = '*'; seq_A[1] = '*'; seq_p[2] = '*';
+				seq[0] = args[0]; seq_p[0] = parent[args][0]; seq_p[1] = parent[args][1];
+				if (seq_p[0]==seq[0]) seq_A[0] = seq_p[1];
+				else seq_A[0] = seq_p[0];
+				M[seq] = mttkrp_map[parent[args]][seq_p]*W[int(seq_A[0]-'a')][seq_A];
+			} else {
+				char seq[3],seq_A1[3],seq_A2[3],seq_p[5];
+				seq[2] = '\0'; seq_A1[2] = '\0'; seq_A2[2] = '\0'; seq_p[4] = '\0';
+				seq[1] = '*'; seq_A1[1] = '*'; seq_A2[1] = '*'; seq_p[3] = '*';
+				seq[0] = args[0]; seq_p[0] = parent[args][0]; seq_p[1] = parent[args][1]; seq_p[2] = parent[args][2];
+				if (seq_p[0]==seq[0]) {
+					seq_A1[0] = seq_p[1];
+					seq_A2[0] = seq_p[2];
+				}
+				else {
+					seq_A1[0] = seq_p[0];
+					seq_A2[0] = seq_p[1];
+				}
+				M[seq] = mttkrp_map[parent[args]][seq_p]*W[int(seq_A1[0]-'a')][seq_A1]*W[int(seq_A2[0]-'a')][seq_A2];				
+			}
+			// Khatri-Rao Product C[I,J,K]= A[I,K](op)B[J,K]
+			// KhatriRao_contract(M2, V, W, index, lens_H, dw);
+			// calculating S
+			S["ij"] = W[index[0]]["ki"]*W[index[0]]["kj"];
+			for (int ii=1; ii<V.order-1; ii++) {
+				S["ij"] = S["ij"]*(W[index[ii]]["ki"]*W[index[ii]]["kj"]);
+			}
+			S["ij"] += regul["ij"]; 
+			// subproblem M=W*S
+			M["ij"] += F[i]["ij"];
+			// calculate gradient
+			grad_W[i]["ij"] = -M["ij"]+W[i]["ik"]*S["kj"]; 
+			SVD_solve(M, W[i], S);
+			// recover the char
+			temp = seq_V[V.order-1];
+			seq_V[V.order-1] = seq_V[i];
+			seq_V[i] = temp;
+		}
+		Normalize(W, V.order, dw);
+		// print .
+		if (iter%10==0 && dw.rank==0) printf(".");
+	}
+	if(dw.rank==0) {
+		printf ("\nIter = %d Final proj-grad norm %E \n", iter, projnorm);
+		printf ("tf took %lf seconds\n",MPI_Wtime()-st_time);
+	}
+	if (bench==false) {
+		Plot_File.close();
+	}
+	delete[] grad_W_proj;
+	if (iter == maxiter+1) return false;
+	else return true;
+}
 
 // // [cd] --> [ab*]
 // void stringbuilder_mttkrp(char* seq, 
