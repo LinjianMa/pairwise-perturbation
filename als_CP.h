@@ -119,21 +119,50 @@ double alsCP_DT_sub(Tensor<> & V,
  *  timelimit, maxiter: limit of time and iterations
  */
 double alsCP_PP_sub(Tensor<> & V, 
-				  	  Matrix<> * W, 
-        	  		  Matrix<> * grad_W, 
-				  	  Matrix<> * dW,
-				  	  Matrix<> * F,
-				  	  double tol, 
-				  	  double tol_init,
-				  	  double timelimit, 
-				  	  int maxiter, 
-				  	  double & st_time,
-				  	  ofstream & Plot_File,
-				  	  double & projnorm,
-				  	  int & iter,
-				  	  int resprint,
-				  	  bool bench,
-				  	  World & dw);
+				  Matrix<> * W, 
+        	  	  Matrix<> * grad_W, 
+				  Matrix<> * dW,
+				  Matrix<> * F,
+				  double tol, 
+				  double tol_init,
+				  double timelimit, 
+				  int maxiter, 
+				  double & st_time,
+				  double lambda,
+				  double ratio_step,
+				  ofstream & Plot_File,
+				  double & projnorm,
+				  int & iter,
+				  int resprint,
+				  bool bench,
+				  World & dw);
+
+/**
+ * \brief ALS method for CP decomposition
+ *  W: output matrices
+ *  V: input tensor
+ *  tol: tolerance for a relative stopping condition
+ *  timelimit, maxiter: limit of time and iterations
+ */
+double alsCP_PP_partupdate_sub(Tensor<> & V, 
+				  Matrix<> * W, 
+        	  	  Matrix<> * grad_W, 
+				  Matrix<> * dW,
+				  Matrix<> * F,
+				  double tol, 
+				  double tol_init,
+				  double timelimit, 
+				  int maxiter, 
+				  double update_percentage,
+				  double & st_time,
+				  double lambda,
+				  double ratio_step,
+				  ofstream & Plot_File,
+				  double & projnorm,
+				  int & iter,
+				  int resprint,
+				  bool bench,
+				  World & dw);
 
 /**
  * \brief ALS method for CP decomposition
@@ -156,6 +185,31 @@ bool alsCP_PP(Tensor<> & V,
           	  int resprint,
           	  bool bench,
           	  World & dw) ;
+
+/**
+ * \brief ALS method for CP decomposition
+ *  W: output matrices
+ *  V: input tensor
+ *  tol: tolerance for a relative stopping condition
+ *  timelimit, maxiter: limit of time and iterations
+ */
+bool alsCP_PP_partupdate(Tensor<> & V, 
+        				 Matrix<> * W, 
+        				 Matrix<> * grad_W, 
+        				 Matrix<> * F,
+        				 double tol, 
+        				 double tol_init,
+        				 double timelimit, 
+        				 int maxiter, 
+        				 double lambda,
+        				 double ratio_step,
+        				 double update_percentage,
+          				 ofstream & Plot_File,
+          				 int resprint,
+          				 bool bench,
+          				 World & dw) ;
+
+vector<int> sort_indexes(const vector<double> &v);
 
 
 #endif

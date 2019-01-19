@@ -28,7 +28,8 @@ int main(int argc, char ** argv){
 
 	char * model;		// 0 is CP, 1 is Tucker
 	char * tensor;		// which tensor    p / p2 / c / r / r2 / o / 
-	int pp;				// 0 Dimention tree 1 pairwise perturbation
+	int pp;				// 0 Dimention tree 1 pairwise perturbation 2 pp with <1 update_percentage_pp
+	double update_percentage_pp; // pp update ratio. For each sweep only update update_percentage_pp*N matrices.
 	/*
 	p : poisson operator
 	p2 : poisson operator with doubled dimension (decomposition is not accurate)
@@ -73,10 +74,16 @@ int main(int argc, char ** argv){
 	}	
 	if (getCmdOption(input_str, input_str+in_num, "-pp")) {
 		pp = atoi(getCmdOption(input_str, input_str+in_num, "-pp"));
-    	if (pp < 0 || pp > 1) pp = 0;
+    	if (pp < 0 || pp > 2) pp = 0;
 	} else {
 		pp = 0;
 	}
+	if (getCmdOption(input_str, input_str+in_num, "-update_percentage_pp")) {
+		update_percentage_pp = atof(getCmdOption(input_str, input_str+in_num, "-update_percentage_pp"));
+    	if (update_percentage_pp < 0 || update_percentage_pp > 1) update_percentage_pp = 1.0;
+	} else {
+		update_percentage_pp = 1.0;
+	}	
 	if (getCmdOption(input_str, input_str+in_num, "-dim")) {
 		dim = atoi(getCmdOption(input_str, input_str+in_num, "-dim"));
     	if (dim < 0) dim = 8;
@@ -182,7 +189,7 @@ int main(int argc, char ** argv){
 			cout << "  lambda=  " << lambda_ << "  magnitude=  " << magni << "  filename=  " << filename << endl;
 			cout << "  col_min=  " << col_min << "  col_max=  " << col_max  << "  rationoise  " << ratio_noise << endl;
 			cout << "  timelimit=  " << timelimit << "  maxiter=  " << maxiter << "  resprint=  " << resprint  << endl;
-			cout << "  tensorfile=  " << tensorfile << endl;
+			cout << "  tensorfile=  " << tensorfile << "  update_percentage_pp=  " << update_percentage_pp << endl;
 		}
 
 		// initialization of tensor
@@ -313,6 +320,9 @@ int main(int argc, char ** argv){
 			}
 			else if (pp==1) {
 				alsCP_PP(V, W, grad_W, F, tol*Vnorm, pp_res_tol, timelimit, maxiter, lambda_, magni, Plot_File, resprint, false, dw);
+			}
+			else if (pp==2) {
+				alsCP_PP_partupdate(V, W, grad_W, F, tol*Vnorm, pp_res_tol, timelimit, maxiter, lambda_, magni, update_percentage_pp, Plot_File, resprint, false, dw);
 			}
 		}
 		else if (model[0]=='T') {
