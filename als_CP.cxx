@@ -1131,9 +1131,15 @@ double alsCP_PP_partupdate_sub(Tensor<> & V,
 		}
 		// sort the indices based on the W_relative_perturbe
 		sorted_indices = sort_indexes(W_relative_perturbe);
+		// if (dw.rank==0) {
+		// 	for (int iii=0; iii< V.order; iii++)
+		// 		cout << W_relative_perturbe[iii] << endl;
+		// }
 		// iteration on W[i]
+		if (dw.rank==0) cout << "new round" << endl; 
 		for (int i_indices=0; i_indices<update_size; i_indices++) {
 			int i = sorted_indices[i_indices];
+			if (dw.rank==0) cout << i << endl;
 			//make the char
 			char temp = seq_V[V.order-1];
 			seq_V[V.order-1] = seq_V[i];
