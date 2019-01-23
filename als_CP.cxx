@@ -1060,7 +1060,7 @@ bool alsCP_rank1(Tensor<> & V,
  		   Matrix<> * W,
  		   Matrix<> * grad_W,
  		   double tol,
-			 double tol_rank1,
+			 /*double tol_rank1,*/
  		   double timelimit,
  		   int maxiter,
  		   World & dw) {
@@ -1087,12 +1087,15 @@ bool alsCP_rank1(Tensor<> & V,
 	Matrix<>* dA = new Matrix<>[V.order];
 	for (int i = 0; i<V.order; i++){dA[i] = Matrix<>(W[0].nrow, W[0].ncol);}
 
+	Matrix<> ones = Matrix<>(W[0].ncol, W[0].ncol);
+	ones["ij"] = 1.;
 	unordered_map<string, Tensor<>>mttkrp_map;
 	unordered_map<string, Matrix<>>gamma_map;
 	unordered_map<string, string>parent;
 	build_BDT(parent, seq, 0, V.order-1);
-	fill_gamma_tree(gamma_map, S, seq, 0, V.order-1);
 	mttkrp_map[seq] = V;
+	gamma_map[seq] = ones;
+	fill_gamma_tree(gamma_map, S, seq, 0, V.order-1);
 
 	// define two cached tensor
 	// special index is 0 and V.order/2+1
@@ -1130,12 +1133,25 @@ bool alsCP_rank1(Tensor<> & V,
 			start = get<0>(interval); end = get<1>(interval);
 			char name[4]; name[2] = '\0'; name[3]='\0';
 			for (int i=start; i<=end; i++){name[i-start]=seq[i];}
+
+			/*if (mttkrp_map.find(name)==mttkrp_map.end()) {
+				cout<<"didn't find parent\n";
+				cout<<"the dict contains "<<mttkrp_map.size()<<" elements\n";
+				//cout<<"name is "<<name[0]<<name[1]<<name[2]<<"\n";
+			}*/
 			res_tensor = mttkrp_map[name];
 			gamma = gamma_map[name];
 			M = Matrix<>(W[0].nrow, W[0].ncol);
 			compute_gamma(gamma, W, i, start, end);
 			compute_M(M, res_tensor, W, i, start, end, dw);
 
+			// regular solve
+			cout<<"gamma is ";
+			gamma.print();
+			cout<<"M is ";
+			M.print();
+			cout<<"W[i] is ";
+			W[i].print();
 			SVD_solve(M, W[i], gamma);
 			dA[i]["ij"] = A_old["ij"] - W[i]["ij"];
 
@@ -1171,22 +1187,22 @@ bool alsCP_rank1(Tensor<> & V,
 /** Recursively construct the binary dimension tree (BDT)
 	*/
 void build_BDT(unordered_map<string, string> &parent_map, char* seq, int start, int end){
-	if (end==start+1 || end==start+2) return;
+	if (end==start+1 || end==start+2 || end==start) return;
 	int mid = (start+end)/2;
 	int child1_len = mid-start+1;
 	char child1[child1_len+1];
-	int child2_len = end-mid;
-	char child2[child2_len+1]; // end-(mid+1)+2
+	int child2_len = end-mid; // end - (mid+1)+1
+	char child2[child2_len+1];
 	int parent_len = end-start+1;
 	char parent[parent_len+1];
 	for (int i = 0; i<parent_len; i++){
 		parent[i] = seq[start+i];
 	}
-	parent[end-start+1] = '\0';
+	parent[parent_len] = '\0';
 	for (int i = 0; i<child1_len; i++){
 		child1[i] = seq[start+i];
 	}
-	child1[child1_len+1] = '\0';
+	child1[child1_len] = '\0';
 	for (int i = 0; i<child2_len; i++){
 		child2[i] = seq[mid+1+i];
 	}
@@ -1207,7 +1223,7 @@ void build_1st_level_left_child(unordered_map<string, Tensor<>> &mttkrp_map, Ten
 	// first compute M(1,2) (if the original tensor is M(1,2,3,4)) which is M(1,2,3,4) *W[3] *W[4]
 	// This is the easier of the two because there is no change of order of modes.
 	// notice the result (M(1,2)) will be a 3-d tensor
-	int child1_name_len = V.order/2+1;
+	int child1_name_len = (V.order-1)/2+1;
 	char child1_name[child1_name_len+1]; child1_name[child1_name_len]='\0';
 	for (int i=0; i<child1_name_len; i++) {child1_name[i] = 'a'+i;}
 
@@ -1235,8 +1251,8 @@ void build_1st_level_left_child(unordered_map<string, Tensor<>> &mttkrp_map, Ten
 }
 
 void build_1st_level_right_child(unordered_map<string, Tensor<>> &mttkrp_map, Tensor<> &V, Matrix<>*W, Tensor<> *cached_tensor1, World &dw){
-	int child1_name_len = V.order/2+1;
-	int child2_name_len = V.order - V.order/2-1; //V.order-1- (V.order/2+1)+1;
+	int child1_name_len = (V.order-1)/2+1;
+	int child2_name_len = V.order - (V.order-1)/2-1; //V.order-1- ((V.order-1)/2+1)+1;
 	char child2_name[child2_name_len+1]; child2_name[child2_name_len]='\0';
 	for (int i=0; i<child2_name_len; i++) {child2_name[i] = 'a'+i+child1_name_len;}
 
@@ -1273,10 +1289,6 @@ void build_1st_level_right_child(unordered_map<string, Tensor<>> &mttkrp_map, Te
 		ndim--;
 	}
 	mttkrp_map[child2_name] = prev;
-	//char seq_temp[V.order+1]; seq_temp[V.order]='\0';
-	//char seq_prev[V.order+1]; seq_prev[V.order]='\0';
-	//for (int i=0; i<prev.order; i++) {seq_prev[i] = 'a'+i; seq_temp[i] = seq_prev[i];}
-	//seq_temp[V.order-1]='\0';
 }
 
 void update_cached_tensor(Tensor<> &V, Matrix<> *W, Tensor<>* cached_tensor, char* seq, int i){
@@ -1293,7 +1305,7 @@ void update_cached_tensor(Tensor<> &V, Matrix<> *W, Tensor<>* cached_tensor, cha
 */
 
 void fill_mttkrp_tree(unordered_map<string, Tensor<>> &mttkrp_map, Matrix<> *W, char *seq, int start, int end, World &dw){
-	if (end==start+1 || end==start+2) return;
+	if (end==start+1 || end==start+2 || start==end) return;
 
 	int mid = (start+end)/2;
 	build_left_child(mttkrp_map, W, seq, start, end, dw);
@@ -1312,11 +1324,13 @@ void build_left_child(unordered_map<string, Tensor<>> &mttkrp_map, Matrix<> *W, 
 		for (int i = 0; i<parent_len; i++){
 			parent[i] = seq[start+i];
 		}
-		parent[end-start+1] = '\0';
+		parent[parent_len] = '\0';
 		for (int i = 0; i<child1_len; i++){
 			child1[i] = seq[start+i];
+			//cout<<child1[i];
 		}
-		child1[child1_len+1] = '\0';
+		//cout<<"\n";
+		child1[child1_len] = '\0';
 
 		//compute M(1,2), the first child
 		Tensor<> prev = mttkrp_map[parent];
@@ -1357,7 +1371,7 @@ void build_right_child(unordered_map<string, Tensor<>> &mttkrp_map, Matrix<> *W,
 	for (int i = 0; i<parent_len; i++){
 		parent[i] = seq[start+i];
 	}
-	parent[end-start+1] = '\0';
+	parent[parent_len] = '\0';
 	for (int i = 0; i<child2_len; i++){
 		child2[i] = seq[mid+1+i];
 	}
@@ -1404,11 +1418,11 @@ void fill_gamma_tree(unordered_map<string, Matrix<>> &gamma_map, Matrix<> *S, ch
 	for (int i = 0; i<parent_len; i++){
 		parent[i] = seq[start+i];
 	}
-	parent[end-start+1] = '\0';
+	parent[parent_len] = '\0';
 	for (int i = 0; i<child1_len; i++){
 		child1[i] = seq[start+i];
 	}
-	child1[child1_len+1] = '\0';
+	child1[child1_len] = '\0';
 	for (int i = 0; i<child2_len; i++){
 		child2[i] = seq[mid+1+i];
 	}
@@ -1443,11 +1457,11 @@ void update_gamma_tree(unordered_map<string, Matrix<>> &gamma_map, Matrix<>* S, 
 	for (int i = 0; i<parent_len; i++){
 		parent[i] = seq[start+i];
 	}
-	parent[end-start+1] = '\0';
+	parent[parent_len] = '\0';
 	for (int i = 0; i<child1_len; i++){
 		child1[i] = seq[start+i];
 	}
-	child1[child1_len+1] = '\0';
+	child1[child1_len] = '\0';
 	for (int i = 0; i<child2_len; i++){
 		child2[i] = seq[mid+1+i];
 	}
