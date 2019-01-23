@@ -1098,7 +1098,7 @@ bool alsCP_rank1(Tensor<> & V,
 	fill_gamma_tree(gamma_map, S, seq, 0, V.order-1);
 
 	// define two cached tensor
-	// special index is 0 and V.order/2+1
+	// special index is 0 and (V.order-1)/2+1
 	int tensor1_len[V.order];
 	int tensor2_len[V.order];
 	for (int i=0; i<V.order; i++){
@@ -1106,16 +1106,16 @@ bool alsCP_rank1(Tensor<> & V,
 		tensor2_len[i] = V.lens[i];
 	}
 	tensor1_len[0] = W[0].ncol;
-	tensor2_len[V.order/2+1] = W[0].ncol;
+	tensor2_len[(V.order-1)/2+1] = W[0].ncol;
 	Tensor<>* cached_tensor1 = new Tensor<>(V.order, tensor1_len, dw);
 	Tensor<>* cached_tensor2 = new Tensor<>(V.order, tensor2_len, dw);
 
 	update_cached_tensor(V, W, cached_tensor1, seq, 0);
-	update_cached_tensor(V, W, cached_tensor2, seq, V.order/2+1);
+	update_cached_tensor(V, W, cached_tensor2, seq, (V.order-1)/2+1);
 
 	build_1st_level(mttkrp_map, V, W, cached_tensor1, cached_tensor2, dw);
-	fill_mttkrp_tree(mttkrp_map, W, seq, 0, V.order/2, dw);
-	fill_mttkrp_tree(mttkrp_map, W, seq, V.order/2+1, V.order-1, dw);
+	fill_mttkrp_tree(mttkrp_map, W, seq, 0, (V.order-1)/2, dw);
+	fill_mttkrp_tree(mttkrp_map, W, seq, (V.order-1)/2+1, V.order-1, dw);
 
 	double tempnorm;
 	tuple<int, int> interval;
@@ -1142,16 +1142,25 @@ bool alsCP_rank1(Tensor<> & V,
 			res_tensor = mttkrp_map[name];
 			gamma = gamma_map[name];
 			M = Matrix<>(W[0].nrow, W[0].ncol);
-			compute_gamma(gamma, W, i, start, end);
+			compute_gamma(gamma, S, i, start, end);
 			compute_M(M, res_tensor, W, i, start, end, dw);
 
 			// regular solve
 			cout<<"gamma is ";
 			gamma.print();
-			cout<<"M is ";
+			/*cout<<"M is ";
 			M.print();
 			cout<<"W[i] is ";
-			W[i].print();
+			W[i].print();*/
+			Matrix<> U,VT;
+			Vector<> s;
+			/*cout<<"U is ";
+			U.print();
+			cout<<"VT is ";
+			VT.print();
+			cout<<"s is "; s.print();*/
+			//S.print();
+			W[i].svd(U,s,VT,W[i].ncol);
 			SVD_solve(M, W[i], gamma);
 			dA[i]["ij"] = A_old["ij"] - W[i]["ij"];
 
@@ -1162,8 +1171,8 @@ bool alsCP_rank1(Tensor<> & V,
 				update_cached_tensor(V, W, cached_tensor1, seq, 0);
 				build_1st_level_right_child(mttkrp_map, V, W, cached_tensor1, dw);
 			}
-			else if (i==V.order/2+1) {
-				update_cached_tensor(V,W, cached_tensor2, seq, V.order/2+1);
+			else if (i==(V.order-1)/2+1) {
+				update_cached_tensor(V,W, cached_tensor2, seq, (V.order-1)/2+1);
 				build_1st_level_left_child(mttkrp_map, V, W, cached_tensor2, dw);
 			}
 			update_mttkrp_tree(mttkrp_map, W, seq, i, 0, V.order-1, dw);
@@ -1238,7 +1247,7 @@ void build_1st_level_left_child(unordered_map<string, Tensor<>> &mttkrp_map, Ten
 
 	char seq_w[3]; seq_w[2]='\0'; seq_w[1] = seq_prev[child1_name_len];
 	Tensor<> temp;
-	for (int i=V.order-1; i>V.order/2+1; i--){
+	for (int i=V.order-1; i>child1_name_len; i--){
 		seq_w[0] = seq_prev[i];
 		temp = Tensor<>(ndim, len, dw);
 		temp[seq_temp] = (prev)[seq_prev]*W[i][seq_w];
@@ -1279,7 +1288,7 @@ void build_1st_level_right_child(unordered_map<string, Tensor<>> &mttkrp_map, Te
 
 	Tensor<> temp;
 	char seq_w[3]; seq_w[1] = seq_prev[child1_name_len]; seq_w[2]='\0';
-	for (int i=V.order/2; i>0; i--){
+	for (int i=(V.order-1)/2; i>0; i--){
 		seq_w[0] = seq_prev[i+child2_name_len];
 		temp = Tensor<>(ndim, len, dw);
 		temp[seq_temp] = (prev)[seq_prev]*W[i][seq_w];
@@ -1495,20 +1504,19 @@ tuple<int, int> find_interval(int index, int start, int end){
 
 /** Compute the result gamma matrix. res is imported as a partial result.
 	*/
-void compute_gamma(Matrix<> &res, Matrix<> *W, int index, int start, int end){
+void compute_gamma(Matrix<> &res, Matrix<> *S, int index, int start, int end){
 	for (int i=start; i<=end; i++){
 		if (i!=index){
-			res["ij"] = W[i]["ij"]*res["ij"];
+			res["ij"] = S[i]["ij"]*res["ij"];
 		}
 	}
 }
 
 void compute_M(Matrix<> &M, Tensor<> &res, Matrix<> *W, int index, int start, int end, World &dw){
+	//cout<<"index is "<<index<<" start is "<<start<<" end is "<<end<<"\n";
+	//M.print(); res.print(); W[end].print();
 	if (start+1==end){
-		//Tensor<> temp;
 		if (index==start){
-			//int len[] = {res.lens[1], res.lens[2]};
-			//temp = Tensor<>(2, len, dw);
 			M["ik"] = res["ijk"]*W[end]["jk"];
 		}
 		else {M["jk"] = res["ijk"]*W[start]["ik"];}
