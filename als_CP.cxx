@@ -89,6 +89,7 @@ bool alsCP(Tensor<> & V,
 			}
 			// subproblem M=W*S
 			M["ij"] += F[i]["ij"];
+			if (iter==0 && i==0){M.print(); S.print();}
 			SVD_solve(M, W[i], S);
 			// Gauss_Seidel(W[i], M, S, 20);
 			// recover the char
@@ -450,6 +451,7 @@ bool alsCP_DT(Tensor<> & V,
 			M["ij"] += F[i]["ij"];
 			// calculate gradient
 			grad_W[i]["ij"] = -M["ij"]+W[i]["ik"]*S["kj"];
+			if (iter==0){M.print(); S.print();}
 			SVD_solve(M, W[i], S);
 			// recover the char
 			temp = seq_V[V.order-1];
@@ -1084,9 +1086,6 @@ bool alsCP_rank1(Tensor<> & V,
 	for (int i = 0; i<V.order; i++){S[i] = Matrix<>(W[0].ncol, W[0].ncol);}
 	for (int i = 1; i<V.order; i++){S[i]["ij"] = W[i]["ki"]*W[i]["kj"];}
 
-	Matrix<>* dA = new Matrix<>[V.order];
-	for (int i = 0; i<V.order; i++){dA[i] = Matrix<>(W[0].nrow, W[0].ncol);}
-
 	Matrix<> ones = Matrix<>(W[0].ncol, W[0].ncol);
 	ones["ij"] = 1.;
 	unordered_map<string, Tensor<>>mttkrp_map;
@@ -1127,66 +1126,68 @@ bool alsCP_rank1(Tensor<> & V,
 		gradnorm = 0;
 
 		for (int i = 0; i<V.order; i++){
+			//cout<<i<<"\n";
 			// first compute the mttkrp and S via dimension tree
-			A_old = W[i]; // to compute G
+			A_old = W[i]; // to compute gradient
 			interval = find_interval(i, 0, V.order-1);
 			start = get<0>(interval); end = get<1>(interval);
 			char name[4]; name[2] = '\0'; name[3]='\0';
 			for (int i=start; i<=end; i++){name[i-start]=seq[i];}
 
-			/*if (mttkrp_map.find(name)==mttkrp_map.end()) {
-				cout<<"didn't find parent\n";
-				cout<<"the dict contains "<<mttkrp_map.size()<<" elements\n";
-				//cout<<"name is "<<name[0]<<name[1]<<name[2]<<"\n";
-			}*/
 			res_tensor = mttkrp_map[name];
 			gamma = gamma_map[name];
 			M = Matrix<>(W[0].nrow, W[0].ncol);
 			compute_gamma(gamma, S, i, start, end);
-			compute_M(M, res_tensor, W, i, start, end, dw);
-
+			//cout<<"start computing M\n";
+			if (i<=(V.order-1)/2) compute_M(M, res_tensor, W, true, i, start, end, dw);
+			else compute_M(M, res_tensor, W, false, i, start, end, dw);
+			//cout<<"finish computing M\n";
 			// regular solve
-			cout<<"gamma is ";
-			gamma.print();
-			/*cout<<"M is ";
-			M.print();
-			cout<<"W[i] is ";
-			W[i].print();*/
-			Matrix<> U,VT;
-			Vector<> s;
-			/*cout<<"U is ";
-			U.print();
-			cout<<"VT is ";
-			VT.print();
-			cout<<"s is "; s.print();*/
-			//S.print();
-			W[i].svd(U,s,VT,W[i].ncol);
+			//if (iter==0){M.print(); gamma.print();}
 			SVD_solve(M, W[i], gamma);
-			dA[i]["ij"] = A_old["ij"] - W[i]["ij"];
+			/*cout<<"A_old is \n";
+			A_old.print();
+			cout<<"W[i] is \n";
+			W[i].print();*/
 
-			grad_W[i]["ij"] = dA[i]["ik"]*gamma["kj"];
+			grad_W[i]["ij"] = (A_old["ik"] - W[i]["ik"])*gamma["kj"];
 
 			// If i is one of the special index, we need to update the cached_tensors
 			if (i==0){
+				//cout<<"start updating cached tensor\n";
 				update_cached_tensor(V, W, cached_tensor1, seq, 0);
+				//cout<<"finish updating cached tensor\n start building the first level right child\n";
 				build_1st_level_right_child(mttkrp_map, V, W, cached_tensor1, dw);
+				//cout<<"finish building the first level right child\n";
 			}
 			else if (i==(V.order-1)/2+1) {
 				update_cached_tensor(V,W, cached_tensor2, seq, (V.order-1)/2+1);
 				build_1st_level_left_child(mttkrp_map, V, W, cached_tensor2, dw);
 			}
-			update_mttkrp_tree(mttkrp_map, W, seq, i, 0, V.order-1, dw);
+			//cout<<"start updating mttkrp tree\n";
+			update_mttkrp_tree(mttkrp_map, W, true, seq, i, 0, (V.order-1)/2, dw);
+			update_mttkrp_tree(mttkrp_map, W, false, seq, i, (V.order-1)/2+1, V.order-1, dw);
+			//cout<<"finish updating mttkrp tree\n";
 			S[i]["ij"] = W[i]["ki"]*W[i]["kj"];
+			//cout<<"start update gamma tree\n";
 			update_gamma_tree(gamma_map, S, seq, i, 0, V.order-1);
+			//cout<<"finish updating gamma tree\n";
 			tempnorm = grad_W[i].norm2(); // gradient 2-norm squared
 			gradnorm += tempnorm*tempnorm;
 		}
 		gradnorm = sqrt(gradnorm);
+		Tensor<> V_build;
+		build_V(V_build, W, V.order, dw);
+		Tensor<> diff_V = V;
+		diff_V[seq_V] = V[seq_V] - V_build[seq_V];
+		double diffnorm_V = diff_V.norm2();
+		cout<<"grad norm is "<<gradnorm<<"\n";
+		cout<<"iteration is "<<iter<<"\n";
+		cout<<"diffnorm V is "<<diffnorm_V<<"\n";
 		iter++;
 		if (MPI_Wtime()-start_time > timelimit) {exceedsMaxTime = true; break;}
 	}
 	delete[] S;
-	delete[] dA;
 	delete cached_tensor1;
 	delete cached_tensor2;
 	if (iter==maxiter || exceedsMaxTime) return false;
@@ -1227,77 +1228,41 @@ void build_1st_level(unordered_map<string, Tensor<>> &mttkrp_map, Tensor<> &V, M
 	build_1st_level_right_child(mttkrp_map, V, W, cached_tensor1, dw);
 }
 
+/**==========================================================================================
+	*compute the first level tree nodes
+	*first compute M(1,2) (if the original tensor is M(1,2,3,4)) which is M(1,2,3,4) *W[3] *W[4]
+	*This is the easier of the two because there is no change of order of modes.
+	*notice the result (M(1,2)) will be a 3-d tensor
+	===========================================================================================
+	*/
 void build_1st_level_left_child(unordered_map<string, Tensor<>> &mttkrp_map, Tensor<> &V, Matrix<>*W, Tensor<> *cached_tensor2, World &dw){
-	// compute the first level tree nodes
-	// first compute M(1,2) (if the original tensor is M(1,2,3,4)) which is M(1,2,3,4) *W[3] *W[4]
-	// This is the easier of the two because there is no change of order of modes.
-	// notice the result (M(1,2)) will be a 3-d tensor
+	int mid = (V.order-1)/2;
 	int child1_name_len = (V.order-1)/2+1;
 	char child1_name[child1_name_len+1]; child1_name[child1_name_len]='\0';
 	for (int i=0; i<child1_name_len; i++) {child1_name[i] = 'a'+i;}
 
-	int ndim = V.order-1;
-	int len[V.order];
-	for (int i=0; i<cached_tensor2->order; i++){len[i] = cached_tensor2->lens[i];}
-	Tensor<> prev = *cached_tensor2;
-	char seq_temp[V.order+1]; seq_temp[V.order]='\0';
-	char seq_prev[V.order+1]; seq_prev[V.order]='\0';
-	for (int i=0; i<prev.order; i++) {seq_prev[i] = 'a'+i; seq_temp[i] = seq_prev[i];}
-	seq_temp[V.order-1]='\0';
-
-	char seq_w[3]; seq_w[2]='\0'; seq_w[1] = seq_prev[child1_name_len];
-	Tensor<> temp;
-	for (int i=V.order-1; i>child1_name_len; i--){
-		seq_w[0] = seq_prev[i];
-		temp = Tensor<>(ndim, len, dw);
-		temp[seq_temp] = (prev)[seq_prev]*W[i][seq_w];
-		prev = temp;
-		seq_prev[i] = '\0';
-		seq_temp[i-1] = '\0';
-		ndim--;
+	Tensor<> temp = *cached_tensor2;
+	for (int i=mid+2; i<V.order; i++){
+		KhatriRaoProductAlong(temp, W[i], mid+1, mid+2, dw);
 	}
-	mttkrp_map[child1_name] = prev;
+	mttkrp_map[child1_name] = temp;
 }
 
+/** Build the first level right child. The right child is the one contracted by the first mode.
+	* Thus in the subsequence computation, the first mode should be fixed.
+	*/
 void build_1st_level_right_child(unordered_map<string, Tensor<>> &mttkrp_map, Tensor<> &V, Matrix<>*W, Tensor<> *cached_tensor1, World &dw){
+	int mid = (V.order-1)/2;
 	int child1_name_len = (V.order-1)/2+1;
 	int child2_name_len = V.order - (V.order-1)/2-1; //V.order-1- ((V.order-1)/2+1)+1;
 	char child2_name[child2_name_len+1]; child2_name[child2_name_len]='\0';
 	for (int i=0; i<child2_name_len; i++) {child2_name[i] = 'a'+i+child1_name_len;}
 
-	//compute M(3,4) Slightly more complicated than M(1,2) since it involves change of modes.
-	int ndim = V.order;
-	int len[ndim];
-	char seq_prev[ndim+1]; seq_prev[ndim]='\0';
-	for (int i=0; i<child2_name_len; i++){
-		len[i] = cached_tensor1->lens[i+child1_name_len];
-		seq_prev[i] = 'a'+i+child1_name_len;
+	Tensor<> temp = *cached_tensor1;
+	for (int i=1; i<=mid; i++){
+		KhatriRaoProductAlong(temp, W[i], 0, 1, dw);
 	}
-	for (int i=0; i<child1_name_len; i++){
-		len[i+child2_name_len] = cached_tensor1->lens[i];
-		seq_prev[i+child2_name_len] = 'a'+i;
-	}
-	char seq_temp[ndim];
-	for (int i=0; i<V.order; i++) {seq_temp[i] = 'a'+i;}
-	Tensor<> prev = Tensor<>(ndim, len, dw);
-	prev[seq_prev] = (*cached_tensor1)[seq_temp];
-	ndim--;
-
-	for (int i=0; i<prev.order; i++) {seq_prev[i] = 'a'+i; seq_temp[i] = seq_prev[i];}
-	seq_temp[V.order-1]='\0';
-
-	Tensor<> temp;
-	char seq_w[3]; seq_w[1] = seq_prev[child1_name_len]; seq_w[2]='\0';
-	for (int i=(V.order-1)/2; i>0; i--){
-		seq_w[0] = seq_prev[i+child2_name_len];
-		temp = Tensor<>(ndim, len, dw);
-		temp[seq_temp] = (prev)[seq_prev]*W[i][seq_w];
-		prev = temp;
-		seq_prev[i+child2_name_len] = '\0';
-		seq_temp[i-1+child2_name_len] = '\0';
-		ndim--;
-	}
-	mttkrp_map[child2_name] = prev;
+	mttkrp_map[child2_name] = temp;
 }
 
 void update_cached_tensor(Tensor<> &V, Matrix<> *W, Tensor<>* cached_tensor, char* seq, int i){
@@ -1307,71 +1272,33 @@ void update_cached_tensor(Tensor<> &V, Matrix<> *W, Tensor<>* cached_tensor, cha
 			seq_V1[j] = 'a'+j;
 		}
 		seq_V1[i] = 'a'+V.order;
-		(*cached_tensor)[seq_V1] = V[seq]*W[0][seq_M];
+		(*cached_tensor)[seq_V1] = V[seq]*W[i][seq_M];
 }
 
 /** Fill in the mttkrp map. Starting from the 1st level down.
-*/
+	* The input start and end is the interval that containing parent name.
+	* In this case, it should be the name of the first level child.
+	*/
 
 void fill_mttkrp_tree(unordered_map<string, Tensor<>> &mttkrp_map, Matrix<> *W, char *seq, int start, int end, World &dw){
-	if (end==start+1 || end==start+2 || start==end) return;
+	if (start==0)	build_child(mttkrp_map, W, true, seq, start, end, dw);
+	else build_child(mttkrp_map, W, false, seq, start, end, dw);
+}
+
+/** Build all the children for a subtree.
+	*/
+void build_child(unordered_map<string, Tensor<>> &mttkrp_map, Matrix<> *W, bool leftSubtree, char *seq, int start, int end, World &dw){
+	if (start==end || start+1==end || start+2==end) return;
 
 	int mid = (start+end)/2;
-	build_left_child(mttkrp_map, W, seq, start, end, dw);
-	build_right_child(mttkrp_map, W, seq, start, end, dw);
-
-	fill_mttkrp_tree(mttkrp_map, W, seq, start, mid, dw);
-	fill_mttkrp_tree(mttkrp_map, W, seq, mid+1, end, dw);
+	build_left_child(mttkrp_map, W, leftSubtree, seq, start, end, dw);
+	build_right_child(mttkrp_map, W, leftSubtree, seq, start, end, dw);
+	build_child(mttkrp_map, W, leftSubtree, seq, start, mid, dw);
+	build_child(mttkrp_map, W, leftSubtree, seq, mid+1, end, dw);
 }
 
-void build_left_child(unordered_map<string, Tensor<>> &mttkrp_map, Matrix<> *W, char *seq, int start, int end, World &dw){
-		int mid = (start+end)/2;
-		int child1_len = mid-start+1;
-		char child1[child1_len+1];
-		int parent_len = end-start+1;
-		char parent[parent_len+1];
-		for (int i = 0; i<parent_len; i++){
-			parent[i] = seq[start+i];
-		}
-		parent[parent_len] = '\0';
-		for (int i = 0; i<child1_len; i++){
-			child1[i] = seq[start+i];
-			//cout<<child1[i];
-		}
-		//cout<<"\n";
-		child1[child1_len] = '\0';
-
-		//compute M(1,2), the first child
-		Tensor<> prev = mttkrp_map[parent];
-		int ndim = prev.order-1;
-		char seq2[prev.order+1]; seq2[prev.order]='\0';
-		for (int i=0; i<prev.order; i++){seq2[i]='a'+i;}
-		char seq3[prev.order+1]; seq3[prev.order]='\0';
-		for (int i=0; i<prev.order; i++) {seq3[i]='a'+i;}
-		int len[prev.order];
-		for (int i=0; i<prev.order; i++){len[i]=prev.lens[i];}
-		int pos = prev.order-1-1; // position of the last mode
-		int last_len = len[prev.order-1];
-		char last_char = 'a'+prev.order;
-		char seq_w[3]; seq_w[2]='\0';
-		seq_w[1] = last_char;
-		Tensor<> temp;
-		for (int i=end; i>mid; i--){
-			seq3[pos]=last_char; seq3[pos+1]='\0';
-			seq2[pos-1] = last_char; seq3[pos]='\0';
-			seq_w[0] = seq3[pos-1];
-			len[pos] = last_len;
-			temp = Tensor<>(ndim, len, dw);
-			temp[seq2] = prev[seq3]*W[i][seq_w];
-			prev = temp;
-			ndim--;
-			pos--;
-		}
-		mttkrp_map[child1] = prev;
-}
-
-
-void build_right_child(unordered_map<string, Tensor<>> &mttkrp_map, Matrix<> *W, char *seq, int start, int end, World &dw){
+void build_right_child(unordered_map<string, Tensor<>> &mttkrp_map, Matrix<> *W, bool leftSubtree, char *seq, int start, int end, World &dw){
+	if (start==end || start+1==end || start+2==end) return;
 	int mid = (start+end)/2;
 	int child2_len = end-mid;
 	char child2[child2_len+1]; // end-(mid+1)+2
@@ -1386,33 +1313,63 @@ void build_right_child(unordered_map<string, Tensor<>> &mttkrp_map, Matrix<> *W,
 	}
 	child2[child2_len] = '\0';
 
-	Tensor<> prev = mttkrp_map[parent];
-	// compute M(3,4) i.e. the second child
-	char seq2[prev.order+1]; seq2[prev.order]='\0';
-	for (int i=0; i<prev.order; i++){seq2[i]='a'+i;}
-	char seq_w[3]; seq_w[2]='\0'; seq_w[1] = seq2[prev.order-1];
-	int len[prev.order]; for (int i=0; i<prev.order; i++) len[i]=prev.lens[i];
-	int ndim = prev.order-1;
-	Tensor<> temp;
-	for (int i=start;i<=mid; i++){
-		seq_w[0]= seq2[i-start];
-		temp = Tensor<>(ndim, len+1+i-start, dw);
-		temp[seq2+1+i-start] = prev[seq2+i-start]*W[i][seq_w];
-		prev = temp;
-		ndim--;
+	if (!leftSubtree){
+		Tensor<> temp = mttkrp_map[parent];
+		for (int i=start; i<=mid; i++){
+			KhatriRaoProductAlong(temp, W[i], 0, 1, dw);
+		}
+		mttkrp_map[child2] = temp;
+	}	else {
+		Tensor<> temp = mttkrp_map[parent];
+		for (int i=start; i<=mid; i++){
+			KhatriRaoProductAlong(temp, W[i], temp.order-1, 0, dw);
+		}
+		mttkrp_map[child2] = temp;
 	}
-	mttkrp_map[child2] = prev;
 }
 
-void update_mttkrp_tree(unordered_map<string, Tensor<>>&mttkrp_map, Matrix<> *W, char* seq, int index, int start, int end, World &dw){
+void build_left_child(unordered_map<string, Tensor<>> &mttkrp_map, Matrix<> *W, bool leftSubtree, char *seq, int start, int end, World &dw){
+	if (start==end || start+1==end || start+2==end) return;
+	int mid = (start+end)/2;
+	int child1_len = mid-start+1;
+	char child1[child1_len+1];
+	int parent_len = end-start+1;
+	char parent[parent_len+1];
+	for (int i = 0; i<parent_len; i++){
+		parent[i] = seq[start+i];
+	}
+	parent[parent_len] = '\0';
+	for (int i = 0; i<child1_len; i++){
+		child1[i] = seq[start+i];
+	}
+	child1[child1_len] = '\0';
+
+	Tensor<> temp;
+	if (!leftSubtree){
+		temp = mttkrp_map[parent];
+		for (int i=mid+1; i<=end; i++){
+			KhatriRaoProductAlong(temp, W[i], 0, 2+mid-start, dw); // the contracted mode should be 1 + (mid-start)+1
+		}
+		mttkrp_map[child1] = temp;
+	}
+	else {
+		temp = mttkrp_map[parent];
+		for (int i=mid+1; i<=end; i++){
+			KhatriRaoProductAlong(temp, W[i], temp.order-1, 1+mid-start, dw); // the contracted mode should be (mid-start)+1
+		}
+		mttkrp_map[child1] = temp;
+	}
+}
+
+void update_mttkrp_tree(unordered_map<string, Tensor<>>&mttkrp_map, Matrix<> *W, bool leftSubtree, char* seq, int index, int start, int end, World &dw){
 	if (end==start+1 || end==start+2) return;
 
 	int mid = (start+end)/2;
-	if (!(start<=index && index<=mid))	build_left_child(mttkrp_map, W, seq, start, end, dw);
-	if (!(mid+1<=index && index<=end)) 	build_right_child(mttkrp_map, W, seq, start, end, dw);
+	if (!(start<=index && index<=mid))	{build_left_child(mttkrp_map, W, leftSubtree, seq, start, end, dw);}
+	if (!(mid+1<=index && index<=end)) 	{build_right_child(mttkrp_map, W, leftSubtree, seq, start, end, dw);}
 
-	update_mttkrp_tree(mttkrp_map, W, seq, index, start, mid, dw);
-	update_mttkrp_tree(mttkrp_map, W, seq, index, mid+1, end, dw);
+	update_mttkrp_tree(mttkrp_map, W, leftSubtree, seq, index, start, mid, dw);
+	update_mttkrp_tree(mttkrp_map, W, leftSubtree, seq, index, mid+1, end, dw);
 }
 
 void fill_gamma_tree(unordered_map<string, Matrix<>> &gamma_map, Matrix<> *S, char* seq, int start, int end){
@@ -1443,7 +1400,7 @@ void fill_gamma_tree(unordered_map<string, Matrix<>> &gamma_map, Matrix<> *S, ch
 	gamma_map[child1] = temp;
 
 	temp = gamma_map[parent];
-	for (int i=start; i<=mid; i++) temp["ij"] = temp["ij"]*S[i]["ij"];
+	for (int i=start; i<=mid; i++) {temp["ij"] = temp["ij"]*S[i]["ij"];}
 	gamma_map[child2] = temp;
 	fill_gamma_tree(gamma_map, S, seq, start, mid);
 	fill_gamma_tree(gamma_map, S, seq, mid+1, end);
@@ -1484,7 +1441,7 @@ void update_gamma_tree(unordered_map<string, Matrix<>> &gamma_map, Matrix<>* S, 
 	}
 	if (index<mid || index>end){// I need to update child2
 		Matrix<> temp = gamma_map[parent];
-		for (int i=start; i<=mid; i++) temp["ij"] = temp["ij"]*S[i]["ij"];
+		for (int i=start; i<=mid; i++) {temp["ij"] = temp["ij"]*S[i]["ij"];}
 		gamma_map[child2] = temp;
 	}
 	update_gamma_tree(gamma_map, S, seq, index, start, mid);
@@ -1512,34 +1469,66 @@ void compute_gamma(Matrix<> &res, Matrix<> *S, int index, int start, int end){
 	}
 }
 
-void compute_M(Matrix<> &M, Tensor<> &res, Matrix<> *W, int index, int start, int end, World &dw){
+void compute_M(Matrix<> &M, Tensor<> &res, Matrix<> *W, bool leftSubtree, int index, int start, int end, World &dw){
 	//cout<<"index is "<<index<<" start is "<<start<<" end is "<<end<<"\n";
 	//M.print(); res.print(); W[end].print();
-	if (start+1==end){
-		if (index==start){
-			M["ik"] = res["ijk"]*W[end]["jk"];
+	//cout<<"Dimensions of res is ";
+	//print_lens(res);
+	if (leftSubtree){ // the last mode is fixed
+		if (start+1==end){
+			if (index==start){
+				M["ik"] = res["ijk"]*W[end]["jk"];
+			}
+			else {M["jk"] = res["ijk"]*W[start]["ik"];}
 		}
-		else {M["jk"] = res["ijk"]*W[start]["ik"];}
-	}
-	else if (start+2==end){
-		Tensor<> temp;
-		if (start==index){
-			int len[] = {res.lens[0], res.lens[2], res.lens[3]};
-			temp = Tensor<>(3, len, dw);
-			temp["ikl"] = res["ijkl"]*W[start+1]["jl"];
-			M["il"] = temp["ikl"]*W[end]["kl"];
+		else if (start+2==end){
+			Tensor<> temp;
+			if (start==index){
+				int len[] = {res.lens[0], res.lens[2], res.lens[3]};
+				temp = Tensor<>(3, len, dw);
+				temp["ikl"] = res["ijkl"]*W[start+1]["jl"];
+				M["il"] = temp["ikl"]*W[end]["kl"];
+			}
+			else if (end==index){
+				int len[] = {res.lens[1], res.lens[2], res.lens[3]};
+				temp = Tensor<>(3, len, dw);
+				temp["jkl"] = res["ijkl"]*W[start]["il"];
+				M["kl"] = temp["jkl"]*W[start+1]["jl"];
+			}
+			else {
+				int len[] = {res.lens[1], res.lens[2], res.lens[3]};
+				temp = Tensor<>(3, len, dw);
+				temp["jkl"] = res["ijkl"]*W[start]["il"];
+				M["jl"] = temp["jkl"]*W[end]["kl"];
+			}
 		}
-		else if (end==index){
-			int len[] = {res.lens[1], res.lens[2], res.lens[3]};
-			temp = Tensor<>(3, len, dw);
-			temp["jkl"] = res["ijkl"]*W[start+1]["il"];
-			M["kl"] = temp["jkl"]*W[end]["jl"];
+	}else { // the first mode is fixed; need to do transpose
+		if (start+1==end){
+			if (index==start){
+				M["ji"] = res["ijk"]*W[end]["ki"];
+			}
+			else {M["ki"] = res["ijk"]*W[start]["ji"];}
 		}
-		else {
-			int len[] = {res.lens[1], res.lens[2], res.lens[3]};
-			temp = Tensor<>(3, len, dw);
-			temp["jkl"] = res["ijkl"]*W[start+1]["il"];
-			M["jl"] = temp["jkl"]*W[end]["kl"];
+		else if (start+2==end){
+			Tensor<> temp;
+			if (start==index){
+				int len[] = {res.lens[0], res.lens[1], res.lens[3]};
+				temp = Tensor<>(3, len, dw);
+				temp["ijl"] = res["ijkl"]*W[start+1]["ki"];
+				M["ji"] = temp["ijl"]*W[end]["li"];
+			}
+			else if (end==index){
+				int len[] = {res.lens[0], res.lens[2], res.lens[3]};
+				temp = Tensor<>(3, len, dw);
+				temp["ikl"] = res["ijkl"]*W[start]["ji"];
+				M["li"] = temp["ikl"]*W[start+1]["ki"];
+			}
+			else {
+				int len[] = {res.lens[0], res.lens[2], res.lens[3]};
+				temp = Tensor<>(3, len, dw);
+				temp["ikl"] = res["ijkl"]*W[start]["ji"];
+				M["ki"] = temp["ikl"]*W[end]["li"];
+			}
 		}
 	}
 }

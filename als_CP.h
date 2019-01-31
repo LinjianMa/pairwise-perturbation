@@ -164,7 +164,7 @@ bool alsCP_rank1(Tensor<> & V,
 		   Matrix<> * W,
 		   Matrix<> * grad_W,
 		   double tol,
-       double tol_rank1,
+       /*double tol_rank1,*/
 		   double timelimit,
 		   int maxiter,
 		   World & dw);
@@ -182,11 +182,13 @@ void update_cached_tensor(Tensor<> &V, Matrix<> *W, Tensor<>* cached_tensor, cha
 
 void fill_mttkrp_tree(unordered_map<string, Tensor<>>&mttkrp_map, Matrix<> *W, char *seq, int start, int end, World &dw);
 
-void build_left_child(unordered_map<string, Tensor<>> &mttkrp_map, Matrix<> *W, char *seq, int start, int end, World &dw);
+void build_child(unordered_map<string, Tensor<>> &mttkrp_map, Matrix<> *W, bool leftSubtree, char *seq, int start, int end, World &dw);
 
-void build_right_child(unordered_map<string, Tensor<>> &mttkrp_map, Matrix<> *W, char *seq, int start, int end, World &dw);
+void build_left_child(unordered_map<string, Tensor<>> &mttkrp_map, Matrix<> *W, bool leftSubtree, char *seq, int start, int end, World &dw);
 
-void update_mttkrp_tree(unordered_map<string, Tensor<>>&mttkrp_map, Matrix<> *W, char* seq, int index, int start, int end, World &dw);
+void build_right_child(unordered_map<string, Tensor<>> &mttkrp_map, Matrix<> *W, bool leftSubtree, char *seq, int start, int end, World &dw);
+
+void update_mttkrp_tree(unordered_map<string, Tensor<>>&mttkrp_map, Matrix<> *W, bool leftSubtree, char* seq, int index, int start, int end, World &dw);
 
 void fill_gamma_tree(unordered_map<string, Matrix<>> &gamma_map, Matrix<> *S, char* seq, int start, int end);
 
@@ -196,6 +198,6 @@ tuple<int, int> find_interval(int index, int start, int end);
 
 void compute_gamma(Matrix<> &res, Matrix<> *W, int index, int start, int end);
 
-void compute_M(Matrix<> &M, Tensor<> &res, Matrix<> *W, int index, int start, int end, World &dw);
+void compute_M(Matrix<> &M, Tensor<> &res, Matrix<> *W, bool leftSubtree, int index, int start, int end, World &dw);
 
 #endif
