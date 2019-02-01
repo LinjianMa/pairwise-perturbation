@@ -717,6 +717,26 @@ void KhatriRaoProductAlong(Tensor<> &V, Matrix<> &W, int fixed_mode, int contrac
 	V = temp;
 }
 
+/** Return the result on V.
+	*/
+void tensorMatrixMultiplication(Tensor<> &V, Matrix<> &W, int contract_mode, World &dw){
+	int lens[V.order];
+	char seq_V[V.order+1]; seq_V[V.order]='\0';
+	char seq_temp[V.order+1]; seq_temp[V.order]='\0';
+	for (int i=0; i<V.order; i++){
+		seq_V[i] = 'a'+i;
+		seq_temp[i] = 'a'+i;
+		lens[i] = V.lens[i];
+	}
+	lens[contract_mode] = W.ncol;
+	seq_temp[contract_mode] = 'a'+V.order;
+	char seq_W[] = {seq_V[contract_mode], 'a'+V.order, '\0'};
+
+	Tensor<> temp = Tensor<>(V.order, lens, dw);
+	temp[seq_temp] = V[seq_V]*W[seq_W];
+	V = temp;
+}
+
 void print_lens(Tensor<> &V){
 	for (int i=0; i<V.order; i++) cout<<V.lens[i]<<",";
 	cout<<"\n";

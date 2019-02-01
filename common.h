@@ -114,6 +114,8 @@ void KhatriRao_contract(Matrix<> & M,
 
 void KhatriRaoProductAlong(Tensor<> &V, Matrix<> &W, int fixed_mode, int contract_mode, World &dw);
 
+void tensorMatrixMultiplication(Tensor<> &V, Matrix<> &W, int contract_mode, World &dw);
+
 /**
  *  \brief subproblem grad_W[i]
  */

@@ -200,4 +200,8 @@ void compute_gamma(Matrix<> &res, Matrix<> *W, int index, int start, int end);
 
 void compute_M(Matrix<> &M, Tensor<> &res, Matrix<> *W, bool leftSubtree, int index, int start, int end, World &dw);
 
+void print_gamma(Tensor<> &V, Matrix<> *S, int index);
+
+void print_M(Tensor<> &V, Matrix<> *W, int index, World &dw);
+
 #endif

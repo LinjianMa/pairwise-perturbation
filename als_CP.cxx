@@ -451,7 +451,7 @@ bool alsCP_DT(Tensor<> & V,
 			M["ij"] += F[i]["ij"];
 			// calculate gradient
 			grad_W[i]["ij"] = -M["ij"]+W[i]["ik"]*S["kj"];
-			if (iter==0){M.print(); S.print();}
+			if (iter==0 && i==2){M.print(); print_M(V, W, i, dw);}
 			SVD_solve(M, W[i], S);
 			// recover the char
 			temp = seq_V[V.order-1];
@@ -1143,7 +1143,11 @@ bool alsCP_rank1(Tensor<> & V,
 			else compute_M(M, res_tensor, W, false, i, start, end, dw);
 			//cout<<"finish computing M\n";
 			// regular solve
-			//if (iter==0){M.print(); gamma.print();}
+			if (iter==0 && (i==2)){
+				M.print();
+				print_M(V, W, i, dw);
+				//gamma.print(); print_gamma(V, S, i);
+			}
 			SVD_solve(M, W[i], gamma);
 			/*cout<<"A_old is \n";
 			A_old.print();
@@ -1161,9 +1165,13 @@ bool alsCP_rank1(Tensor<> & V,
 				//cout<<"finish building the first level right child\n";
 			}
 			else if (i==(V.order-1)/2+1) {
-				update_cached_tensor(V,W, cached_tensor2, seq, (V.order-1)/2+1);
+				update_cached_tensor(V, W, cached_tensor2, seq, (V.order-1)/2+1);
 				build_1st_level_left_child(mttkrp_map, V, W, cached_tensor2, dw);
 			}
+			else if (i<(V.order-1)/2+1) {
+				build_1st_level_right_child(mttkrp_map, V, W, cached_tensor1, dw);
+			}
+			else build_1st_level_left_child(mttkrp_map, V, W, cached_tensor2, dw);
 			//cout<<"start updating mttkrp tree\n";
 			update_mttkrp_tree(mttkrp_map, W, true, seq, i, 0, (V.order-1)/2, dw);
 			update_mttkrp_tree(mttkrp_map, W, false, seq, i, (V.order-1)/2+1, V.order-1, dw);
@@ -1313,13 +1321,13 @@ void build_right_child(unordered_map<string, Tensor<>> &mttkrp_map, Matrix<> *W,
 	}
 	child2[child2_len] = '\0';
 
-	if (!leftSubtree){
+	if (!leftSubtree){ // right subtree: the first mode should be fixed
 		Tensor<> temp = mttkrp_map[parent];
 		for (int i=start; i<=mid; i++){
 			KhatriRaoProductAlong(temp, W[i], 0, 1, dw);
 		}
 		mttkrp_map[child2] = temp;
-	}	else {
+	}	else { // left subtree: the last mode should be fixed
 		Tensor<> temp = mttkrp_map[parent];
 		for (int i=start; i<=mid; i++){
 			KhatriRaoProductAlong(temp, W[i], temp.order-1, 0, dw);
@@ -1439,7 +1447,7 @@ void update_gamma_tree(unordered_map<string, Matrix<>> &gamma_map, Matrix<>* S, 
 		for (int i = mid+1; i<=end; i++){temp["ij"] = temp["ij"]*S[i]["ij"];}
 		gamma_map[child1] = temp;
 	}
-	if (index<mid || index>end){// I need to update child2
+	if (index<mid+1 || index>end){// I need to update child2
 		Matrix<> temp = gamma_map[parent];
 		for (int i=start; i<=mid; i++) {temp["ij"] = temp["ij"]*S[i]["ij"];}
 		gamma_map[child2] = temp;
@@ -1531,4 +1539,61 @@ void compute_M(Matrix<> &M, Tensor<> &res, Matrix<> *W, bool leftSubtree, int in
 			}
 		}
 	}
+}
+
+/** For debugging use only
+	*/
+void print_gamma(Tensor<> &V, Matrix<> *S, int index){
+	Matrix<> temp = S[0];
+	for (int i=1; i<V.order; i++){
+		if (i!=index) temp["ij"] = temp["ij"]*S[i]["ij"];
+	}
+	cout<<"Real gamma is \n";
+	temp.print();
+}
+
+void print_M(Tensor<> &V, Matrix<> *W, int index, World &dw){
+	Tensor<> temp = V;
+	/*tensorMatrixMultiplication(temp, W[V.order-1], V.order-1, dw);
+	for (int i=0; i<V.order-1; i++){
+		if (i!=index){
+			KhatriRaoProductAlong(temp, W[i], temp.order-1, 0, dw);
+		}
+	}
+	cout<<"Real M1 is \n";
+	temp.print();
+
+	temp = V;
+	tensorMatrixMultiplication(temp, W[V.order-1], V.order-1, dw);
+	for (int i=V.order-2; i>=0; i--){
+		if (i!=index){
+			KhatriRaoProductAlong(temp, W[i], temp.order-1, 0, dw);
+		}
+	}
+	cout<<"Real M2 is \n";
+	temp.print();
+
+	temp = V;
+	tensorMatrixMultiplication(temp, W[2], 2, dw);
+	KhatriRaoProductAlong(temp, W[3], 2, 3, dw);
+	KhatriRaoProductAlong(temp, W[0], 2, 0, dw);
+	cout<<"Real M3 is \n";
+	temp.print();*/
+
+	//temp = V;
+
+	tensorMatrixMultiplication(temp, W[0], 0, dw);
+	//cout<<"correct cached tensor is \n";
+	//temp.print();
+	KhatriRaoProductAlong(temp, W[1], 0, 1, dw);
+	//cout<<"correct dt tensor is \n";
+	//temp.print();
+	KhatriRaoProductAlong(temp, W[3], 0, 2, dw);
+	cout<<"Real M is \n";
+	temp.print();
+	/*tensorMatrixMultiplication(temp, W[3], 3, dw);
+	KhatriRaoProductAlong(temp, W[0], 3, 0, dw);
+	KhatriRaoProductAlong(temp, W[1], 2, 0, dw);
+	cout<<"Real M is \n";
+	temp.print();*/
 }
