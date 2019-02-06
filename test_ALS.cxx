@@ -1,7 +1,7 @@
-/** \addtogroup examples 
-  * @{ 
+/** \addtogroup examples
+  * @{
   * \defgroup TESTS_multigrid TESTS_multigrid
-  * @{ 
+  * @{
   * \brief NTF/TF multigrid tests
   */
 #include "als_Tucker.h"
@@ -24,10 +24,10 @@ char* getCmdOption(char ** begin,
 int main(int argc, char ** argv){
 	int rank, np;//, n, pass;
 	int const in_num = argc;
-	char ** input_str = argv; 
+	char ** input_str = argv;
 
 	char * model;		// 0 is CP, 1 is Tucker
-	char * tensor;		// which tensor    p / p2 / c / r / r2 / o / 
+	char * tensor;		// which tensor    p / p2 / c / r / r2 / o /
 	int pp;				// 0 Dimention tree 1 pairwise perturbation
 	/*
 	p : poisson operator
@@ -42,7 +42,7 @@ int main(int argc, char ** argv){
 	int R;   			// decomposition rank
 	int issparse;  	// whether use the sparse routine or not
 	double tol;  	// global convergance tolerance
-	double pp_res_tol;	// pp restart tolerance 
+	double pp_res_tol;	// pp restart tolerance
 	double lambda_; 	// regularization param
 	double magni;		// pp update magnitude
 	char * filename;	// output csv filename
@@ -65,15 +65,15 @@ int main(int argc, char ** argv){
     	if (model[0] != 'C' && model[0] != 'T') model = "CP";
 	} else {
 		model = "CP";
-	}	
+	}
 	if (getCmdOption(input_str, input_str+in_num, "-tensor")) {
 		tensor = getCmdOption(input_str, input_str+in_num, "-tensor");
 	} else {
 		tensor = "p";
-	}	
+	}
 	if (getCmdOption(input_str, input_str+in_num, "-pp")) {
 		pp = atoi(getCmdOption(input_str, input_str+in_num, "-pp"));
-    	if (pp < 0 || pp > 1) pp = 0;
+    	if (pp < 0 /*|| pp > 1*/) pp = 0;
 	} else {
 		pp = 0;
 	}
@@ -124,7 +124,7 @@ int main(int argc, char ** argv){
     	if (tol < 0 || tol > 1) tol = 1e-10;
 	} else {
 		tol = 1e-10;
-	}	
+	}
 	if (getCmdOption(input_str, input_str+in_num, "-pp_res_tol")) {
 		pp_res_tol = atof(getCmdOption(input_str, input_str+in_num, "-pp_res_tol"));
     	if (pp_res_tol < 0 || pp_res_tol > 1) pp_res_tol = 1e-2;
@@ -136,23 +136,23 @@ int main(int argc, char ** argv){
     	if (lambda_ < 0 ) lambda_ = 0.;
 	} else {
 		lambda_ = 0.;
-	}	
+	}
 	if (getCmdOption(input_str, input_str+in_num, "-magni")) {
 		magni = atof(getCmdOption(input_str, input_str+in_num, "-magni"));
     	if (magni < 0 ) magni = 1.;
 	} else {
 		magni = 1.;
-	}	
+	}
 	if (getCmdOption(input_str, input_str+in_num, "-filename")) {
 		filename = getCmdOption(input_str, input_str+in_num, "-filename");
 	} else {
 		filename = "out.csv";
-	}	
+	}
 	if (getCmdOption(input_str, input_str+in_num, "-tensorfile")) {
 		tensorfile = getCmdOption(input_str, input_str+in_num, "-tensorfile");
 	} else {
 		tensorfile = "test";
-	}	
+	}
 	if (getCmdOption(input_str, input_str+in_num, "-colmin")) {
 		col_min = atof(getCmdOption(input_str, input_str+in_num, "-colmin"));
 	} else {
@@ -162,13 +162,13 @@ int main(int argc, char ** argv){
 		col_max = atof(getCmdOption(input_str, input_str+in_num, "-colmax"));
 	} else {
 		col_max = 0.9;
-	}	
+	}
 	if (getCmdOption(input_str, input_str+in_num, "-rationoise")) {
 		ratio_noise = atof(getCmdOption(input_str, input_str+in_num, "-rationoise"));
     	if (ratio_noise < 0 ) ratio_noise = 0.01;
 	} else {
 		ratio_noise = 0.01;
-	}	
+	}
 
 	{
 		double start_time = MPI_Wtime();
@@ -193,19 +193,19 @@ int main(int argc, char ** argv){
 				//p2 : poisson operator with doubled dimension (decomposition is not accurate)
 				int lens[dim];
 				for (int i=0; i<dim; i++) lens[i]=s;
-				V = Tensor<>(dim, issparse, lens, dw); 
+				V = Tensor<>(dim, issparse, lens, dw);
 				laplacian_tensor(V, dim, s, issparse, dw);
 			}
 			else {
 				//p : poisson operator
 				int lens0[dim];
 				for (int i=0; i<dim; i++) lens0[i]=s;
-				Tensor<> V0 = Tensor<>(dim, issparse, lens0, dw); 
+				Tensor<> V0 = Tensor<>(dim, issparse, lens0, dw);
 				laplacian_tensor(V0, dim, s, issparse, dw);
 				// reshape V0
 				int lens[dim/2];
 				for (int i=0; i<dim/2; i++) lens[i]=s*s;
-				V = Tensor<>(dim/2, issparse, lens, dw); 
+				V = Tensor<>(dim/2, issparse, lens, dw);
 				// reshape V0 into V
 				fold_unfold(V0, V);
 			}
@@ -220,7 +220,7 @@ int main(int argc, char ** argv){
 			for (int i = 0; i < dim; i++) {
 				arg[i] = chars[i];
 			}
-			V = Gen_collinearity(lens, dim, R, col_min, col_max, dw); 
+			V = Gen_collinearity(lens, dim, R, col_min, col_max, dw);
 			Tensor<> V_noise = Tensor<>(dim, issparse, lens, dw);
 			V_noise.fill_random(-1,1);
 			double noise_norm = V_noise.norm2();
@@ -233,8 +233,8 @@ int main(int argc, char ** argv){
 				//r2 : random tensor
 				int lens[dim];
 				for (int i=0; i<dim; i++) lens[i]=s;
-				V = Tensor<>(dim, issparse, lens, dw); 
-				V.fill_random(0.5,1);		  // Why?   when V is (-1,1), low rank Tucker has no accurate decomposition		
+				V = Tensor<>(dim, issparse, lens, dw);
+				V.fill_random(0.5,1);		  // Why?   when V is (-1,1), low rank Tucker has no accurate decomposition
 			}
 			else {
 				//r : tensor made by random matrices
@@ -243,7 +243,7 @@ int main(int argc, char ** argv){
 				Matrix<>* W = new Matrix<>[dim];				// N matrices V will be decomposed into
 				for (int i=0; i<dim; i++) {
 					W[i] = Matrix<>(s,R,dw);
-					W[i].fill_random(0,1); 
+					W[i].fill_random(0,1);
 				}
 				build_V(V, W, dim, dw);
 				delete[] W;
@@ -286,51 +286,58 @@ int main(int argc, char ** argv){
 
 		double Vnorm = V.norm2();
 		if (dw.rank==0) cout << "Vnorm= " << Vnorm << endl;
- 		ofstream Plot_File(filename); 
+ 		ofstream Plot_File(filename);
 		Matrix<>* W = new Matrix<>[V.order];				// N matrices V will be decomposed into
-		Matrix<>* grad_W = new Matrix<>[V.order];			// gradients in N dimensions 
+		Matrix<>* grad_W = new Matrix<>[V.order];			// gradients in N dimensions
 		for (int i=0; i<V.order; i++) {
 			W[i] = Matrix<>(V.lens[i],R,dw);
 			grad_W[i] = Matrix<>(V.lens[i],R,dw);
-			W[i].fill_random(0,1); 
-			grad_W[i].fill_random(0,1);  
+			W[i].fill_random(0,1);
+			grad_W[i].fill_random(0,1);
 		}
 		//construct F matrices (correction terms, F[]=0 initially)
 		Matrix<>* F = new Matrix<>[V.order];
 		for (int i=0; i<V.order; i++) {
 			F[i] = Matrix<>(V.lens[i],R,dw);
 			F[i]["ij"] = 0.;
-		}	
+		}
 
-		// V.write_dense_to_file (fh);	
+		// V.write_dense_to_file (fh);
 
     	Timer_epoch tALS("ALS");
     	tALS.begin();
 
 		if (model[0]=='C') {
 			if (pp==0) {
+        V.print();
 				alsCP_DT(V, W, grad_W, F, tol*Vnorm, timelimit, maxiter, lambda_, Plot_File, resprint, false, dw);
 			}
 			else if (pp==1) {
 				alsCP_PP(V, W, grad_W, F, tol*Vnorm, pp_res_tol, timelimit, maxiter, lambda_, magni, Plot_File, resprint, false, dw);
 			}
+      if (pp==2){
+        alsCP_DimensionTree(V, W, grad_W, tol*Vnorm, timelimit, maxiter, dw);
+      }
+      if (pp==3){
+        alsCP_rankR(V, W, grad_W, 1, tol*Vnorm, 10, timelimit, maxiter, dw);
+      }
 		}
 		else if (model[0]=='T') {
 			int ranks[V.order];
 			if (tensor[0]=='o') {
-				//o1 : coil-100 dataset 
-				if (strlen(tensor)>1 && tensor[1]=='1') {	
+				//o1 : coil-100 dataset
+				if (strlen(tensor)>1 && tensor[1]=='1') {
 					ranks[0] = 3;
 					ranks[1] = 10;
 					ranks[2] = 10;
-					ranks[3] = 70;						
+					ranks[3] = 70;
 				}
 				//o2 : time-lapse dataset
-				else if (strlen(tensor)>1 && tensor[1]=='2') {	
+				else if (strlen(tensor)>1 && tensor[1]=='2') {
 					ranks[0] = 10;
 					ranks[1] = 100;
 					ranks[2] = 100;
-					ranks[3] = 5;	
+					ranks[3] = 5;
 				}
 			} else {
 				for (int i=0; i<V.order; i++) {
@@ -344,10 +351,10 @@ int main(int argc, char ** argv){
 				alsTucker_DT(V, hosvd_core, W, tol*Vnorm, timelimit, maxiter, Plot_File, resprint, false, dw);
 			}
 			else if (pp==1) {
-				alsTucker_PP(V, hosvd_core, W, tol*Vnorm, pp_res_tol, timelimit, maxiter, Plot_File, resprint, false, dw);				
+				alsTucker_PP(V, hosvd_core, W, tol*Vnorm, pp_res_tol, timelimit, maxiter, Plot_File, resprint, false, dw);
 			}
 		}
-    	
+
     	tALS.end();
 
 		if(dw.rank==0) {

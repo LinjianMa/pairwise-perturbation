@@ -116,6 +116,11 @@ void KhatriRaoProductAlong(Tensor<> &V, Matrix<> &W, int fixed_mode, int contrac
 
 void tensorMatrixMultiplication(Tensor<> &V, Matrix<> &W, int contract_mode, World &dw);
 
+void matrixDot(Matrix<>& result, Matrix<> &matrix1, Matrix<> &matrix2);
+
+void SVD_solve_left(Matrix<> &M, Matrix<> &X, Matrix<> &Y);
+
+
 /**
  *  \brief subproblem grad_W[i]
  */

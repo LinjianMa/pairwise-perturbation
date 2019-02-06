@@ -492,6 +492,19 @@ void SVD_solve(Matrix<>& M,
   tSVD_solve.stop();
 }
 
+void SVD_solve_left(Matrix<> &S, Matrix<> &X, Matrix<> &Y){
+	Matrix<> U,VT;
+	Vector<> s;
+	S.svd(U,s,VT,S.ncol);
+	Matrix<> S_reverse(S);
+ 	// reverse
+ 	Transform<> inv([](double & d){ d=1./d; });
+	inv(s["i"]);
+	S_reverse["ij"] = VT["ki"]*s["k"]*U["jk"];
+	matrixDot(X, S_reverse, Y);
+}
+
+
 void SVD_solve_mod(Matrix<>& M,
 				   Matrix<>& W,
 				   Matrix<>& W_init,
@@ -735,6 +748,11 @@ void tensorMatrixMultiplication(Tensor<> &V, Matrix<> &W, int contract_mode, Wor
 	Tensor<> temp = Tensor<>(V.order, lens, dw);
 	temp[seq_temp] = V[seq_V]*W[seq_W];
 	V = temp;
+}
+
+void matrixDot(Matrix<>& result, Matrix<> &matrix1, Matrix<> &matrix2){
+	result = Matrix<>(matrix1.nrow, matrix2.ncol);
+	result["ij"] = matrix1["ik"]*matrix2["kj"];
 }
 
 void print_lens(Tensor<> &V){

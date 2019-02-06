@@ -89,7 +89,7 @@ bool alsCP(Tensor<> & V,
 			}
 			// subproblem M=W*S
 			M["ij"] += F[i]["ij"];
-			if (iter==0 && i==0){M.print(); S.print();}
+			//if (iter==0 && i==0){M.print(); S.print();}
 			SVD_solve(M, W[i], S);
 			// Gauss_Seidel(W[i], M, S, 20);
 			// recover the char
@@ -451,7 +451,7 @@ bool alsCP_DT(Tensor<> & V,
 			M["ij"] += F[i]["ij"];
 			// calculate gradient
 			grad_W[i]["ij"] = -M["ij"]+W[i]["ik"]*S["kj"];
-			if (iter==0 && i==2){M.print(); print_M(V, W, i, dw);}
+			//if (iter==0 && i==2){M.print(); print_M(V, W, i, dw);}
 			SVD_solve(M, W[i], S);
 			// recover the char
 			temp = seq_V[V.order-1];
@@ -1058,11 +1058,176 @@ bool alsCP_PP(Tensor<> & V,
  *  V.order should be >=4
  *	return whether the ALS steps have converged.
  */
-bool alsCP_rank1(Tensor<> & V,
+ bool alsCP_rankR(Tensor<> & V,
+  		   Matrix<> * W,
+  		   Matrix<> * grad_W,
+				 int R,
+  		   double tol,
+ 			   double tol_rankR,
+  		   double timelimit,
+  		   int maxiter,
+  		   World & dw) {
+
+ 	bool exceedsMaxTime = false;
+ 	double start_time = MPI_Wtime();
+ 	double gradnorm = tol+1;
+ 	int iter = 0;
+ 	//make the char
+ 	char seq[V.order+1], seq_V[V.order+1];
+ 	seq[V.order] = '\0'; seq_V[V.order] = '\0';
+ 	for (int j=0; j<V.order; j++) {
+ 		seq[j] = 'a'+j;
+ 		seq_V[j] = seq[j];
+ 	}
+
+ 	// Gamma[n] = S[1]*S[2]*...*S[n-1]*S[n+1]*...*S[V.order], where S[i] = W[i].T.dot(W[i])
+ 	// Save all S[i] since S[i] can be fast updated if we have rank1 updates on W[i]
+ 	// Notice that the structure of CP allows us to save partial result of product of S into dimension tree
+ 	Matrix<>* S = new Matrix<>[V.order];
+ 	for (int i = 0; i<V.order; i++){S[i] = Matrix<>(W[0].ncol, W[0].ncol);}
+ 	for (int i = 1; i<V.order; i++){S[i]["ij"] = W[i]["ki"]*W[i]["kj"];}
+
+ 	Matrix<> ones = Matrix<>(W[0].ncol, W[0].ncol);
+ 	ones["ij"] = 1.;
+ 	unordered_map<string, Tensor<>>mttkrp_map;
+ 	unordered_map<string, Matrix<>>gamma_map;
+ 	unordered_map<string, string>parent;
+ 	build_BDT(parent, seq, 0, V.order-1);
+ 	mttkrp_map[seq] = V;
+ 	gamma_map[seq] = ones;
+ 	fill_gamma_tree(gamma_map, S, seq, 0, V.order-1);
+
+ 	// define two cached tensor
+ 	// special index is 0 and (V.order-1)/2+1
+ 	int tensor1_len[V.order];
+ 	int tensor2_len[V.order];
+ 	for (int i=0; i<V.order; i++){
+ 		tensor1_len[i] = V.lens[i];
+ 		tensor2_len[i] = V.lens[i];
+ 	}
+ 	tensor1_len[0] = W[0].ncol;
+ 	tensor2_len[(V.order-1)/2+1] = W[0].ncol;
+ 	Tensor<>* cached_tensor1 = new Tensor<>(V.order, tensor1_len, dw);
+ 	Tensor<>* cached_tensor2 = new Tensor<>(V.order, tensor2_len, dw);
+
+ 	update_cached_tensor(V, W, cached_tensor1, seq, 0);
+ 	update_cached_tensor(V, W, cached_tensor2, seq, (V.order-1)/2+1);
+
+ 	build_1st_level(mttkrp_map, V, W, cached_tensor1, cached_tensor2, dw);
+ 	fill_mttkrp_tree(mttkrp_map, W, seq, 0, (V.order-1)/2, dw);
+ 	fill_mttkrp_tree(mttkrp_map, W, seq, (V.order-1)/2+1, V.order-1, dw);
+
+ 	double tempnorm;
+ 	tuple<int, int> interval;
+ 	int start, end;
+ 	Tensor<> res_tensor;
+ 	Matrix<> gamma, M, A_old;
+	double *gradnorms = new double[V.order];
+ 	// Perform ALS for CP with dimension tree. The loop will be broke out if maximum iterations or maximum time is exceeded.
+ 	while (iter<maxiter && gradnorm>tol){
+ 		gradnorm = 0;
+
+ 		for (int i = 0; i<V.order; i++){
+ 			//cout<<i<<"\n";
+ 			// first compute the mttkrp and S via dimension tree
+ 			A_old = W[i]; // to compute gradient
+ 			interval = find_interval(i, 0, V.order-1);
+ 			start = get<0>(interval); end = get<1>(interval);
+ 			char name[4]; name[2] = '\0'; name[3]='\0';
+ 			for (int i=start; i<=end; i++){name[i-start]=seq[i];}
+
+ 			res_tensor = mttkrp_map[name];
+ 			gamma = gamma_map[name];
+ 			M = Matrix<>(W[0].nrow, W[0].ncol);
+ 			compute_gamma(gamma, S, i, start, end);
+ 			//cout<<"start computing M\n";
+ 			if (i<=(V.order-1)/2) compute_M(M, res_tensor, W, true, i, start, end, dw);
+ 			else compute_M(M, res_tensor, W, false, i, start, end, dw);
+ 			//cout<<"finish computing M\n";
+ 			// regular solve
+ 			/*if (iter==0 && (i==2)){
+ 				M.print();
+ 				print_M(V, W, i, dw);
+ 				//gamma.print(); print_gamma(V, S, i);
+ 			}*/
+			if (iter!=0 && (i==0 || i==(V.order-1)/2+1) && gradnorms[i]<tol_rankR){
+				Matrix<> U, VT;
+				Vector<> sigma;
+				double tempStartTime = MPI_Wtime();
+				get_rankR_update(R, U, sigma, VT, M, W[i], gamma);
+				double tempEndTime = MPI_Wtime();
+				cout<<"the time to get rank R update is "<<tempEndTime-tempStartTime<<"\n";
+				if (i==0) {
+					apply_rankR_update(U, sigma, VT, W[i], V, cached_tensor1, i);
+					cout<<"the time to apply rank R update is "<<MPI_Wtime()-tempEndTime<<"\n";
+					build_1st_level_right_child(mttkrp_map, V, W, cached_tensor1, dw);
+				}
+				else {
+					apply_rankR_update(U, sigma, VT, W[i], V, cached_tensor2, i);
+					cout<<"the time to apply rank R update is "<<MPI_Wtime()-tempEndTime<<"\n";
+					build_1st_level_left_child(mttkrp_map, V, W, cached_tensor2, dw);
+				}
+			}
+			else {
+				double tempStartTime = MPI_Wtime();
+				SVD_solve(M, W[i], gamma);
+				double tempEndTime = MPI_Wtime();
+				cout<<"the time to compute new W[i] via psudo inverse of gamma is "<<tempEndTime-tempEndTime<<"\n";
+				// If i is one of the special index, we need to update the cached_tensors
+				if (i==0){
+					//cout<<"start updating cached tensor\n";
+					update_cached_tensor(V, W, cached_tensor1, seq, 0);
+					cout<<"time to update cached tensor using full matrix is "<<MPI_Wtime()-tempEndTime<<"\n";
+					//cout<<"finish updating cached tensor\n start building the first level right child\n";
+					build_1st_level_right_child(mttkrp_map, V, W, cached_tensor1, dw);
+					//cout<<"finish building the first level right child\n";
+				}
+				else if (i==(V.order-1)/2+1) {
+					update_cached_tensor(V, W, cached_tensor2, seq, (V.order-1)/2+1);
+					cout<<"time to update cached tensor using fully matrix is "<<MPI_Wtime()-tempEndTime<<"\n";
+					build_1st_level_left_child(mttkrp_map, V, W, cached_tensor2, dw);
+				}
+				else if (i<(V.order-1)/2+1) {
+					build_1st_level_right_child(mttkrp_map, V, W, cached_tensor1, dw);
+				}
+				else build_1st_level_left_child(mttkrp_map, V, W, cached_tensor2, dw);
+			}
+ 			//cout<<"start updating mttkrp tree\n";
+ 			update_mttkrp_tree(mttkrp_map, W, true, seq, i, 0, (V.order-1)/2, dw);
+ 			update_mttkrp_tree(mttkrp_map, W, false, seq, i, (V.order-1)/2+1, V.order-1, dw);
+ 			//cout<<"finish updating mttkrp tree\n";
+ 			S[i]["ij"] = W[i]["ki"]*W[i]["kj"];
+ 			//cout<<"start update gamma tree\n";
+ 			update_gamma_tree(gamma_map, S, seq, i, 0, V.order-1);
+ 			//cout<<"finish updating gamma tree\n";
+			grad_W[i]["ij"] = (A_old["ik"] - W[i]["ik"])*gamma["kj"];
+			gradnorms[i] = grad_W[i].norm2(); // gradient 2-norm squared
+ 			gradnorm += gradnorms[i]*gradnorms[i];
+ 		}
+ 		gradnorm = sqrt(gradnorm);
+ 		Tensor<> V_build;
+ 		build_V(V_build, W, V.order, dw);
+ 		Tensor<> diff_V = V;
+ 		diff_V[seq_V] = V[seq_V] - V_build[seq_V];
+ 		double diffnorm_V = diff_V.norm2();
+ 		cout<<"grad norm is "<<gradnorm<<"\n";
+ 		cout<<"iteration is "<<iter<<"\n";
+ 		cout<<"diffnorm V is "<<diffnorm_V<<"\n";
+ 		iter++;
+ 		if (MPI_Wtime()-start_time > timelimit) {exceedsMaxTime = true; break;}
+ 	}
+	delete[] gradnorms;
+ 	delete[] S;
+ 	delete cached_tensor1;
+ 	delete cached_tensor2;
+ 	if (iter==maxiter || exceedsMaxTime) return false;
+ 	else return true;
+ }
+
+bool alsCP_DimensionTree(Tensor<> & V,
  		   Matrix<> * W,
  		   Matrix<> * grad_W,
  		   double tol,
-			 /*double tol_rank1,*/
  		   double timelimit,
  		   int maxiter,
  		   World & dw) {
@@ -1121,6 +1286,7 @@ bool alsCP_rank1(Tensor<> & V,
 	int start, end;
 	Tensor<> res_tensor;
 	Matrix<> gamma, M, A_old;
+
 	// Perform ALS for CP with dimension tree. The loop will be broke out if maximum iterations or maximum time is exceeded.
 	while (iter<maxiter && gradnorm>tol){
 		gradnorm = 0;
@@ -1143,16 +1309,12 @@ bool alsCP_rank1(Tensor<> & V,
 			else compute_M(M, res_tensor, W, false, i, start, end, dw);
 			//cout<<"finish computing M\n";
 			// regular solve
-			if (iter==0 && (i==2)){
+			/*if (iter==0 && (i==2)){
 				M.print();
 				print_M(V, W, i, dw);
 				//gamma.print(); print_gamma(V, S, i);
-			}
+			}*/
 			SVD_solve(M, W[i], gamma);
-			/*cout<<"A_old is \n";
-			A_old.print();
-			cout<<"W[i] is \n";
-			W[i].print();*/
 
 			grad_W[i]["ij"] = (A_old["ik"] - W[i]["ik"])*gamma["kj"];
 
@@ -1182,7 +1344,7 @@ bool alsCP_rank1(Tensor<> & V,
 			//cout<<"finish updating gamma tree\n";
 			tempnorm = grad_W[i].norm2(); // gradient 2-norm squared
 			gradnorm += tempnorm*tempnorm;
-		}
+		} // end for
 		gradnorm = sqrt(gradnorm);
 		Tensor<> V_build;
 		build_V(V_build, W, V.order, dw);
@@ -1554,46 +1716,38 @@ void print_gamma(Tensor<> &V, Matrix<> *S, int index){
 
 void print_M(Tensor<> &V, Matrix<> *W, int index, World &dw){
 	Tensor<> temp = V;
-	/*tensorMatrixMultiplication(temp, W[V.order-1], V.order-1, dw);
-	for (int i=0; i<V.order-1; i++){
-		if (i!=index){
-			KhatriRaoProductAlong(temp, W[i], temp.order-1, 0, dw);
-		}
-	}
-	cout<<"Real M1 is \n";
-	temp.print();
-
-	temp = V;
-	tensorMatrixMultiplication(temp, W[V.order-1], V.order-1, dw);
-	for (int i=V.order-2; i>=0; i--){
-		if (i!=index){
-			KhatriRaoProductAlong(temp, W[i], temp.order-1, 0, dw);
-		}
-	}
-	cout<<"Real M2 is \n";
-	temp.print();
-
-	temp = V;
-	tensorMatrixMultiplication(temp, W[2], 2, dw);
-	KhatriRaoProductAlong(temp, W[3], 2, 3, dw);
-	KhatriRaoProductAlong(temp, W[0], 2, 0, dw);
-	cout<<"Real M3 is \n";
-	temp.print();*/
-
-	//temp = V;
-
 	tensorMatrixMultiplication(temp, W[0], 0, dw);
-	//cout<<"correct cached tensor is \n";
-	//temp.print();
 	KhatriRaoProductAlong(temp, W[1], 0, 1, dw);
-	//cout<<"correct dt tensor is \n";
-	//temp.print();
 	KhatriRaoProductAlong(temp, W[3], 0, 2, dw);
 	cout<<"Real M is \n";
 	temp.print();
-	/*tensorMatrixMultiplication(temp, W[3], 3, dw);
-	KhatriRaoProductAlong(temp, W[0], 3, 0, dw);
-	KhatriRaoProductAlong(temp, W[1], 2, 0, dw);
-	cout<<"Real M is \n";
-	temp.print();*/
+}
+
+/** Compute the rank 1 update vector on A(n).
+	*/
+void get_rankR_update(int R, Matrix<> &U, Vector<> &sigma, Matrix<> &VT, Matrix<> &M, Matrix<> &A, Matrix<> &gamma){
+	Matrix<> rhs;
+	matrixDot(rhs, A, gamma);
+	rhs["ij"] = M["ij"] - rhs["ij"];
+	Matrix<> VT_rhs;
+	rhs.svd(U, sigma, VT_rhs, R);
+	VT = VT_rhs;
+	SVD_solve(VT_rhs, VT, gamma);
+}
+
+/** Perform rank R update on V and A
+	*/
+void apply_rankR_update(Matrix<> &U, Vector<> &sigma, Matrix<> &VT, Matrix<> &A, Tensor<> &V, Tensor<> *cached_tensor, int mode){
+	A["ij"] = A["ij"]+U["ik"]*sigma["k"]*VT["kj"];
+	char seq[V.order+1]; seq[V.order] = '\0';
+	char seq2[V.order+1]; seq2[V.order] = '\0';
+	for (int i=0; i<V.order; i++) {
+		seq[i] = 'a'+i; seq2[i] = 'a'+i;
+	}
+	seq2[mode] = 'a'+V.order;
+	char seq_VT[] = {'a'+V.order+1, seq2[mode], '\0'};
+	char seq_U[] = {seq[mode], 'a'+V.order+1, '\0'};
+	char seq_sigma[] = {'a'+V.order+1, '\0'};
+	U["ij"] = U["ij"]*sigma["j"];
+	(*cached_tensor)[seq2] = (*cached_tensor)[seq2]+VT[seq_VT]*U[seq_U]*V[seq];
 }
