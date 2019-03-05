@@ -309,17 +309,16 @@ int main(int argc, char ** argv){
 
 		if (model[0]=='C') {
 			if (pp==0) {
-        V.print();
 				alsCP_DT(V, W, grad_W, F, tol*Vnorm, timelimit, maxiter, lambda_, Plot_File, resprint, false, dw);
 			}
 			else if (pp==1) {
 				alsCP_PP(V, W, grad_W, F, tol*Vnorm, pp_res_tol, timelimit, maxiter, lambda_, magni, Plot_File, resprint, false, dw);
 			}
       if (pp==2){
-        alsCP_DimensionTree(V, W, grad_W, tol*Vnorm, timelimit, maxiter, dw);
+        alsCP_DimensionTree(V, W, grad_W, tol*Vnorm, timelimit, maxiter, Plot_File, false, dw);
       }
       if (pp==3){
-        alsCP_rankR(V, W, grad_W, 1, tol*Vnorm, 10, timelimit, maxiter, dw);
+        alsCP_rankR(V, W, grad_W, 1, tol*Vnorm, 10, timelimit, maxiter, Plot_File, false, dw);
       }
 		}
 		else if (model[0]=='T') {

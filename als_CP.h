@@ -167,6 +167,8 @@ bool alsCP_DimensionTree(Tensor<> & V,
        /*double tol_rank1,*/
 		   double timelimit,
 		   int maxiter,
+       ofstream &Plot_File,
+       bool bench,
 		   World & dw);
 
 
@@ -178,6 +180,8 @@ bool alsCP_rankR(Tensor<> & V,
        double tol_rankR,
 		   double timelimit,
 		   int maxiter,
+       ofstream &Plot_File,
+       bool bench,
 		   World & dw);
 
 void build_BDT(unordered_map<string, string> &parent_map, char* seq, int start, int end);
@@ -216,6 +220,6 @@ void print_M(Tensor<> &V, Matrix<> *W, int index, World &dw);
 
 void get_rankR_update(int R, Matrix<> &U, Vector<> &sigma, Matrix<> &VT, Matrix<> &M, Matrix<> &A, Matrix<> &gamma);
 
-void apply_rankR_update(Matrix<> &U, Vector<> &sigma, Matrix<> &VT, Matrix<> &A, Tensor<> &V, Tensor<> *cached_tensor, int mode);
+void apply_rankR_update(Matrix<> &U, Vector<> &sigma, Matrix<> &VT, Matrix<> &A, Tensor<> &V, Tensor<> *cached_tensor, int mode, World &dw);
 
 #endif
