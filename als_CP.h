@@ -23,14 +23,6 @@ bool alsCP(Tensor<> & V,
        int maxiter, 
        World & dw);
 
-void mttkrp_map_DT(map<string,Tensor<>>& mttkrp_map, 
-           map<string,string>& parent, 
-           map<string,string>& sibling, 
-           Tensor<>& V, 
-           Matrix<> * W, 
-           string args,
-           World& dw) ;
-
 /**
  * \brief ALS method for CP decomposition with decision tree
  *  W: output solutions
@@ -66,10 +58,6 @@ void Build_mttkrp_map(map<string, Tensor<>> & mttkrp_map,
             char* seq,
             World & dw);
 
-void build_V(Tensor<> & V,
-			 Matrix<> * W,
-			 int order,
-			 World & dw);
 /**
  * \brief ALS method for CP decomposition
  *  W: output solutions

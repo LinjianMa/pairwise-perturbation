@@ -26,13 +26,30 @@ class CPD : public Decomposition<dtype> {
 
 		void update_gradnorm();
 
-
 		/**
 		 * \brief ALS method for CP decomposition
 		 *  tol: tolerance for a relative stopping condition
 		 *  timelimit, maxiter: limit of time and iterations
 		 */
 		bool als(double tol, double timelimit, int maxiter);
+
+		/**
+		 * \brief ALS method for CP decomposition with dimension tree
+		 *  W: output solutions
+		 *  V: input tensor
+		 *  grad_W: gradient in each dimension
+		 *	F: correction terms, F[]=0 initially
+		 *  tol: tolerance for a relative stopping condition
+		 *  timelimit, maxiter: limit of time and iterations
+		 *  V.order should be >=4
+		 */
+		bool alsCP_DT(double tol, 
+					  double timelimit, 
+					  int maxiter, 
+					  double lambda,
+		        	  ofstream & Plot_File,
+		        	  int resprint,
+		        	  bool bench);
 
 		// void mttkrp_map_DT(map<string,Tensor<>>& mttkrp_map, 
 		//            map<string,string>& parent, 

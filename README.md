@@ -40,6 +40,17 @@ mpirun n -model CP -tensor o2 -pp 0 -dim 4 -rank 10 -maxiter 250
 
 Commands for these tests are in `script_strongscaling.py`, `script_weakscaling.py`, `script_synthetic.py`, `script_real.py` in the script folder. 
 
+## Visualization with Visdom
+
+For now visdom can fetch all the csv files following the particular format and plot them.
+
+Go to the Visdom folder then execute the following commands:
+```
+visdom -port XXXXX
+
+python visdom_pull_server.py -port XXXXX
+```
+
 ## Acknowledging Usage
 
 The source code is available to everyone. If you would like to acknowledge the usage of the code, please cite the [following paper](https://arxiv.org/abs/1811.10573):

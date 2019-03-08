@@ -4,6 +4,19 @@
 #include <ctf.hpp>
 using namespace CTF;
 
+void build_V(Tensor<> & V,
+       Matrix<> * W,
+       int order,
+       World & dw);
+
+void mttkrp_map_DT(map<string,Tensor<>>& mttkrp_map, 
+           map<string,string>& parent, 
+           map<string,string>& sibling, 
+           Tensor<>& V, 
+           Matrix<> * W, 
+           string args,
+           World& dw) ;
+
 void swap_char(char* seq, int i, int j);
 
 Matrix<> unroll_tensor_contraction(Tensor<>& T, int i);
