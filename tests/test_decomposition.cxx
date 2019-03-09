@@ -1,9 +1,9 @@
 
 #include "../src/decomposition.h"
 #include "../src/CP.h"
-#include "../src/optimizer/ALS_optimizer.h"
-#include "../src/optimizer/simple_optimizer.h"
-#include "../src/optimizer/DT_optimizer.h"
+#include "../src/optimizer/cp_als_optimizer.h"
+#include "../src/optimizer/cp_simple_optimizer.h"
+#include "../src/optimizer/cp_dt_optimizer.h"
 
 #include <ctf.hpp>
 

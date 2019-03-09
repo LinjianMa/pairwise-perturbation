@@ -1,5 +1,5 @@
-#ifndef __SIMPLE_OPTIMIZER_H__
-#define __SIMPLE_OPTIMIZER_H__
+#ifndef __CP_SIMPLE_OPTIMIZER_H__
+#define __CP_SIMPLE_OPTIMIZER_H__
 
 #include <ctf.hpp>
 #include <fstream>
@@ -20,7 +20,7 @@ class SimpleOptimizer : public Optimizer<dtype> {
 };
 
 
-#include "simple_optimizer.cxx"
+#include "cp_simple_optimizer.cxx"
 
 #endif
 

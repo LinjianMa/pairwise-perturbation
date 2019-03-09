@@ -1,5 +1,5 @@
-#ifndef __ALS_OPTIMIZER_H__
-#define __ALS_OPTIMIZER_H__
+#ifndef __CP_ALS_OPTIMIZER_H__
+#define __CP_ALS_OPTIMIZER_H__
 
 #include <ctf.hpp>
 #include <fstream>
@@ -35,7 +35,7 @@ class Optimizer {
 };
 
 
-#include "ALS_optimizer.cxx"
+#include "cp_als_optimizer.cxx"
 
 #endif
 

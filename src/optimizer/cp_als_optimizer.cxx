@@ -24,7 +24,6 @@ template<typename dtype>
 void Optimizer<dtype>::configure(Tensor<dtype>* input, Matrix<dtype>* mat, Matrix<dtype>* grad, double lambda){
 
 	assert(input->order == order);
-	cout << order << endl;
 
 	for (int i=0; i< order; i++) {
 		assert(mat[i].ncol == rank);

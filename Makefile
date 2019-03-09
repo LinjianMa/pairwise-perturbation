@@ -7,12 +7,15 @@ TDIR=$(BDIR)/tests
 
 FCXX=$(CXX) $(CXXFLAGS)
 
-all: test_ALS pp_bench test #tool
+all: test_ALS pp_bench test run #tool
 
 # tool: $(ODIR)/decomposition.o #$(ODIR)/CP.o $(ODIR)/Tucker.o
 
 # test: $(TDIR)/test_decomposition.cxx $(ODIR)/decomposition.o Makefile config.mk
 # 	$(FCXX) $< $(ODIR)/decomposition.o -o $@ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+
+run: run.cxx $(ODIR)/common.o Makefile config.mk
+	$(FCXX) $< $(ODIR)/common.o -o $@ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
 test: $(TDIR)/test_decomposition.cxx $(ODIR)/common.o Makefile config.mk
 	$(FCXX) $< $(ODIR)/common.o -o $@ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
@@ -42,4 +45,4 @@ $(ODIR)/common.o: common.cxx common.h config.mk
 	$(FCXX) -c $< -o $@ $(INCLUDE_PATH) 
 
 clean:
-	rm -f $(ODIR)/*.o  test_ALS pp_bench test
+	rm -f $(ODIR)/*.o  test_ALS pp_bench test run

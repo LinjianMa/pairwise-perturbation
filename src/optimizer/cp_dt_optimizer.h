@@ -1,5 +1,5 @@
-#ifndef __DT_OPTIMIZER_H__
-#define __DT_OPTIMIZER_H__
+#ifndef __CP_DT_OPTIMIZER_H__
+#define __CP_DT_OPTIMIZER_H__
 
 #include <ctf.hpp>
 #include <fstream>
@@ -26,7 +26,7 @@ class DTOptimizer : public Optimizer<dtype> {
 };
 
 
-#include "DT_optimizer.cxx"
+#include "cp_dt_optimizer.cxx"
 
 #endif
 
