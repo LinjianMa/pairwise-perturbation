@@ -17,7 +17,6 @@ all: test_ALS pp_bench test #tool
 test: $(TDIR)/test_decomposition.cxx $(ODIR)/common.o Makefile config.mk
 	$(FCXX) $< $(ODIR)/common.o -o $@ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
-
 # $(ODIR)/decomposition.o: $(SDIR)/decomposition.h  config.mk
 # 	$(FCXX) -c $< -o $@ $(INCLUDE_PATH) 
 
