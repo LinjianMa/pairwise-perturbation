@@ -3,6 +3,8 @@
 #include "src/optimizer/cp_als_optimizer.h"
 #include "src/optimizer/cp_simple_optimizer.h"
 #include "src/optimizer/cp_dt_optimizer.h"
+#include "src/optimizer/cp_msdt_optimizer.h"
+
 #include "common.h"
 //#define ERR_REPORT
 
@@ -312,9 +314,12 @@ int main(int argc, char ** argv){
 				decom.als(tol*Vnorm, timelimit, maxiter, resprint, Plot_File);
 				// alsCP_DT(V, W, grad_W, F, tol*Vnorm, timelimit, maxiter, lambda_, Plot_File, resprint, false, dw);
 			}
-			// else if (pp==1) {
+			else if (pp==1) {
+				CPD<double, CPMSDTOptimizer<double>> decom(dim,s,R,dw);
+				decom.Init(&V,W);
+				decom.als(tol*Vnorm, timelimit, maxiter, resprint, Plot_File);
 			// 	alsCP_PP(V, W, grad_W, F, tol*Vnorm, pp_res_tol, timelimit, maxiter, lambda_, magni, Plot_File, resprint, false, dw);
-			// }
+			}
 			// else if (pp==2) {
 			// 	alsCP_PP_partupdate(V, W, grad_W, F, tol*Vnorm, pp_res_tol, timelimit, maxiter, lambda_, magni, update_percentage_pp, Plot_File, resprint, false, dw);
 			// }
