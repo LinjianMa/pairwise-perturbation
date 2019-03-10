@@ -6,12 +6,12 @@
 using namespace CTF;
 
 template<typename dtype>  
-class SimpleOptimizer : public Optimizer<dtype> {
+class CPSimpleOptimizer : public CPOptimizer<dtype> {
 
 	public:
-		SimpleOptimizer(int order, int r, World & dw);
+		CPSimpleOptimizer(int order, int r, World & dw);
 
-		~SimpleOptimizer();
+		~CPSimpleOptimizer();
 
 		void step();
 

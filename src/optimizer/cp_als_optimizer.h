@@ -6,14 +6,16 @@
 using namespace CTF;
 
 template<typename dtype>  
-class Optimizer {
+class CPOptimizer {
 
 	public:
-		Optimizer(int order, int r, World & dw);
+		CPOptimizer(int order, int r, World & dw);
 
-		~Optimizer();
+		~CPOptimizer();
 
 		void configure(Tensor<dtype>* input, Matrix<dtype>* mat, Matrix<dtype>* grad, double lambda);
+
+		void update_S(int update_index);
 
 		int order;
 		int rank;

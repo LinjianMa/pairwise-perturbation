@@ -307,7 +307,7 @@ int main(int argc, char ** argv){
 
 		if (model[0]=='C') {
 			if (pp==0) {
-				CPD<double, DTOptimizer<double>> decom(dim,s,R,dw);
+				CPD<double, CPDTOptimizer<double>> decom(dim,s,R,dw);
 				decom.Init(&V,W);
 				decom.als(tol*Vnorm, timelimit, maxiter, resprint, Plot_File);
 				// alsCP_DT(V, W, grad_W, F, tol*Vnorm, timelimit, maxiter, lambda_, Plot_File, resprint, false, dw);

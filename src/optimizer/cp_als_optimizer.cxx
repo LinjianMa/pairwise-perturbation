@@ -5,7 +5,7 @@
 using namespace CTF;
 
 template<typename dtype>  
-Optimizer<dtype>::Optimizer(int order, int r, World & dw) {
+CPOptimizer<dtype>::CPOptimizer(int order, int r, World & dw) {
 
 	this->world = & dw; 
 	this->order = order;
@@ -17,11 +17,33 @@ Optimizer<dtype>::Optimizer(int order, int r, World & dw) {
 }
 
 template<typename dtype>  
-Optimizer<dtype>::~Optimizer(){
+CPOptimizer<dtype>::~CPOptimizer(){
 }
 
+template<typename dtype>  
+void CPOptimizer<dtype>::update_S(int update_index) {
+	// build index 
+	vector<int> index = vector<int>(order-1, 0);
+	int j = 0; 
+	for (int i=0; i<update_index; i++) {
+		index[j] = i;
+		j++;
+	}
+	for (int i=update_index+1; i<order; i++) {
+		index[j] = i;
+		j++;
+	}
+	// contractions
+	S["ij"] = W[index[0]]["ki"] * W[index[0]]["kj"];
+	for (int ii=1; ii<order-1; ii++) {
+		S["ij"] = S["ij"]*(W[index[ii]]["ki"] * W[index[ii]]["kj"]);
+	}
+	S["ij"] += regul["ij"]; 
+}
+
+
 template<typename dtype>
-void Optimizer<dtype>::configure(Tensor<dtype>* input, Matrix<dtype>* mat, Matrix<dtype>* grad, double lambda){
+void CPOptimizer<dtype>::configure(Tensor<dtype>* input, Matrix<dtype>* mat, Matrix<dtype>* grad, double lambda){
 
 	assert(input->order == order);
 

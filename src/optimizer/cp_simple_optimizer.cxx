@@ -7,8 +7,8 @@
 using namespace CTF;
 
 template<typename dtype>  
-SimpleOptimizer<dtype>::SimpleOptimizer(int order, int r, World & dw)
-	: Optimizer<dtype>(order, r, dw){
+CPSimpleOptimizer<dtype>::CPSimpleOptimizer(int order, int r, World & dw)
+	: CPOptimizer<dtype>(order, r, dw){
 
 	// make the char seq_V
 	seq_V[order] = '\0'; 
@@ -19,12 +19,12 @@ SimpleOptimizer<dtype>::SimpleOptimizer(int order, int r, World & dw)
 }
 
 template<typename dtype>  
-SimpleOptimizer<dtype>::~SimpleOptimizer(){
+CPSimpleOptimizer<dtype>::~CPSimpleOptimizer(){
 	// delete S;
 }
 
 template<typename dtype>
-void SimpleOptimizer<dtype>::step() {
+void CPSimpleOptimizer<dtype>::step() {
 
 	World * dw = this->world;
 	int order = this->order; 
@@ -44,14 +44,11 @@ void SimpleOptimizer<dtype>::step() {
 		index[order-1] = (int)(seq_V[order-1]-'a');
 		lens_H[order-1] = this->W[i].ncol;
 		// initialize matrix M
-		Matrix<> M = Matrix<>(this->W[i].nrow,this->W[i].ncol);
+		Matrix<dtype> M = Matrix<dtype>(this->W[i].nrow,this->W[i].ncol);
 		// Khatri-Rao Product C[I,J,K]= A[I,K](op)B[J,K]
 		KhatriRao_contract(M, *(this->V), this->W, index, lens_H, *dw);
 		// calculating S
-		(this->S)["ij"] = this->W[index[0]]["ki"] * this->W[index[0]]["kj"];
-		for (int ii=1; ii<order-1; ii++) {
-			(this->S)["ij"] = (this->S)["ij"]*(this->W[index[ii]]["ki"] * this->W[index[ii]]["kj"]);
-		}
+		CPOptimizer<dtype>::update_S(i);
 		// calculate gradient
 		this->grad_W[i]["ij"] = -M["ij"]+this->W[i]["ik"]*this->S["kj"]; 
 		// subproblem M=W*S

@@ -4,6 +4,8 @@
 #include "../src/optimizer/cp_als_optimizer.h"
 #include "../src/optimizer/cp_simple_optimizer.h"
 #include "../src/optimizer/cp_dt_optimizer.h"
+#include "../src/optimizer/cp_msdt_optimizer.h"
+
 
 #include <ctf.hpp>
 
@@ -36,7 +38,7 @@ void TEST_decomposition(World & dw) {
 void TEST_CPD(World & dw) {
 
 	// test dimension
-	CPD<double, SimpleOptimizer<double>> decom(6,13,5,dw);
+	CPD<double, CPDTOptimizer<double>> decom(6,13,5,dw);
 	cout << decom.order << endl;
 	assert(decom.order == 6);
 	assert(decom.rank[0] == 5);
@@ -52,10 +54,10 @@ void TEST_CPD(World & dw) {
 		W[i].fill_random(0,1); 
 	}
 	decom.Init(V,W);
-	decom.print_W(0);
-	decom.print_W(1);	
-	decom.print_grad(0);
-	decom.print_grad(1);
+	// decom.print_W(0);
+	// decom.print_W(1);	
+	// decom.print_grad(0);
+	// decom.print_grad(1);
 
  	ofstream Plot_File("results/test.csv"); 
 

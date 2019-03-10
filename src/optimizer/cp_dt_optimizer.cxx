@@ -7,8 +7,8 @@
 using namespace CTF;
 
 template<typename dtype>  
-DTOptimizer<dtype>::DTOptimizer(int order, int r, World & dw)
-	: Optimizer<dtype>(order, r, dw){
+CPDTOptimizer<dtype>::CPDTOptimizer(int order, int r, World & dw)
+	: CPOptimizer<dtype>(order, r, dw){
 
 	// make the char seq_V and seq
 	seq[order] = '\0'; 
@@ -24,12 +24,12 @@ DTOptimizer<dtype>::DTOptimizer(int order, int r, World & dw)
 }
 
 template<typename dtype>  
-DTOptimizer<dtype>::~DTOptimizer(){
+CPDTOptimizer<dtype>::~CPDTOptimizer(){
 	// delete S;
 }
 
 template<typename dtype>
-void DTOptimizer<dtype>::step() {
+void CPDTOptimizer<dtype>::step() {
 
 	World * dw = this->world;
 	int order = this->order; 
@@ -43,20 +43,9 @@ void DTOptimizer<dtype>::step() {
 		/*  construct Matrix M
 		*	M["dk"] = V["abcd"]*W1["ak"]*W2["bk"]*W3["ck"]
 		*/
-		int lens_H[order];
-		int index[order];
-		for (int j=0; j<order-1; j++) {
-			index[j] = (int)(seq_V[j]-'a');
-			lens_H[j] = (this->V)->lens[index[j]];
-		}
-		index[order-1] = (int)(seq_V[order-1]-'a');
-		lens_H[order-1] = (this->W)[i].ncol;
-		/* initialize matrix M
-		*/
 		// make args
-		char args[2];
-		args[1] = '\0';
-		args[0] = i+'a';
+		char args[2]; args[1] = '\0'; args[0] = i+'a';
+
 		if (mttkrp_map.find(parent[args])==mttkrp_map.end()) {
 			mttkrp_map_DT(mttkrp_map, parent, sibling, *(this->V) , this->W, parent[args], *dw);
 		}
@@ -84,14 +73,8 @@ void DTOptimizer<dtype>::step() {
 			}
 			M[seq] = mttkrp_map[parent[args]][seq_p]*this->W[int(seq_A1[0]-'a')][seq_A1]*this->W[int(seq_A2[0]-'a')][seq_A2];				
 		}
-		// Khatri-Rao Product C[I,J,K]= A[I,K](op)B[J,K]
-		// KhatriRao_contract(M2, V, W, index, lens_H, dw);
 		// calculating S
-		this->S["ij"] = this->W[index[0]]["ki"]*this->W[index[0]]["kj"];
-		for (int ii=1; ii<order-1; ii++) {
-			this->S["ij"] = this->S["ij"]*(this->W[index[ii]]["ki"]*this->W[index[ii]]["kj"]);
-		}
-		this->S["ij"] += this->regul["ij"]; 
+		CPOptimizer<dtype>::update_S(i);
 		// calculate gradient
 		this->grad_W[i]["ij"] = -M["ij"]+this->W[i]["ik"]*this->S["kj"]; 
 		SVD_solve(M, this->W[i], this->S);
