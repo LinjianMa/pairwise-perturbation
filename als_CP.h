@@ -218,8 +218,4 @@ void print_gamma(Tensor<> &V, Matrix<> *S, int index);
 
 void print_M(Tensor<> &V, Matrix<> *W, int index, World &dw);
 
-void get_rankR_update(int R, Matrix<> &U, Vector<> &sigma, Matrix<> &VT, Matrix<> &M, Matrix<> &A, Matrix<> &gamma);
-
-void apply_rankR_update(Matrix<> &U, Vector<> &sigma, Matrix<> &VT, Matrix<> &A, Tensor<> &V, Tensor<> *cached_tensor, int mode, World &dw);
-
 #endif

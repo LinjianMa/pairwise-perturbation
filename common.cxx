@@ -1,11 +1,198 @@
-/** \addtogroup examples
-  * @{
+/** \addtogroup examples 
+  * @{ 
   * \defgroup helper functions for multigrid
-  * @{
+  * @{ 
   * \brief NTF algorithms based on projected gradient methods
   */
 #include "common.h"
 //#define ERR_REPORT
+
+void mttkrp_map_DT(map<string,Tensor<>>& mttkrp_map, 
+				   map<string,string>& parent, 
+				   map<string,string>& sibling, 
+				   Tensor<>& V, 
+				   Matrix<> * W, 
+				   string args,
+				   World& dw) {
+	int K = W[0].ncol;
+	if(mttkrp_map.find(args)!=mttkrp_map.end()) return;
+	char seq_w[3];
+	seq_w[2] = '\0'; seq_w[1] = '*'; 
+	if(args.length()==V.order/2 || args.length()==V.order/2+1) {
+		Tensor<> V_front = V;
+		Tensor<> V_temp; 
+		/* initial condition
+		*/
+		char seq[V_front.order+1], seq_f[V_front.order+1];
+		seq[V_front.order] = '\0';
+		char_string_copy(seq,0,parent[args],0,parent[args].length());
+		seq_f[V_front.order] = '\0';
+		seq_w[0] = sibling[args][0];
+		// make seq_f
+		int index_start = int(sibling[args][0]-'a');
+		char_string_copy(seq_f,0,parent[args],0,index_start);
+		char_string_copy(seq_f,index_start,parent[args],index_start+1,V.order-index_start-1);
+		seq_f[V.order-1] = '*';
+		// build len for V_temp
+		int lens_V[V.order];
+		for (int m=0; m<index_start; m++) {
+			lens_V[m] = V.lens[m];
+		}
+		for (int m=index_start+1; m<V.order; m++) {
+			lens_V[m-1] = V.lens[m];
+		}
+		lens_V[V.order-1] = K;
+		V_temp = Tensor<>(V.order, lens_V, dw);
+		// contraction
+		V_temp[seq_f] = V_front[seq]*W[index_start][seq_w];
+		V_front = V_temp;
+		/* loops
+		*/
+		for (int j=1; j<sibling[args].length(); j++) {     // iterate on [ab]
+			// make seq
+			seq[V_front.order] = '\0';
+			strncpy(seq,seq_f, strlen(seq_f));
+			// make seq_w
+			seq_w[0] = sibling[args][j];
+			// make seq_f
+			seq_f[V_front.order-1] = '\0';
+			seq_f[V_front.order-2] = '*';
+			char_string_copy(seq_f,0,parent[args],0,index_start);
+			char_string_copy(seq_f,index_start,parent[args],index_start+j+1,V.order-index_start-j-1);		
+			// build len for V_temp
+			int lens_V[V.order-j];
+			for (int m=0; m<index_start; m++) {
+				lens_V[m] = V.lens[m];
+			}
+			for (int m=index_start+j+1; m<V.order; m++) {
+				lens_V[m-j-1] = V.lens[m];
+			}
+			lens_V[V.order-j-1] = K;
+			V_temp = Tensor<>(V.order-j, lens_V, dw);
+			// contraction
+			V_temp[seq_f] = V_front[seq]*W[index_start+j][seq_w];
+			V_front = V_temp;
+		}
+		mttkrp_map[args] = V_front;
+		return;
+	}
+	if(mttkrp_map.find(parent[args])==mttkrp_map.end()) {
+		mttkrp_map_DT(mttkrp_map, parent, sibling, V, W, parent[args], dw);
+	}
+	/* Else
+	*/
+	Tensor<> V_temp; 
+	Tensor<> V_front = mttkrp_map[parent[args]];
+	Tensor<> V_parent = mttkrp_map[parent[args]];
+	int index_start = int(sibling[args][0]-parent[args][0]);
+	// make seq_f
+	char seq[V_front.order+1];
+	char seq_f[V_front.order+1];
+	seq_f[V_front.order] = '\0';
+	seq_f[V_front.order-1] = '*';
+	char_string_copy(seq_f,0,parent[args],0,parent[args].length());
+	/* loops */
+	for (int j=0; j<sibling[args].length(); j++) {     // iterate on [ab]
+		// make seq
+		seq[V_front.order] = '\0';
+		strncpy(seq,seq_f, strlen(seq_f));
+		// make seq_w
+		seq_w[0] = sibling[args][j];
+		// make seq_f
+		seq_f[V_front.order-1] = '\0';
+		seq_f[V_front.order-2] = '*';
+		char_string_copy(seq_f,0,parent[args],0,index_start);
+		char_string_copy(seq_f,index_start,parent[args],index_start+j+1,V_parent.order-index_start-j-2);				
+		// build len for V_temp
+		int lens_V[V_parent.order-j-1];
+		for (int m=0; m<index_start; m++) {
+			lens_V[m] = V_parent.lens[m];
+		}
+		for (int m=index_start+j+1; m<V_parent.order; m++) {
+			lens_V[m-j-1] = V_parent.lens[m];
+		}
+		lens_V[V_parent.order-j-2] = K;
+		V_temp = Tensor<>(V_parent.order-j-1, lens_V, dw);
+		// contraction
+		V_temp[seq_f] = V_front[seq]*W[seq_w[0]-'a'][seq_w];				
+		V_front = V_temp;
+	}
+	mttkrp_map[args] = V_front;
+	return;
+}
+
+void build_V(Tensor<> & V,
+			 Matrix<> * W,
+			 int order,
+			 World & dw) {
+  Timer tbuild_V("build_V");
+  tbuild_V.start();
+	char chars[] = {'i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','\0'};
+	// int lens_V[2];
+	// lens_V[0] = W[0].nrow;
+	// lens_V[1] = W[0].ncol;
+	V = W[0];
+	char seq_W[3] = {'i', '*', '\0'};
+	// char seq = {'i','*','\0'};
+	for (int i=1; i<order-1; i++) {
+		// build V_temp
+		int lens_V[i+2];
+		for (int j=0; j<i+1; j++) {
+			lens_V[j] = W[j].nrow;
+		}		
+		lens_V[i+1] = W[0].ncol;
+		Tensor<> V_temp = Tensor<>(i+2, lens_V, dw);
+		// seq_temp
+		char seq_temp[i+3];
+		seq_temp[i+2] = '\0';
+		seq_temp[i+1] = '*';
+		for (int j=0; j<i+1; j++) {
+			seq_temp[j] = chars[j];
+		}
+		// seq
+		char seq[i+2];
+		seq[i+1] = '\0';
+		seq[i] = '*';
+		for (int j=0; j<i; j++) {
+			seq[j] = chars[j];
+		}
+		// seq_W		
+		seq_W[0] = chars[i];
+		V_temp[seq_temp] = V[seq] * W[i][seq_W];
+		V = V_temp;
+		// char seq[i+3];
+		// for (int j=0; j<i+3; j++) {
+		// 	seq[j] = seq_temp[j];
+		// }
+	}
+	// build V_temp
+	int lens_V[order];
+	for (int j=0; j<order; j++) {
+		lens_V[j] = W[j].nrow;
+	}		
+	Tensor<> V_temp = Tensor<>(order, lens_V, dw);
+	char seq_temp[order+1];
+	char seq[order+2];
+	seq_temp[order] = '\0';
+	seq_temp[order] = '\0';
+	for (int j=0; j<order; j++) {
+		seq_temp[j] = chars[j];
+		seq[j] = chars[j];
+	}
+	seq[order-1] = '*';
+	seq_W[0] = chars[order-1];
+
+	V_temp[seq_temp] = V[seq] * W[order-1][seq_W];
+	V = V_temp;
+  tbuild_V.stop();
+
+}
+
+void swap_char(char* seq, int i, int j) {
+	char temp = seq[j];
+	seq[j] = seq[i];
+	seq[i] = temp;
+}
 
 Matrix<> unroll_tensor_contraction(Tensor<>& T,
 									int i) {
@@ -28,8 +215,8 @@ Matrix<> unroll_tensor_contraction(Tensor<>& T,
 }
 
 void Construct_Dimension_Tree(map<string, string>& parent,
-							  map<string, string>& sibling,
-							  int start,
+							  map<string, string>& sibling, 
+							  int start, 
 							  int end) {
 	if (end==start) return;
 	if (end==start+1) {
@@ -65,7 +252,7 @@ void Construct_Dimension_Tree(map<string, string>& parent,
 	}
 	parent[args] = args_parent;
 	sibling[args] = args2;
-	Construct_Dimension_Tree(parent, sibling, start, middle);
+	Construct_Dimension_Tree(parent, sibling, start, middle);	
 	sibling[args2] = args;
 	parent[args2] = args_parent;
 	Construct_Dimension_Tree(parent, sibling, middle+1, end);
@@ -74,8 +261,8 @@ void Construct_Dimension_Tree(map<string, string>& parent,
 
 
 void unit_tensor(Tensor<>& V,
-				 int N,
-				 int s,
+				 int N, 
+				 int s, 
 				 World & dw){
 	int64_t my_tot_nnz = s*s;
 	int64_t * inds = (int64_t*)malloc(sizeof(int64_t)*my_tot_nnz);
@@ -83,7 +270,7 @@ void unit_tensor(Tensor<>& V,
 	int ii=0;
 	for (int64_t column=0; column<s; column++)
 	for (int64_t row=0; row<s; row++)
-	{
+	{	
 		inds[ii] = column*s*s+row*s+(row+column*(s-1))%s;
 		if (dw.rank==0) vals[ii] = 1.;
 		else vals[ii] = 0.;
@@ -124,7 +311,7 @@ void build_V_vec(Tensor<> & V,
 		int lens_V[i+1];
 		for (int j=0; j<i+1; j++) {
 			lens_V[j] = W[j].len;
-		}
+		}		
 		Tensor<> V_temp = Tensor<>(i+1, lens_V, dw);
 		// seq_temp
 		char seq_temp[i+2];
@@ -138,7 +325,7 @@ void build_V_vec(Tensor<> & V,
 		for (int j=0; j<i; j++) {
 			seq[j] = chars[j];
 		}
-		// seq_W
+		// seq_W		
 		seq_W[0] = chars[i];
 		V_temp[seq_temp] = V[seq] * W[i][seq_W];
 		V = V_temp;
@@ -151,7 +338,7 @@ void build_V_vec(Tensor<> & V,
 	int lens_V[order];
 	for (int j=0; j<order; j++) {
 		lens_V[j] = W[j].len;
-	}
+	}		
 	Tensor<> V_temp = Tensor<>(order, lens_V, dw);
 	char seq_temp[order+1];
 	char seq[order+1];
@@ -172,7 +359,7 @@ Tensor<> Gen_collinearity(int * lens,
 						 int dim,
 						 int R,
 						 double col_min,
-						 double col_max,
+						 double col_max, 
 						 World & dw) {
 	// build chars
 	char chars[] = {'i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','\0'};
@@ -213,14 +400,14 @@ Tensor<> Gen_collinearity(int * lens,
 
 	// Vector<> lambda = Vector<>[R];
 	// lambda.fill_random(0.2,0.8);
-	//
+	// 
 	Tensor<> X(dim, lens, dw);
 	for (int i=0; i<R; i++) {
 		double lambda_;
 		lambda_ = 0.2+0.6/R*(i+1);//rand()%600 *1./1000 + 0.2;
 					if (dw.rank==0) cout << "lambda=" << lambda_ << endl;
 		Tensor<> X_sub;
-		build_V_vec(X_sub, vec[i], dim, dw);
+		build_V_vec(X_sub, vec[i], dim, dw); 
 		X[arg] = X[arg] + lambda_ * X_sub[arg];
 	}
 	for (int i=0; i< R; i++) {
@@ -228,21 +415,21 @@ Tensor<> Gen_collinearity(int * lens,
 	}
 	delete[] vec;
 	return X;
-
+	
 }
 
 // /**
 //  * \brief Identity tensor: I x I x I x ...
 //  */
-// Tensor<> identitiy_tensor(int N,
-// 						  int s,
+// Tensor<> identitiy_tensor(int N, 
+// 						  int s, 
 // 						  World & dw) {
 // 	int d = N/2;
 // 	Matrix<> ident = Matrix<>(s,s,SP,dw);
 // 	ident["ii"] = 1.;
 
 // 	int *lens = new int[N];
-// 	for (int i=0; i<N; i++) lens[i]=s;
+// 	for (int i=0; i<N; i++) lens[i]=s;		
 // 	Tensor<> I(N,true,lens,dw);
 
 // 	Tensor<> * I_temp = new Tensor<>;
@@ -252,7 +439,7 @@ Tensor<> Gen_collinearity(int * lens,
 // 		// lens
 // 		int *lens_temp = new int[2*i+2];
 // 		for (int jj=0; jj<2*i+2; jj++) lens_temp[jj]=s;
-// 		// I_temp
+// 		// I_temp		
 // 		I_temp = new Tensor<>(2*i+2,true,lens_temp,dw);
 // 		//build char
 // 		char seq_I2[2*i+1]; seq_I2[2*i] = '\0';
@@ -268,8 +455,8 @@ Tensor<> Gen_collinearity(int * lens,
 /**
  * \brief Identity tensor: I x I x I x ...
  */
-Tensor<> identitiy_tensor(int N,
-						  int s,
+Tensor<> identitiy_tensor(int N, 
+						  int s, 
 						  World & dw) {
 	int d = N/2;
 	// Matrix<> ident = Matrix<>(s,s,SP,dw);
@@ -277,7 +464,7 @@ Tensor<> identitiy_tensor(int N,
 	ident["ii"] = 1.;
 
 	int lens[N];
-	for (int i=0; i<N; i++) lens[i]=s;
+	for (int i=0; i<N; i++) lens[i]=s;		
 	Tensor<> I(N,false,lens,dw);
 	Tensor<> I_temp = ident;
 	for (int i=1; i<d; i++) {
@@ -285,7 +472,7 @@ Tensor<> identitiy_tensor(int N,
 		// lens
 		int lens_temp[2*i+2];
 		for (int jj=0; jj<2*i+2; jj++) lens_temp[jj]=s;
-		// I_temp
+		// I_temp		
 		I_temp = Tensor<>(2*i+2,false,lens_temp,dw);
 		//build char
 		char seq_I2[2*i+1]; seq_I2[2*i] = '\0';
@@ -299,12 +486,12 @@ Tensor<> identitiy_tensor(int N,
 }
 
 /**
- * \brief laplacian tensor:
+ * \brief laplacian tensor: 
  * 3d example : I x D x I + D x I x I + I x I x D
  */
 void random_laplacian_tensor(Tensor<>& V,
-							 int N,
-							 int s,
+							 int N, 
+							 int s, 
 							 bool sparse_V,
 							 World & dw){
 
@@ -330,7 +517,7 @@ void random_laplacian_tensor(Tensor<>& V,
 	char seq[N+1]; seq[N] = '\0';
 	for (int jj=0; jj<N; jj++) seq[jj] = 'a'+jj;
 	/* k=1 */
-	// initialize
+	// initialize		
 	Tensor<> I2 = identitiy_tensor(N-2, s, dw);
 	// build char
 	char seq_D[3] = "ab";
@@ -339,7 +526,7 @@ void random_laplacian_tensor(Tensor<>& V,
 	// contract
 	V[seq] += D[seq_D]*I2[seq_I2];
 	// k=d
-	// initialize
+	// initialize		
 	Tensor<> I1 = identitiy_tensor(N-2, s, dw);
 	// build char
 	char seq_I1[N-1]; seq_I1[N-2] = '\0';
@@ -359,16 +546,16 @@ void random_laplacian_tensor(Tensor<>& V,
 		for (int jj=2*k; jj<2*d; jj++) seq_I2[jj-2*k] = 'a'+jj;
 		// contract
 		V[seq] += I1[seq_I1]*D[seq_D]*I2[seq_I2];
-	}
+	} 
 }
 
 /**
- * \brief laplacian tensor:
+ * \brief laplacian tensor: 
  * 3d example : I x D x I + D x I x I + I x I x D
  */
 void laplacian_tensor(Tensor<>& V,
-					  int N,
-					  int s,
+					  int N, 
+					  int s, 
 					  bool sparse_V,
 					  World & dw){
 
@@ -393,7 +580,7 @@ void laplacian_tensor(Tensor<>& V,
 	char seq[N+1]; seq[N] = '\0';
 	for (int jj=0; jj<N; jj++) seq[jj] = 'a'+jj;
 	/* k=1 */
-	// initialize
+	// initialize		
 	Tensor<> I2 = identitiy_tensor(N-2, s, dw);
 	// build char
 	char seq_D[3] = "ab";
@@ -402,7 +589,7 @@ void laplacian_tensor(Tensor<>& V,
 	// contract
 	V[seq] += D[seq_D]*I2[seq_I2];
 	// k=d
-	// initialize
+	// initialize		
 	Tensor<> I1 = identitiy_tensor(N-2, s, dw);
 	// build char
 	char seq_I1[N-1]; seq_I1[N-2] = '\0';
@@ -422,11 +609,11 @@ void laplacian_tensor(Tensor<>& V,
 		for (int jj=2*k; jj<2*d; jj++) seq_I2[jj-2*k] = 'a'+jj;
 		// contract
 		V[seq] += I1[seq_I1]*D[seq_D]*I2[seq_I2];
-	}
+	} 
 }
 
-void Normalize(Matrix<>* W,
-			   int N,
+void Normalize(Matrix<>* W, 
+			   int N, 
 			   World & dw) {
 /*
 	int R = W[0].ncol;
@@ -457,7 +644,7 @@ void Normalize(Matrix<>* W,
 		for (int jj=0; jj<R; jj++) {
 			inds_t[jj] = jj*R+jj;
 			if(dw.rank==0) vals_t[jj] = norm_sum[jj]/norm[j][jj];
-			else vals_t[0] = 0;
+			else vals_t[0] = 0;	
 		}
 		transform.write(R,inds_t,vals_t);
 		W[j]["ij"] = W[j]["ik"]*transform["kj"];
@@ -471,11 +658,11 @@ void Normalize(Matrix<>* W,
 	for (int i=0; i<N; i++) {
 		double norm_Wi = W[i].norm2();
 		W[i]["ij"] = norm/norm_Wi*W[i]["ij"];
-	}
+	}	
 }
 
-void SVD_solve(Matrix<>& M,
-			   Matrix<>& W,
+void SVD_solve(Matrix<>& M, 
+			   Matrix<>& W, 
 			   Matrix<>& S) {
   Timer tSVD_solve("SVD_solve");
   tSVD_solve.start();
@@ -492,23 +679,10 @@ void SVD_solve(Matrix<>& M,
   tSVD_solve.stop();
 }
 
-void SVD_solve_left(Matrix<> &S, Matrix<> &X, Matrix<> &Y){
-	Matrix<> U,VT;
-	Vector<> s;
-	S.svd(U,s,VT,S.ncol);
-	Matrix<> S_reverse(S);
- 	// reverse
- 	Transform<> inv([](double & d){ d=1./d; });
-	inv(s["i"]);
-	S_reverse["ij"] = VT["ki"]*s["k"]*U["jk"];
-	matrixDot(X, S_reverse, Y);
-}
-
-
-void SVD_solve_mod(Matrix<>& M,
+void SVD_solve_mod(Matrix<>& M, 
 				   Matrix<>& W,
 				   Matrix<>& W_init,
-				   Matrix<>& dW,
+				   Matrix<>& dW, 
 				   Matrix<>& S,
 				   double ratio_step) {
   Timer tSVD_solve_mod("SVD_solve");
@@ -530,8 +704,43 @@ void SVD_solve_mod(Matrix<>& M,
   tSVD_solve_mod.stop();
 }
 
+
+void matrixDot(Matrix<>& result, Matrix<> &matrix1, Matrix<> &matrix2){
+	result = Matrix<>(matrix1.nrow, matrix2.ncol);
+	result["ij"] = matrix1["ik"]*matrix2["kj"];
+}
+
+/** Compute the rank 1 update vector on A(n).
+	*/
+void get_rankR_update(int R, Matrix<> &U, Vector<> &sigma, Matrix<> &VT, Matrix<> &M, Matrix<> &A, Matrix<> &gamma){
+	Matrix<> rhs;
+	matrixDot(rhs, A, gamma);
+	rhs["ij"] = M["ij"] - rhs["ij"];
+	Matrix<> VT_rhs;
+	rhs.svd(U, sigma, VT_rhs, R);
+	VT = VT_rhs;
+	SVD_solve(VT_rhs, VT, gamma);
+}
+
+/** Perform rank R update on V and A
+	*/
+void apply_rankR_update(Matrix<> &U, Vector<> &sigma, Matrix<> &VT, Matrix<> &A, Tensor<> &V, Tensor<> *cached_tensor, int mode, World &dw){
+	//A["ij"] = A["ij"]+U["ik"]*sigma["k"]*VT["kj"];
+	char seq[V.order+1]; seq[V.order] = '\0';
+	char seq2[V.order+1]; seq2[V.order] = '\0';
+	for (int i=0; i<V.order; i++) {
+		seq[i] = 'a'+i; seq2[i] = 'a'+i;
+	}
+	seq2[mode] = 'a'+V.order;
+	char seq_VT[] = {'a'+V.order+1, seq2[mode], '\0'};
+	char seq_U[] = {seq[mode], 'a'+V.order+1, '\0'};
+	char seq_sigma[] = {'a'+V.order+1, '\0'};
+	U["ij"] = U["ij"]*sigma["j"];
+	(*cached_tensor)[seq2] = (*cached_tensor)[seq2]+VT[seq_VT]*U[seq_U]*V[seq];
+}
+
 // Gauss-Seidel relaxation for A*Gamma = F
-void Gauss_Seidel(Matrix<>& A,
+void Gauss_Seidel(Matrix<>& A, 
 				  Matrix<>& F,
 				  Matrix<>& Gamma,
 				  int maxits) {
@@ -553,7 +762,7 @@ void Gauss_Seidel(Matrix<>& A,
  	// reverse
  	Transform<> inv([](double & d){ d=1./d; });
 	inv(p["i"]);
-	GL_reverse["ij"] = VT["ki"]*p["k"]*U["jk"];
+	GL_reverse["ij"] = VT["ki"]*p["k"]*U["jk"];	
 	// iteration
 	for(int i=0; i<maxits; i++) {
 		// A = A+(P\(F-A*Gamma)T)T;
@@ -579,18 +788,18 @@ void fold_unfold(Tensor<>& X, Tensor<>& Y){
  * \brief To calculate the Khatri-Rao Product of W[i]
  *  H_T: output solution
  *  W[i]: input matrix
- *  index: sequence for W[i] to be used
+ *  index: sequence for W[i] to be used 
  *  lens_H: lens of each dimension in H_T
  */
-void KhatriRaoProduct(Tensor<> & H_T,
-					  Matrix<> * W,
-					  int * index,
-					  int * lens_H,
+void KhatriRaoProduct(Tensor<> & H_T, 
+					  Matrix<> * W, 
+					  int * index, 
+					  int * lens_H, 
 					  World & dw) {
 
 	int K = H_T.lens[H_T.order-1];
-	Tensor<> H_front = W[index[0]];
-	Tensor<> H_temp;
+	Tensor<> H_front = W[index[0]]; 
+	Tensor<> H_temp; 
 	for (int j=1; j<H_T.order-1; j++) {     // iterate on [ab]
 		// make the char
 		char seq[H_front.order+1], seq_f[H_front.order+2];
@@ -623,20 +832,20 @@ void KhatriRaoProduct(Tensor<> & H_T,
  *  M: output solution
  *  V: input tensor
  *  W[i]: input matrixs
- *  index: sequence for W[i] to be used
+ *  index: sequence for W[i] to be used 
  *  lens_H: lens of each dimension in H_T
  *	M["dk"] = V["abcd"]*W1["ak"]*W2["bk"]*W3["ck"]
  */
-void KhatriRao_contract(Matrix<> & M,
-						Tensor<> & V,
-						Matrix<> * W,
-						int * index,
-						int * lens_H,
+void KhatriRao_contract(Matrix<> & M, 
+						Tensor<> & V, 
+						Matrix<> * W, 
+						int * index, 
+						int * lens_H, 
 						World &dw) {
 
 	int K = W[0].ncol;
-	Tensor<> V_front = V;
-	Tensor<> V_temp;
+	Tensor<> V_front = V; 
+	Tensor<> V_temp; 
 	/* initial condition
 	*/
 	char seq[V_front.order+1], seq_f[V_front.order+1], seq_w[3];
@@ -699,97 +908,35 @@ void KhatriRao_contract(Matrix<> & M,
 	return;
 }
 
-
-/** Compute the KhatriRao Product along the fixed mode and contract mode.
-	* V is used as both imput and output.
-	*/
-void KhatriRaoProductAlong(Tensor<> &V, Matrix<> &W, int fixed_mode, int contract_mode, World &dw){
-	int tempLens[V.order-1]; // dimensions for temp tensor V defined below
-	char seq_temp[V.order+1];
-	char seq_V[V.order+1];
-	int tempPosition=0;
-	int VPosition = 0;
-
-	// Computing the sequence for Einstein summation and dimension lens for temp tensor.
-	while (VPosition<V.order){
-		char c = 'a'+VPosition;
-		seq_V[VPosition] = c;
-		if (contract_mode!=VPosition) {
-			seq_temp[tempPosition] = c;
-			tempLens[tempPosition] = V.lens[VPosition];
-			tempPosition++;
-		}
-		VPosition++;
-	}
-	seq_V[VPosition]='\0';
-	seq_temp[tempPosition]='\0';
-
-	char seq_W[]={seq_V[contract_mode], seq_V[fixed_mode]};
-	Tensor<> temp = Tensor<>(V.order-1, tempLens, dw);
-	temp[seq_temp] = V[seq_V]*W[seq_W];
-	V = temp;
-}
-
-/** Return the result on V.
-	*/
-void tensorMatrixMultiplication(Tensor<> &V, Matrix<> &W, int contract_mode, World &dw){
-	int lens[V.order];
-	char seq_V[V.order+1]; seq_V[V.order]='\0';
-	char seq_temp[V.order+1]; seq_temp[V.order]='\0';
-	for (int i=0; i<V.order; i++){
-		seq_V[i] = 'a'+i;
-		seq_temp[i] = 'a'+i;
-		lens[i] = V.lens[i];
-	}
-	lens[contract_mode] = W.ncol;
-	seq_temp[contract_mode] = 'a'+V.order;
-	char seq_W[] = {seq_V[contract_mode], 'a'+V.order, '\0'};
-
-	Tensor<> temp = Tensor<>(V.order, lens, dw);
-	temp[seq_temp] = V[seq_V]*W[seq_W];
-	V = temp;
-}
-
-void matrixDot(Matrix<>& result, Matrix<> &matrix1, Matrix<> &matrix2){
-	result = Matrix<>(matrix1.nrow, matrix2.ncol);
-	result["ij"] = matrix1["ik"]*matrix2["kj"];
-}
-
-void print_lens(Tensor<> &V){
-	for (int i=0; i<V.order; i++) cout<<V.lens[i]<<",";
-	cout<<"\n";
-}
-
-
-/**
+/** 
  *  \brief subproblem grad_W[i]
  */
-void gradsubprob(Matrix<>& M,
-				 Matrix<>& S,
-				 Matrix<>& W,
+void gradsubprob(Matrix<>& M, 
+				 Matrix<>& S, 
+				 Matrix<>& W, 
 				 Matrix<>& grad_W) {
-	grad_W["ij"] = -M["ij"]+W["ik"]*S["kj"];
+	grad_W["ij"] = -M["ij"]+W["ik"]*S["kj"]; 
 }
 
 /**
  * \brief initialize grad_W
  */
-void gradient_CP(Tensor<> & V,
-				 Matrix<> * W,
-				 Matrix<> * grad_W,
+void gradient_CP(Tensor<> & V, 
+				 Matrix<> * W, 
+				 Matrix<> * grad_W, 
 				 World & dw) {
   Timer tgradient_CP("gradient_CP");
   tgradient_CP.start();
 	//make the char
 	char seq_V[V.order+1];
-	seq_V[V.order] = '\0';
+	seq_V[V.order] = '\0'; 
 	for (int j=0; j<V.order; j++) {
 		seq_V[j] = 'a'+j;
 	}
 	//initialize matrix S
 	Matrix<> S = Matrix<>(W[0].ncol,W[0].ncol);
 	// iteration on grad_W[i]
-	for (int i=0; i<V.order; i++) {
+	for (int i=0; i<V.order; i++) { 
 		//make the char
 		char temp = seq_V[V.order-1];
 		seq_V[V.order-1] = seq_V[i];
@@ -822,7 +969,7 @@ void gradient_CP(Tensor<> & V,
   tgradient_CP.stop();
 }
 
-void char_string_copy(char* a,
+void char_string_copy(char* a, 
 				 int start_a,
 				 string& b,
 				 int start_b,
