@@ -159,19 +159,13 @@ void CPMSDTLROptimizer<dtype>::mttkrp_map_init(int left_index) {
 		else lens[ii] = this->V->lens[int(seq_map_init[ii]-'a')];
 	}
 	mttkrp_map[seq_tree_top] = Tensor<dtype>(strlen(seq_map_init), lens, *dw);
-	Tensor<dtype> temp = Tensor<dtype>(strlen(seq_map_init), lens, *dw);
 	if (this->low_rank_decomp && this->is_cached[left_index]){
-		this->U["ij"] = this->U["ij"]*this->s["j"];
-		char seq_U[] = {'a'+left_index, '&', '\0'};
-		char seq_VT[] = {'&', '*','\0'};
-		cached_tensors[left_index].print();
-		//mttkrp_map[seq_tree_top][seq_map_init] = (*this->V)[seq_V] * this->W[left_index][seq_matrix];
-		mttkrp_map[seq_tree_top][seq_map_init] = cached_tensors[left_index][seq_map_init] + (*this->V)[seq_V] * this->U[seq_U] * this->VT[seq_VT];
+		mttkrp_map[seq_tree_top] = cached_tensors[left_index];
 	} else {
 		mttkrp_map[seq_tree_top][seq_map_init] = (*this->V)[seq_V] * this->W[left_index][seq_matrix];
+		cached_tensors[left_index] = mttkrp_map[seq_tree_top];
+		this->is_cached[left_index] = true;
 	}
-	cached_tensors[left_index] = mttkrp_map[seq_tree_top];
-	this->is_cached[left_index] = true;
 }
 
 template<typename dtype>
@@ -195,6 +189,29 @@ void CPMSDTLROptimizer<dtype>::mttkrp_map_DT(string index) {
 	mttkrp_map[index] = Tensor<dtype>(strlen(index_char), lens, *dw);
 
 	mttkrp_map[index][index_char] = mttkrp_map[parent_index][parent_index] * this->W[indexes[W_index]][mat_index];
+}
+
+template<typename dtype>
+void CPMSDTLROptimizer<dtype>::update_cached_tensor(int left_index){
+	int order = this->order;
+	seq_map_init[order] = '\0';
+	seq_map_init[order-1] = '*';
+	int j = 0;
+	for (int i=left_index+1; i<order; i++){
+		seq_map_init[j] = 'a' + i;
+		j++;
+	}
+	for (int i=0; i<left_index; i++) {
+		seq_map_init[j] = 'a' + i;
+		j++;
+	}
+	this->U["ij"] = this->U["ij"]*this->s["j"];
+	char seq_U[] = {'a'+left_index, '&', '\0'};
+	char seq_VT[] = {'&', '*','\0'};
+	char seq_matrix[] = {'a'+left_index, '*', '\0'};
+	cached_tensors[left_index][seq_map_init] = (*this->V)[seq_V] * this->W[left_index][seq_matrix];
+	//cached_tensors[left_index][seq_map_init] = cached_tensors[left_index][seq_map_init] + (*this->V)[seq_V] * this->U[seq_U] * this->VT[seq_VT];
+	this->is_cached[left_index] = true;
 }
 
 template<typename dtype>
@@ -229,11 +246,12 @@ void CPMSDTLROptimizer<dtype>::step() {
 		CPOptimizer<dtype>::update_S(indexes[i]);
 		// calculate gradient
 		this->grad_W[indexes[i]]["ij"] = -M["ij"]+this->W[indexes[i]]["ik"]*this->S["kj"];
-		if (i!=indexes.size()-1){
+		if (!is_cached[indexes[i]]){
 			SVD_solve(M, this->W[indexes[i]], this->S);
 		} else {
 			get_rankR_update(this->rank, this->U, this->s, this->VT, M, this->W[indexes[i]], this->S);
 			this->W[indexes[i]]["ij"] = this->W[indexes[i]]["ij"] + this->U["ik"]*this->s["k"]*this->VT["kj"];
+			update_cached_tensor(indexes[i]);
 			this->low_rank_decomp = true;
 		}
 	}

@@ -29,6 +29,8 @@ class CPMSDTLROptimizer : public CPOptimizer<dtype> {
 
 		void vec2str(vector<int> vec, string & seq);
 
+		void update_cached_tensor(int index);
+
 		char seq_V[100];
 		// used for doing the first contraction
 		// mttkrp_map[seq][seq_map_init] = V[seq_V] * W[i][seq2]
