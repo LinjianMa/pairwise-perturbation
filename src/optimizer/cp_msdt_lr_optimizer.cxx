@@ -216,7 +216,7 @@ void CPMSDTLROptimizer<dtype>::update_cached_tensor(int left_index){
 	dW["ij"] = this->W[left_index]["ij"] - old_W[left_index]["ij"];
 	Matrix<dtype> dU, dVT;
 	Vector<dtype> ds;
-	dW.svd(dU, ds, dVT, order-1);
+	dW.svd(dU, ds, dVT, (order-1)*this->rank);
 	//cached_tensors[left_index][seq_map_init] = (*this->V)[seq_V] * this->W[left_index][seq_matrix];
 	//cached_tensors[left_index][seq_map_init] = cached_tensors[left_index][seq_map_init] + (*this->V)[seq_V] * this->U[seq_U] * this->VT[seq_VT];
 	cached_tensors[left_index][seq_map_init] = cached_tensors[left_index][seq_map_init] + (*this->V)[seq_V] * dU[seq_U] * ds["&"]* dVT[seq_VT];
