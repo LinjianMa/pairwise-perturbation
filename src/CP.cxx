@@ -4,19 +4,19 @@
 
 using namespace CTF;
 
-template<typename dtype, class Optimizer>  
+template<typename dtype, class Optimizer>
 CPD<dtype, Optimizer>::CPD(int order, int size_, int r, World & dw)
 	: Decomposition<dtype>(order, size_, r, dw) {
-	optimizer = new Optimizer(order, r, dw); 
+	optimizer = new Optimizer(order, r, dw);
 
 	// make the char seq_V
-	seq_V[order] = '\0'; 
+	seq_V[order] = '\0';
 	for (int j=0; j<order; j++) {
 		seq_V[j] = 'a'+j;
 	}
 }
 
-template<typename dtype, class Optimizer>  
+template<typename dtype, class Optimizer>
 CPD<dtype, Optimizer>::CPD(int order, int* size_, int* r, World & dw)
 	: Decomposition<dtype>(order, size_, r, dw) {
 
@@ -27,19 +27,19 @@ CPD<dtype, Optimizer>::CPD(int order, int* size_, int* r, World & dw)
 		assert( this->rank[i] == rank0 );
 	}
 
-	optimizer = new Optimizer(order, r[0], dw); 
+	optimizer = new Optimizer(order, r[0], dw);
 
 	// make the char seq_V
-	seq_V[order] = '\0'; 
+	seq_V[order] = '\0';
 	for (int j=0; j<order; j++) {
 		seq_V[j] = 'a'+j;
 	}
 
 }
 
-template<typename dtype, class Optimizer>  
-void CPD<dtype, Optimizer>::Init(Tensor<dtype>* input, 
-								Matrix<dtype>* mat, 
+template<typename dtype, class Optimizer>
+void CPD<dtype, Optimizer>::Init(Tensor<dtype>* input,
+								Matrix<dtype>* mat,
 								double lambda
 								){
 
@@ -52,44 +52,44 @@ void CPD<dtype, Optimizer>::Init(Tensor<dtype>* input,
 	grad_W = new Matrix<>[this->order];
 	for (int i=0; i<this->order; i++) {
 		grad_W[i] = Matrix<dtype>(this->size[i],this->rank[i],*dw);
-		grad_W[i].fill_random(0,1); 
+		grad_W[i].fill_random(0,1);
 	}
 	// configure the optimizer
 	this->optimizer->configure(input, mat, grad_W, lambda);
 }
 
-template<typename dtype, class Optimizer>  
+template<typename dtype, class Optimizer>
 void CPD<dtype, Optimizer>::print_grad(int i) const {
 	assert(grad_W != NULL);
 	grad_W[i].print();
 }
 
-template<typename dtype, class Optimizer>  
+template<typename dtype, class Optimizer>
 CPD<dtype, Optimizer>::~CPD() {
 	if (grad_W != NULL) {
 		delete[] grad_W;
 	}
 	if (optimizer != NULL) {
-		delete optimizer; 
+		delete optimizer;
 	}
 
 }
 
-template<typename dtype, class Optimizer>  
+template<typename dtype, class Optimizer>
 void CPD<dtype, Optimizer>::update_gradnorm() {
 	gradnorm = 0;
-	for (int i=0; i<this->order; i++) { 
+	for (int i=0; i<this->order; i++) {
 		gradnorm += this->grad_W[i].norm2() * this->grad_W[i].norm2();
 	}
 	gradnorm = sqrt(gradnorm);
 }
 
-template<typename dtype, class Optimizer>  
-bool CPD<dtype, Optimizer>::als(double tol, 
-								double timelimit, 
+template<typename dtype, class Optimizer>
+bool CPD<dtype, Optimizer>::als(double tol,
+								double timelimit,
 								int maxiter,
         						int resprint,
-								ofstream & Plot_File, 
+								ofstream & Plot_File,
         						bool bench
 								) {
 
@@ -97,7 +97,7 @@ bool CPD<dtype, Optimizer>::als(double tol,
 
 	World * dw = this->world;
 	double st_time = MPI_Wtime();
-	int iter;  
+	int iter;
 	double diffnorm_V = 1000.;
 
 	if (bench==false) {
@@ -106,7 +106,7 @@ bool CPD<dtype, Optimizer>::als(double tol,
 
 	for (iter=0; iter<=maxiter; iter++)
 	{
-		// print the gradient norm 
+		// print the gradient norm
 		if (iter%resprint==0 || iter==maxiter) {
 			double st_time1 = MPI_Wtime();
 			update_gradnorm();
@@ -131,15 +131,15 @@ bool CPD<dtype, Optimizer>::als(double tol,
 				if(dw->rank==0 && iter!=0) {
 					cout << "  [dimension tree step time]  " << dtime <<  "\n";
 					Plot_File << "[DTtime]" << "," << dtime << "\n";
-				}				
+				}
 			}
-			if ((gradnorm < tol) || MPI_Wtime()-st_time > timelimit) 
+			if ((gradnorm < tol) || MPI_Wtime()-st_time > timelimit)
 				break;
 		}
 
 		this->optimizer->step();
 
-		Normalize(this->W, this->order, *dw);
+		//Normalize(this->W, this->order, *dw);
 		// print .
 		if (iter%10==0 && dw->rank==0) printf(".");
 	}
@@ -153,5 +153,3 @@ bool CPD<dtype, Optimizer>::als(double tol,
 	if (iter == maxiter+1) return false;
 	else return true;
 }
-
-
