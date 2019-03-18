@@ -29,15 +29,18 @@ CPMSDTLROptimizer<dtype>::CPMSDTLROptimizer(int order, int r, World & dw)
 	}
 	left_index = order;
 
-	rank = 1;
+	rank = 2;
 	low_rank_decomp = false;
 	is_cached = new bool[order];
+	for (int i=0; i<order; i++){is_cached[i]=false;}
 	cached_tensors = new Tensor<>[order];
 }
 
 template<typename dtype>
 CPMSDTLROptimizer<dtype>::~CPMSDTLROptimizer(){
 	// delete S;
+	delete[] is_cached;
+	delete[] cached_tensors;
 }
 
 template<typename dtype>
@@ -156,11 +159,14 @@ void CPMSDTLROptimizer<dtype>::mttkrp_map_init(int left_index) {
 		else lens[ii] = this->V->lens[int(seq_map_init[ii]-'a')];
 	}
 	mttkrp_map[seq_tree_top] = Tensor<dtype>(strlen(seq_map_init), lens, *dw);
+	Tensor<dtype> temp = Tensor<dtype>(strlen(seq_map_init), lens, *dw);
 	if (this->low_rank_decomp && this->is_cached[left_index]){
 		this->U["ij"] = this->U["ij"]*this->s["j"];
 		char seq_U[] = {'a'+left_index, '&', '\0'};
 		char seq_VT[] = {'&', '*','\0'};
-		mttkrp_map[seq_tree_top][seq_map_init] = cached_tensors[left_index][seq_map_init] + (*this->V)[seq_V]*(this->U[seq_U])*(this->VT[seq_VT]);
+		cached_tensors[left_index].print();
+		//mttkrp_map[seq_tree_top][seq_map_init] = (*this->V)[seq_V] * this->W[left_index][seq_matrix];
+		mttkrp_map[seq_tree_top][seq_map_init] = cached_tensors[left_index][seq_map_init] + (*this->V)[seq_V] * this->U[seq_U] * this->VT[seq_VT];
 	} else {
 		mttkrp_map[seq_tree_top][seq_map_init] = (*this->V)[seq_V] * this->W[left_index][seq_matrix];
 	}
@@ -223,10 +229,11 @@ void CPMSDTLROptimizer<dtype>::step() {
 		CPOptimizer<dtype>::update_S(indexes[i]);
 		// calculate gradient
 		this->grad_W[indexes[i]]["ij"] = -M["ij"]+this->W[indexes[i]]["ik"]*this->S["kj"];
-		if (i==indexes.size()-1){
+		if (i!=indexes.size()-1){
 			SVD_solve(M, this->W[indexes[i]], this->S);
 		} else {
 			get_rankR_update(this->rank, this->U, this->s, this->VT, M, this->W[indexes[i]], this->S);
+			this->W[indexes[i]]["ij"] = this->W[indexes[i]]["ij"] + this->U["ik"]*this->s["k"]*this->VT["kj"];
 			this->low_rank_decomp = true;
 		}
 	}
