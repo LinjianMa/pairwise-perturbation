@@ -54,6 +54,7 @@ class CPMSDTLROptimizer : public CPOptimizer<dtype> {
 		bool low_rank_decomp;
 		bool* is_cached;
 		Tensor<>* cached_tensors;
+		Matrix<>* old_W;
 		Matrix<> U;
 		Vector<> s;
 		Matrix<> VT;

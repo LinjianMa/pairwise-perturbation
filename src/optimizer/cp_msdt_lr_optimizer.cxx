@@ -29,11 +29,12 @@ CPMSDTLROptimizer<dtype>::CPMSDTLROptimizer(int order, int r, World & dw)
 	}
 	left_index = order;
 
-	rank = 2;
+	rank = 1;
 	low_rank_decomp = false;
 	is_cached = new bool[order];
 	for (int i=0; i<order; i++){is_cached[i]=false;}
-	cached_tensors = new Tensor<>[order];
+	cached_tensors = new Tensor<dtype>[order];
+	old_W = new Matrix<dtype>[order];
 }
 
 template<typename dtype>
@@ -160,10 +161,12 @@ void CPMSDTLROptimizer<dtype>::mttkrp_map_init(int left_index) {
 	}
 	mttkrp_map[seq_tree_top] = Tensor<dtype>(strlen(seq_map_init), lens, *dw);
 	if (this->low_rank_decomp && this->is_cached[left_index]){
+		update_cached_tensor(left_index);
 		mttkrp_map[seq_tree_top] = cached_tensors[left_index];
 	} else {
 		mttkrp_map[seq_tree_top][seq_map_init] = (*this->V)[seq_V] * this->W[left_index][seq_matrix];
 		cached_tensors[left_index] = mttkrp_map[seq_tree_top];
+		old_W[left_index] = this->W[left_index];
 		this->is_cached[left_index] = true;
 	}
 }
@@ -209,8 +212,15 @@ void CPMSDTLROptimizer<dtype>::update_cached_tensor(int left_index){
 	char seq_U[] = {'a'+left_index, '&', '\0'};
 	char seq_VT[] = {'&', '*','\0'};
 	char seq_matrix[] = {'a'+left_index, '*', '\0'};
-	cached_tensors[left_index][seq_map_init] = (*this->V)[seq_V] * this->W[left_index][seq_matrix];
+	Matrix<dtype> dW = this->W[left_index];
+	dW["ij"] = this->W[left_index]["ij"] - old_W[left_index]["ij"];
+	Matrix<dtype> dU, dVT;
+	Vector<dtype> ds;
+	dW.svd(dU, ds, dVT, dW.ncol);
+	//cached_tensors[left_index][seq_map_init] = (*this->V)[seq_V] * this->W[left_index][seq_matrix];
 	//cached_tensors[left_index][seq_map_init] = cached_tensors[left_index][seq_map_init] + (*this->V)[seq_V] * this->U[seq_U] * this->VT[seq_VT];
+	cached_tensors[left_index][seq_map_init] = cached_tensors[left_index][seq_map_init] + (*this->V)[seq_V] * dU[seq_U] * ds["&"]* dVT[seq_VT];
+	old_W[left_index] = this->W[left_index];
 	this->is_cached[left_index] = true;
 }
 
@@ -251,7 +261,7 @@ void CPMSDTLROptimizer<dtype>::step() {
 		} else {
 			get_rankR_update(this->rank, this->U, this->s, this->VT, M, this->W[indexes[i]], this->S);
 			this->W[indexes[i]]["ij"] = this->W[indexes[i]]["ij"] + this->U["ik"]*this->s["k"]*this->VT["kj"];
-			update_cached_tensor(indexes[i]);
+			//update_cached_tensor(indexes[i]);
 			this->low_rank_decomp = true;
 		}
 	}
