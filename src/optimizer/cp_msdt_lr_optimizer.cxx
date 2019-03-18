@@ -167,6 +167,7 @@ void CPMSDTLROptimizer<dtype>::mttkrp_map_init(int left_index) {
 		mttkrp_map[seq_tree_top][seq_map_init] = (*this->V)[seq_V] * this->W[left_index][seq_matrix];
 		cached_tensors[left_index] = mttkrp_map[seq_tree_top];
 		old_W[left_index] = this->W[left_index];
+		//cout<<"update old_W "<<left_index<<endl;
 		this->is_cached[left_index] = true;
 	}
 }
@@ -212,14 +213,13 @@ void CPMSDTLROptimizer<dtype>::update_cached_tensor(int left_index){
 	char seq_U[] = {'a'+left_index, '&', '\0'};
 	char seq_VT[] = {'&', '*','\0'};
 	char seq_matrix[] = {'a'+left_index, '*', '\0'};
-	Matrix<dtype> dW = this->W[left_index];
-	dW["ij"] = this->W[left_index]["ij"] - old_W[left_index]["ij"];
-	Matrix<dtype> dU, dVT;
-	Vector<dtype> ds;
-	dW.svd(dU, ds, dVT, (order-1)*this->rank);
-	//cached_tensors[left_index][seq_map_init] = (*this->V)[seq_V] * this->W[left_index][seq_matrix];
+	//Matrix<dtype> dW = this->W[left_index];
+	//dW["ij"] = this->W[left_index]["ij"] - old_W[left_index]["ij"];
+	//Matrix<dtype> dU, dVT;
+	//Vector<dtype> ds;
+	//dW.svd(dU, ds, dVT, (order-1)*this->rank);
+	cached_tensors[left_index][seq_map_init] = (*this->V)[seq_V] * this->W[left_index][seq_matrix];
 	//cached_tensors[left_index][seq_map_init] = cached_tensors[left_index][seq_map_init] + (*this->V)[seq_V] * this->U[seq_U] * this->VT[seq_VT];
-	cached_tensors[left_index][seq_map_init] = cached_tensors[left_index][seq_map_init] + (*this->V)[seq_V] * dU[seq_U] * ds["&"]* dVT[seq_VT];
 	old_W[left_index] = this->W[left_index];
 	this->is_cached[left_index] = true;
 }
@@ -256,11 +256,11 @@ void CPMSDTLROptimizer<dtype>::step() {
 		CPOptimizer<dtype>::update_S(indexes[i]);
 		// calculate gradient
 		this->grad_W[indexes[i]]["ij"] = -M["ij"]+this->W[indexes[i]]["ik"]*this->S["kj"];
-		if (!is_cached[indexes[i]]){
+		if (!is_cached[indexes[i]] || (i!=(indexes.size()-1))){
 			SVD_solve(M, this->W[indexes[i]], this->S);
 		} else {
-			get_rankR_update(this->rank, this->U, this->s, this->VT, M, this->W[indexes[i]], this->S);
-			this->W[indexes[i]]["ij"] = this->W[indexes[i]]["ij"] + this->U["ik"]*this->s["k"]*this->VT["kj"];
+			get_rankR_update(this->rank, this->U, this->s, this->VT, M, this->old_W[indexes[i]], this->S);
+			this->W[indexes[i]]["ij"] = this->old_W[indexes[i]]["ij"] + this->U["ik"]*this->s["k"]*this->VT["kj"];
 			//update_cached_tensor(indexes[i]);
 			this->low_rank_decomp = true;
 		}
