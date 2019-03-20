@@ -29,7 +29,7 @@ CPMSDTLROptimizer<dtype>::CPMSDTLROptimizer(int order, int r, World & dw)
 	}
 	left_index = order;
 
-	rank = 1;
+	rank = 2;
 	low_rank_decomp = false;
 	is_cached = new bool[order];
 	for (int i=0; i<order; i++){is_cached[i]=false;}
@@ -213,13 +213,16 @@ void CPMSDTLROptimizer<dtype>::update_cached_tensor(int left_index){
 	char seq_U[] = {'a'+left_index, '&', '\0'};
 	char seq_VT[] = {'&', '*','\0'};
 	char seq_matrix[] = {'a'+left_index, '*', '\0'};
-	//Matrix<dtype> dW = this->W[left_index];
-	//dW["ij"] = this->W[left_index]["ij"] - old_W[left_index]["ij"];
-	//Matrix<dtype> dU, dVT;
-	//Vector<dtype> ds;
-	//dW.svd(dU, ds, dVT, (order-1)*this->rank);
-	cached_tensors[left_index][seq_map_init] = (*this->V)[seq_V] * this->W[left_index][seq_matrix];
-	//cached_tensors[left_index][seq_map_init] = cached_tensors[left_index][seq_map_init] + (*this->V)[seq_V] * this->U[seq_U] * this->VT[seq_VT];
+	char seq_temp[order];
+	int i = 0;
+	while (seq_V[i]!='\0') {seq_temp[i] = seq_V[i]; i++;}
+	seq_temp[left_index] = '&';
+	int lens[order];
+	for (int i=0; i<order; i++) {lens[i] = this->V->lens[i];}
+	lens[left_index] = rank;
+	Tensor<dtype> temp = Tensor<dtype>(order, lens, *this->world);
+	temp[seq_temp] = (*this->V)[seq_V] * this->U[seq_U];
+	cached_tensors[left_index][seq_map_init] = cached_tensors[left_index][seq_map_init] + this->VT[seq_VT]*temp[seq_temp];
 	old_W[left_index] = this->W[left_index];
 	this->is_cached[left_index] = true;
 }
