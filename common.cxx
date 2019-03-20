@@ -732,9 +732,9 @@ void apply_rankR_update(Matrix<> &U, Vector<> &sigma, Matrix<> &VT, Matrix<> &A,
 		seq[i] = 'a'+i; seq2[i] = 'a'+i;
 	}
 	seq2[mode] = 'a'+V.order;
-	char seq_VT[] = {'a'+V.order+1, seq2[mode], '\0'};
-	char seq_U[] = {seq[mode], 'a'+V.order+1, '\0'};
-	char seq_sigma[] = {'a'+V.order+1, '\0'};
+	char seq_VT[] = {char('a'+V.order+1), seq2[mode], '\0'};
+	char seq_U[] = {seq[mode], char('a'+V.order+1), '\0'};
+	char seq_sigma[] = {char('a'+V.order+1), '\0'};
 	U["ij"] = U["ij"]*sigma["j"];
 	(*cached_tensor)[seq2] = (*cached_tensor)[seq2]+VT[seq_VT]*U[seq_U]*V[seq];
 	A["ij"] = U["ik"]*VT["kj"];

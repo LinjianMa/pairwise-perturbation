@@ -210,9 +210,9 @@ void CPMSDTLROptimizer<dtype>::update_cached_tensor(int left_index){
 		j++;
 	}
 	this->U["ij"] = this->U["ij"]*this->s["j"];
-	char seq_U[] = {'a'+left_index, '&', '\0'};
+	char seq_U[] = {char('a'+left_index), '&', '\0'};
 	char seq_VT[] = {'&', '*','\0'};
-	char seq_matrix[] = {'a'+left_index, '*', '\0'};
+	char seq_matrix[] = {char('a'+left_index), '*', '\0'};
 	//cached_tensors[left_index][seq_map_init] = this->W[left_index][seq_matrix] * (*this->V)[seq_V];
 	char seq_temp[order];
 	int i = 0;

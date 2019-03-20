@@ -110,7 +110,7 @@ int main(int argc, char ** argv){
 	}
 	if (getCmdOption(input_str, input_str+in_num, "-rank")) {
 		R = atoi(getCmdOption(input_str, input_str+in_num, "-rank"));
-    	if (R < 0 || R > s) R = s/2;
+    	if (R < 0) R = s/2;
 	} else {
 		R = s/2;
 	}
@@ -321,11 +321,11 @@ int main(int argc, char ** argv){
 				decom.als(tol*Vnorm, timelimit, maxiter, resprint, Plot_File);
 			// 	alsCP_PP(V, W, grad_W, F, tol*Vnorm, pp_res_tol, timelimit, maxiter, lambda_, magni, Plot_File, resprint, false, dw);
 			}
-      else if (pp==2){
-        CPD<double, CPMSDTLROptimizer<double>> decom(dim,s,R,dw);
-        decom.Init(&V,W);
-        decom.als(tol*Vnorm, timelimit, maxiter, resprint, Plot_File);
-      }
+			else if (pp==2){
+				CPD<double, CPMSDTLROptimizer<double>> decom(dim,s,R,dw);
+				decom.Init(&V,W);
+				decom.als(tol*Vnorm, timelimit, maxiter, resprint, Plot_File);
+			}
 			// else if (pp==2) {
 			// 	alsCP_PP_partupdate(V, W, grad_W, F, tol*Vnorm, pp_res_tol, timelimit, maxiter, lambda_, magni, update_percentage_pp, Plot_File, resprint, false, dw);
 			// }

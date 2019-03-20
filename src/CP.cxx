@@ -139,7 +139,7 @@ bool CPD<dtype, Optimizer>::als(double tol,
 
 		this->optimizer->step();
 
-		Normalize(this->W, this->order, *dw);
+		// Normalize(this->W, this->order, *dw);
 		// print .
 		if (iter%10==0 && dw->rank==0) printf(".");
 	}
