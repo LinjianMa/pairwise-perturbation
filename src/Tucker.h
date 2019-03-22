@@ -8,24 +8,24 @@ using namespace CTF;
 template<typename dtype>  
 class Decomposition {
 
-	public:
-		Decomposition(int size, int order, int rank);
+    public:
+        Decomposition(int size, int order, int rank);
 
-		Decomposition(int* size, int order, int* rank);
+        Decomposition(int* size, int order, int* rank);
 
-		Decomposition(const CPDecomposition & other);
+        Decomposition(const CPDecomposition & other);
 
-		~Decomposition();
+        ~Decomposition();
 
-		Decomposition<dtype> & operator=(Decomposition<dtype> const & other);
+        Decomposition<dtype> & operator=(Decomposition<dtype> const & other);
 
-	private:
-		Tensor<dtype>* input;
-		int order;
-		int* size;
-		int* rank;
-		Matrix<dtype>* mat;
-		DimensionTree<dtype>* dtree;
+    private:
+        Tensor<dtype>* input;
+        int order;
+        int* size;
+        int* rank;
+        Matrix<dtype>* mat;
+        DimensionTree<dtype>* dtree;
 
 }
 
@@ -33,18 +33,18 @@ class Decomposition {
 template<typename dtype>  
 class CPDecomposition : public Decomposition<dtype> {
 
-	public:
-		CPDecomposition(int size, int order, int rank);
+    public:
+        CPDecomposition(int size, int order, int rank);
 
-		CPDecomposition(int* size, int order, int* rank);
+        CPDecomposition(int* size, int order, int* rank);
 
-		CPDecomposition(const CPDecomposition & other);
+        CPDecomposition(const CPDecomposition & other);
 
-		~CPDecomposition();
+        ~CPDecomposition();
 
-		CPDecomposition<dtype> & operator=(CPDecomposition<dtype> const & other);
+        CPDecomposition<dtype> & operator=(CPDecomposition<dtype> const & other);
 
-	private:
+    private:
 
 }
 
@@ -85,17 +85,17 @@ void mttkrp_map_DT(map<string,Tensor<>>& mttkrp_map,
  *  V.order should be >=4
  */
 bool alsCP_DT(Tensor<> & V, 
-			  Matrix<> * W, 
-			  Matrix<> * grad_W, 
-			  Matrix<> * F,
-			  double tol, 
-			  double timelimit, 
-			  int maxiter, 
-			  double lambda,
-        	  ofstream & Plot_File,
-        	  int resprint,
-        	  bool bench,
-			  World & dw) ;
+              Matrix<> * W, 
+              Matrix<> * grad_W, 
+              Matrix<> * F,
+              double tol, 
+              double timelimit, 
+              int maxiter, 
+              double lambda,
+              ofstream & Plot_File,
+              int resprint,
+              bool bench,
+              World & dw) ;
 
 // [cd] --> [ab*]
 void stringbuilder_mttkrp(char* seq, 
@@ -110,9 +110,9 @@ void Build_mttkrp_map(map<string, Tensor<>> & mttkrp_map,
             World & dw);
 
 void build_V(Tensor<> & V,
-			 Matrix<> * W,
-			 int order,
-			 World & dw);
+             Matrix<> * W,
+             int order,
+             World & dw);
 /**
  * \brief ALS method for CP decomposition
  *  W: output solutions
@@ -139,20 +139,20 @@ void build_V(Tensor<> & V,
  *  timelimit, maxiter: limit of time and iterations
  */
 double alsCP_DT_sub(Tensor<> & V, 
-					  Matrix<> * W, 
-        	  		  Matrix<> * grad_W, 
-					  Matrix<> * dW,
-					  Matrix<> * F,
-					  double tol, 
-					  double tol_init,
-					  double timelimit, 
-					  int maxiter, 
-					  double & st_time,
-					  ofstream & Plot_File,
-					  double & projnorm,
-					  int & iter,
-					  int resprint,
-					  World & dw);
+                      Matrix<> * W, 
+                      Matrix<> * grad_W, 
+                      Matrix<> * dW,
+                      Matrix<> * F,
+                      double tol, 
+                      double tol_init,
+                      double timelimit, 
+                      int maxiter, 
+                      double & st_time,
+                      ofstream & Plot_File,
+                      double & projnorm,
+                      int & iter,
+                      int resprint,
+                      World & dw);
 
 /**
  * \brief ALS method for CP decomposition
@@ -162,21 +162,21 @@ double alsCP_DT_sub(Tensor<> & V,
  *  timelimit, maxiter: limit of time and iterations
  */
 double alsCP_PP_sub(Tensor<> & V, 
-				  	  Matrix<> * W, 
-        	  		  Matrix<> * grad_W, 
-				  	  Matrix<> * dW,
-				  	  Matrix<> * F,
-				  	  double tol, 
-				  	  double tol_init,
-				  	  double timelimit, 
-				  	  int maxiter, 
-				  	  double & st_time,
-				  	  ofstream & Plot_File,
-				  	  double & projnorm,
-				  	  int & iter,
-				  	  int resprint,
-				  	  bool bench,
-				  	  World & dw);
+                      Matrix<> * W, 
+                      Matrix<> * grad_W, 
+                      Matrix<> * dW,
+                      Matrix<> * F,
+                      double tol, 
+                      double tol_init,
+                      double timelimit, 
+                      int maxiter, 
+                      double & st_time,
+                      ofstream & Plot_File,
+                      double & projnorm,
+                      int & iter,
+                      int resprint,
+                      bool bench,
+                      World & dw);
 
 /**
  * \brief ALS method for CP decomposition
@@ -186,19 +186,19 @@ double alsCP_PP_sub(Tensor<> & V,
  *  timelimit, maxiter: limit of time and iterations
  */
 bool alsCP_PP(Tensor<> & V, 
-        	  Matrix<> * W, 
-        	  Matrix<> * grad_W, 
-        	  Matrix<> * F,
-        	  double tol, 
-        	  double tol_init,
-        	  double timelimit, 
-        	  int maxiter, 
-        	  double lambda,
-        	  double ratio_step,
-          	  ofstream & Plot_File,
-          	  int resprint,
-          	  bool bench,
-          	  World & dw) ;
+              Matrix<> * W, 
+              Matrix<> * grad_W, 
+              Matrix<> * F,
+              double tol, 
+              double tol_init,
+              double timelimit, 
+              int maxiter, 
+              double lambda,
+              double ratio_step,
+              ofstream & Plot_File,
+              int resprint,
+              bool bench,
+              World & dw) ;
 
 
 #endif

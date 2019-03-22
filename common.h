@@ -157,11 +157,11 @@ void char_string_copy(char* a,
 
 
 Tensor<> Gen_collinearity(int * lens,
-						 int dim,
-						 int R,
-						 double col_min,
-						 double col_max,
-						 World & dw);
+                         int dim,
+                         int R,
+                         double col_min,
+                         double col_max,
+                         World & dw);
 
 void print_str(char* str);
 

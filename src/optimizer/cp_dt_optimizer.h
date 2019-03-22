@@ -8,20 +8,20 @@ using namespace CTF;
 template<typename dtype>  
 class CPDTOptimizer : public CPOptimizer<dtype> {
 
-	public:
-		CPDTOptimizer(int order, int r, World & dw);
+    public:
+        CPDTOptimizer(int order, int r, World & dw);
 
-		~CPDTOptimizer();
+        ~CPDTOptimizer();
 
-		void step();
+        void step();
 
-		char seq_V[100];
-		char seq[100];
+        char seq_V[100];
+        char seq[100];
 
-		// maps 
-		map<string, Tensor<dtype>> mttkrp_map;
-		map<string, string> parent;
-		map<string, string> sibling;
+        // maps 
+        map<string, Tensor<dtype>> mttkrp_map;
+        map<string, string> parent;
+        map<string, string> sibling;
 
 };
 

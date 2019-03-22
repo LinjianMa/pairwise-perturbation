@@ -8,14 +8,14 @@ using namespace CTF;
 template<typename dtype>  
 class CPSimpleOptimizer : public CPOptimizer<dtype> {
 
-	public:
-		CPSimpleOptimizer(int order, int r, World & dw);
+    public:
+        CPSimpleOptimizer(int order, int r, World & dw);
 
-		~CPSimpleOptimizer();
+        ~CPSimpleOptimizer();
 
-		void step();
+        void step();
 
-		char seq_V[100];
+        char seq_V[100];
 
 };
 
