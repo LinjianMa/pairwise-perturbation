@@ -29,7 +29,7 @@ CPMSDTLROptimizer<dtype>::CPMSDTLROptimizer(int order, int r, World & dw)
 	}
 	left_index = order;
 
-	rank = 2;
+	rank = 16;
 	low_rank_decomp = false;
 	is_cached = new bool[order];
 	for (int i=0; i<order; i++){is_cached[i]=false;}
@@ -221,8 +221,14 @@ void CPMSDTLROptimizer<dtype>::update_cached_tensor(int left_index){
 	for (int i=0; i<order; i++) {lens[i] = this->V->lens[i];}
 	lens[left_index] = rank;
 	Tensor<dtype> temp = Tensor<dtype>(order, lens, *this->world);
+  Timer t_top1("t_top1");
+  t_top1.start();
 	temp[seq_temp] = (*this->V)[seq_V] * this->U[seq_U];
-	cached_tensors[left_index][seq_map_init] = cached_tensors[left_index][seq_map_init] + this->VT[seq_VT]*temp[seq_temp];
+  t_top1.stop();
+  Timer t_top2("t_top2");
+  t_top2.start();
+	cached_tensors[left_index][seq_map_init] +=  this->VT[seq_VT]*temp[seq_temp];
+  t_top2.stop();
 	old_W[left_index] = this->W[left_index];
 	this->is_cached[left_index] = true;
 }
@@ -240,6 +246,8 @@ void CPMSDTLROptimizer<dtype>::step() {
 	// cout << left_index << endl;
 	mttkrp_map_init(left_index);
 
+  CTF_Timer step_loop("step_loop");
+  step_loop.start();
 	// iteration on W[i]
 	for (int i=0; i<indexes.size(); i++) {
 		/*  construct Matrix M
@@ -250,9 +258,12 @@ void CPMSDTLROptimizer<dtype>::step() {
 		string mat_seq;
 		vec2str(mat_index, mat_seq);
 
+    CTF_Timer mttkrp_mat_DT_tim("mttkrp_mat_DT");
+    mttkrp_mat_DT_tim.start();
 		if (mttkrp_map.find(mat_seq)==mttkrp_map.end()) {
 			mttkrp_map_DT(mat_seq);
 		}
+    mttkrp_mat_DT_tim.stop();
 		Matrix<dtype> M = mttkrp_map[mat_seq];
 
 		// calculating S
@@ -268,4 +279,5 @@ void CPMSDTLROptimizer<dtype>::step() {
 			this->low_rank_decomp = true;
 		}
 	}
+  step_loop.stop();
 }
