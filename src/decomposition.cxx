@@ -40,7 +40,8 @@ Decomposition<dtype>::Decomposition(int order, int* size_, int* r, World & dw){
 template<typename dtype>  
 Decomposition<dtype>::~Decomposition(){
 	if (V != NULL) {
-		delete V;
+    //FIXME: this makes low rank MSDT crash
+		//delete V;
 	}
 	if (W!= NULL){
 		delete[] W;
