@@ -44,7 +44,7 @@ bool alsCP(Tensor<> & V,
 	for (iter=0; iter<=maxiter; iter++)
 	{
 		// print the gradient norm
-		if (iter%100==0 || iter==maxiter) {
+		if (iter%10==0 || iter==maxiter) {
 			//get the gradient
 			gradient_CP(V, W, grad_W, dw);
 			for (int i=0; i<V.order; i++) {
@@ -89,8 +89,9 @@ bool alsCP(Tensor<> & V,
 			}
 			// subproblem M=W*S
 			M["ij"] += F[i]["ij"];
-			//if (iter==0 && i==0){M.print(); S.print();}
+			//if (iter==1 && i==0){M.print();}
 			SVD_solve(M, W[i], S);
+			if (iter==1 && i==0){S.print();}
 			// Gauss_Seidel(W[i], M, S, 20);
 			// recover the char
 			temp = seq_V[V.order-1];
@@ -1320,18 +1321,14 @@ bool alsCP_DimensionTree(Tensor<> & V,
 			gamma = gamma_map[name];
 			M = Matrix<>(W[0].nrow, W[0].ncol);
 			compute_gamma(gamma, S, i, start, end);
-			//cout<<"start computing M\n";
 			if (i<=(V.order-1)/2) compute_M(M, res_tensor, W, true, i, start, end, dw);
 			else compute_M(M, res_tensor, W, false, i, start, end, dw);
-			//cout<<"finish computing M\n";
 			// regular solve
-			/*if (iter==0 && (i==2)){
+			/**if (iter==1 && i==0){
 				M.print();
-				print_M(V, W, i, dw);
-				//gamma.print(); print_gamma(V, S, i);
-			}*/
+			}**/
+			if (iter==1 && i==0){gamma.print(); print_gamma(V, S, i);}
 			SVD_solve(M, W[i], gamma);
-
 			grad_W[i]["ij"] = (A_old["ik"] - W[i]["ik"])*gamma["kj"];
 
 			// If i is one of the special index, we need to update the cached_tensors
@@ -1634,12 +1631,12 @@ void update_gamma_tree(unordered_map<string, Matrix<>> &gamma_map, Matrix<>* S, 
 	if (index<start || index>mid){ // I need update child1
 		Matrix<> temp = gamma_map[parent];
 		// child1
-		for (int i = mid+1; i<=end; i++){temp["ij"] = temp["ij"]*S[i]["ij"];}
+		for (int i = mid+1; i<=end; i++){temp["ij"] *= S[i]["ij"];}
 		gamma_map[child1] = temp;
 	}
 	if (index<mid+1 || index>end){// I need to update child2
 		Matrix<> temp = gamma_map[parent];
-		for (int i=start; i<=mid; i++) {temp["ij"] = temp["ij"]*S[i]["ij"];}
+		for (int i=start; i<=mid; i++) {temp["ij"] *= S[i]["ij"];}
 		gamma_map[child2] = temp;
 	}
 	update_gamma_tree(gamma_map, S, seq, index, start, mid);
@@ -1662,7 +1659,7 @@ tuple<int, int> find_interval(int index, int start, int end){
 void compute_gamma(Matrix<> &res, Matrix<> *S, int index, int start, int end){
 	for (int i=start; i<=end; i++){
 		if (i!=index){
-			res["ij"] = S[i]["ij"]*res["ij"];
+			res["ij"] *= S[i]["ij"];
 		}
 	}
 }
@@ -1739,7 +1736,7 @@ void print_gamma(Tensor<> &V, Matrix<> *S, int index){
 		if (i!=index) temp["ij"] = temp["ij"]*S[i]["ij"];
 	}
 	cout<<"Real gamma is \n";
-	//temp.print();
+	temp.print();
 }
 
 void print_M(Tensor<> &V, Matrix<> *W, int index, World &dw){

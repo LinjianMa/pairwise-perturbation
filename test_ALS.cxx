@@ -320,6 +320,9 @@ int main(int argc, char ** argv){
       if (pp==3){
         alsCP_rankR(V, W, grad_W, 1, tol*Vnorm, 10, timelimit, maxiter, Plot_File, false, dw);
       }
+      if (pp==4){
+        alsCP(V, W, grad_W, F, tol*Vnorm, timelimit, maxiter, dw);
+      }
 		}
 		else if (model[0]=='T') {
 			int ranks[V.order];
