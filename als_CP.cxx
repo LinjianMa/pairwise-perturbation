@@ -1212,7 +1212,7 @@ bool alsCP_PP(Tensor<> & V,
  		gradnorm = sqrt(gradnorm);
 
 		double dtime = MPI_Wtime()-start_time;
-		if (bench==false && iter%10==0 && iter!=0) {
+		if (bench==false && iter%10==0) {
 			if(dw.rank==0) {
 				Tensor<> V_build;
 		 		build_V(V_build, W, V.order, dw);
@@ -1247,6 +1247,7 @@ bool alsCP_DimensionTree(Tensor<> & V,
 			 bool bench,
  		   World & dw) {
 
+	double st_time = MPI_Wtime();
 	bool exceedsMaxTime = false;
 	double start_time = MPI_Wtime();
 	double gradnorm = tol+1;
@@ -1361,16 +1362,28 @@ bool alsCP_DimensionTree(Tensor<> & V,
 			gradnorm += tempnorm*tempnorm;
 		} // end for
 		gradnorm = sqrt(gradnorm);
-		Tensor<> V_build;
-		build_V(V_build, W, V.order, dw);
-		Tensor<> diff_V = V;
-		diff_V[seq_V] = V[seq_V] - V_build[seq_V];
-		double diffnorm_V = diff_V.norm2();
-		cout<<"grad norm is "<<gradnorm<<"\n";
-		cout<<"iteration is "<<iter<<"\n";
-		cout<<"diffnorm V is "<<diffnorm_V<<"\n";
-		iter++;
-		if (MPI_Wtime()-start_time > timelimit) {exceedsMaxTime = true; break;}
+
+		double dtime = MPI_Wtime()-start_time;
+		if (bench==false && iter%10==0) {
+			if(dw.rank==0) {
+				Tensor<> V_build;
+		 		build_V(V_build, W, V.order, dw);
+		 		Tensor<> diff_V = V;
+		 		diff_V[seq_V] = V[seq_V] - V_build[seq_V];
+		 		double diffnorm_V = diff_V.norm2();
+				cout << "  [dim]=  " << V.lens[0] << "  [iter]=  " << iter << "  [gradnorm]  "<< gradnorm << "  [tol]  " << tol << "  [pp_update]  " << 0  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
+				Plot_File << V.lens[0] << "," << iter << "," << gradnorm << "," << tol << "," << 0 << "," << diffnorm_V << "," << dtime << "\n";
+				if(iter%100==0 && iter!=0) {// flush
+					Plot_File << endl;
+				}
+			}
+		}
+ 		iter++;
+ 		if (dtime > timelimit) {exceedsMaxTime = true; break;}
+	}
+	if(dw.rank==0) {
+		printf ("\nIter = %d Final proj-grad norm %E \n", iter, gradnorm);
+		printf ("tf took %lf seconds\n",MPI_Wtime()-st_time);
 	}
 	delete[] S;
 	delete cached_tensor1;
