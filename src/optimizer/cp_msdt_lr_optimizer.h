@@ -15,7 +15,11 @@ class CPMSDTLROptimizer : public CPOptimizer<dtype> {
 
         void step();
 
-        void update_indexes();
+        void initialize_low_rank_param();
+
+        void update_left_index();
+
+        void update_indexes(vector<int> &indexes, int left_index);
 
         void Construct_Dimension_Tree();
 
@@ -45,16 +49,22 @@ class CPMSDTLROptimizer : public CPOptimizer<dtype> {
         map<string, string> contract_index;
 
         // indices that update in one step
+        bool first_subtree;
         vector<int> indexes;
+        vector<int> indexes1;
+        vector<int> indexes2;
         int left_index;
+        int left_index1;
+        int left_index2;
 
+        int num_subiteration;
+        int count_subiteration;
         // for low rank update
         // either specify the rank or tolerance
         int rank;
         bool low_rank_decomp;
-        bool* is_cached;
-        Tensor<>* cached_tensors;
-        Matrix<>* old_W;
+        Tensor<>* cached_tensor1;
+        Tensor<>* cached_tensor2;
         Matrix<> U;
         Vector<> s;
         Matrix<> VT;
