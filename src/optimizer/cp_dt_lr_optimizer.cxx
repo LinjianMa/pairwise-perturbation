@@ -27,27 +27,44 @@ CPMSDTLROptimizer<dtype>::CPMSDTLROptimizer(int order, int r, World & dw)
     for (int i=0; i<indexes.size(); i++) {
         indexes[i] = i;
     }
-    left_index = order;
+    indexes1 = indexes;
+    indexes2 = indexes1;
 
-    rank = 16;
+    left_index = order-1;
+    left_index1 = left_index;
+    left_index2 = (left_index + order - 1) % order;
+    update_indexes(indexes2, left_index2);
+
+    num_subiteration = 5;
+    rank = 2;
+    cached_tensor1 = NULL;
+    cached_tensor2 = NULL;
+    initialize_low_rank_param();
+}
+
+template<typename dtype>
+void CPMSDTLROptimizer<dtype>::initialize_low_rank_param() {
+    first_subtree = true;
+    count_subiteration = 0;
     low_rank_decomp = false;
-    is_cached = new bool[order];
-    for (int i=0; i<order; i++){is_cached[i]=false;}
-    cached_tensors = new Tensor<dtype>[order];
-    old_W = new Matrix<dtype>[order];
 }
 
 template<typename dtype>
 CPMSDTLROptimizer<dtype>::~CPMSDTLROptimizer(){
     // delete S;
-    delete[] is_cached;
-    delete[] cached_tensors;
+    delete cached_tensor1;
+    delete cached_tensor2;
 }
 
 template<typename dtype>
-void CPMSDTLROptimizer<dtype>::update_indexes() {
+void CPMSDTLROptimizer<dtype>::update_left_index(){
+  int order = this->order;
+  left_index = (left_index + order - 1) % order;
+}
+
+template<typename dtype>
+void CPMSDTLROptimizer<dtype>::update_indexes(vector<int> &indexes, int left_index) {
     int order = this->order;
-    left_index = (left_index + order - 1) % order;
 
     int j = 0;
     for (int i=left_index+1; i<order; i++) {
@@ -160,15 +177,20 @@ void CPMSDTLROptimizer<dtype>::mttkrp_map_init(int left_index) {
         else lens[ii] = this->V->lens[int(seq_map_init[ii]-'a')];
     }
     mttkrp_map[seq_tree_top] = Tensor<dtype>(strlen(seq_map_init), lens, *dw);
-    if (this->low_rank_decomp && this->is_cached[left_index]){
+    if (this->low_rank_decomp && count_subiteration>1){
         update_cached_tensor(left_index);
-        mttkrp_map[seq_tree_top] = cached_tensors[left_index];
+        if (first_subtree) mttkrp_map[seq_tree_top] = *cached_tensor1;
+        else mttkrp_map[seq_tree_top] = *cached_tensor2;
     } else {
         mttkrp_map[seq_tree_top][seq_map_init] = (*this->V)[seq_V] * this->W[left_index][seq_matrix];
-        cached_tensors[left_index] = mttkrp_map[seq_tree_top];
-        old_W[left_index] = this->W[left_index];
-        //cout<<"update old_W "<<left_index<<endl;
-        this->is_cached[left_index] = true;
+        if (first_subtree){
+          if (cached_tensor1==NULL) cached_tensor1 = new Tensor<dtype>(strlen(seq_map_init), lens, *dw);
+          *cached_tensor1 = mttkrp_map[seq_tree_top];
+        }
+        else {
+          if (cached_tensor2==NULL) cached_tensor2 = new Tensor<dtype>(strlen(seq_map_init), lens, *dw);
+          *cached_tensor2 = mttkrp_map[seq_tree_top];
+        }
     }
 }
 
@@ -214,19 +236,8 @@ void CPMSDTLROptimizer<dtype>::update_cached_tensor(int left_index){
     char seq_VT[] = {'&', '*','\0'};
     char seq_matrix[] = {char('a'+left_index), '*', '\0'};
     //cached_tensors[left_index][seq_map_init] = this->W[left_index][seq_matrix] * (*this->V)[seq_V];
-    char seq_temp[order];
-    int i = 0;
-    while (seq_V[i]!='\0') {seq_temp[i] = seq_V[i]; i++;}
-    seq_temp[left_index] = '&';
-    int lens[order];
-    for (int i=0; i<order; i++) {lens[i] = this->V->lens[i];}
-    lens[left_index] = rank;
-    Tensor<dtype> temp = Tensor<dtype>(order, lens, *this->world);
-    temp[seq_temp] = (*this->V)[seq_V] * this->U[seq_U];
-    cached_tensors[left_index][seq_map_init] = cached_tensors[left_index][seq_map_init] + this->VT[seq_VT]*temp[seq_temp];
-    
-    old_W[left_index] = this->W[left_index];
-    this->is_cached[left_index] = true;
+    if (first_subtree) (*cached_tensor1)[seq_map_init] += (*this->V)[seq_V] * this->U[seq_U] * this->VT[seq_VT];
+    else (*cached_tensor2)[seq_map_init] += (*this->V)[seq_V] * this->U[seq_U] * this->VT[seq_VT];
 }
 
 template<typename dtype>
@@ -234,11 +245,12 @@ void CPMSDTLROptimizer<dtype>::step() {
 
     World * dw = this->world;
     int order = this->order;
-
+    if (first_subtree) {indexes = indexes1; left_index = left_index1;}
+    else {indexes = indexes2; left_index = left_index2;}
     // clear the Hash Table
     mttkrp_map.clear();
     // reinitialize
-    update_indexes();
+    //update_indexes();
     // cout << left_index << endl;
     mttkrp_map_init(left_index);
 
@@ -261,13 +273,23 @@ void CPMSDTLROptimizer<dtype>::step() {
         CPOptimizer<dtype>::update_S(indexes[i]);
         // calculate gradient
         this->grad_W[indexes[i]]["ij"] = -M["ij"]+this->W[indexes[i]]["ik"]*this->S["kj"];
-        if (!is_cached[indexes[i]] || (i!=(indexes.size()-1))){
-            SVD_solve(M, this->W[indexes[i]], this->S);
+        if (((first_subtree && i==indexes.size()-1) || (!first_subtree && i==0)) && count_subiteration>=1){
+          get_rankR_update(this->rank, this->U, this->s, this->VT, M, this->W[indexes[i]], this->S);
+          this->W[indexes[i]]["ij"] += this->U["ik"]*this->s["k"]*this->VT["kj"];
+          //update_cached_tensor(indexes[i]);
+          this->low_rank_decomp = true;
         } else {
-            get_rankR_update(this->rank, this->U, this->s, this->VT, M, this->old_W[indexes[i]], this->S);
-            this->W[indexes[i]]["ij"] = this->old_W[indexes[i]]["ij"] + this->U["ik"]*this->s["k"]*this->VT["kj"];
-            //update_cached_tensor(indexes[i]);
-            this->low_rank_decomp = true;
+          SVD_solve(M, this->W[indexes[i]], this->S);
         }
+    }
+    first_subtree = !first_subtree;
+    count_subiteration ++;
+    if (count_subiteration==num_subiteration){
+      initialize_low_rank_param();
+      update_left_index();
+      left_index1 = (left_index1 + order - 1) % order;
+      left_index2 = (left_index2 + order - 1) % order;
+      update_indexes(indexes1, left_index1);
+      update_indexes(indexes2, left_index2);
     }
 }
