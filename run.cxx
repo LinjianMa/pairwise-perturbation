@@ -192,7 +192,7 @@ int main(int argc, char ** argv){
 
         if (dw.rank==0) {
             cout << "  model=  " << model << "  tensor=  " << tensor << "  pp=  " << pp << endl;
-            cout << "  dim=  " << dim << "  size=  " << s << "  rank=  " << R << "updaterank=  " << update_rank << endl;
+            cout << "  dim=  " << dim << "  size=  " << s << "  rank=  " << R << "  updaterank=  " << update_rank << endl;
             cout << "  issparse=  " << issparse << "  tolerance=  " << tol << "  restarttol=  " << pp_res_tol << endl;
             cout << "  lambda=  " << lambda_ << "  magnitude=  " << magni << "  filename=  " << filename << endl;
             cout << "  col_min=  " << col_min << "  col_max=  " << col_max  << "  rationoise  " << ratio_noise << endl;
