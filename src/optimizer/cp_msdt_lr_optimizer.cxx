@@ -7,7 +7,7 @@
 using namespace CTF;
 
 template<typename dtype>
-CPMSDTLROptimizer<dtype>::CPMSDTLROptimizer(int order, int r, World & dw)
+CPMSDTLROptimizer<dtype>::CPMSDTLROptimizer(int order, int r, int update_rank, World & dw)
     : CPOptimizer<dtype>(order, r, dw){
 
     // make the char seq_V
@@ -29,7 +29,7 @@ CPMSDTLROptimizer<dtype>::CPMSDTLROptimizer(int order, int r, World & dw)
     }
     left_index = order;
 
-    rank = 16;
+    rank = update_rank;
     low_rank_decomp = false;
     is_cached = new bool[order];
     for (int i=0; i<order; i++){is_cached[i]=false;}

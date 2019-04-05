@@ -7,7 +7,7 @@
 using namespace CTF;
 
 template<typename dtype>
-CPMSDTLROptimizer<dtype>::CPMSDTLROptimizer(int order, int r, World & dw)
+CPDTLROptimizer<dtype>::CPDTLROptimizer(int order, int r, int update_rank, World & dw)
     : CPOptimizer<dtype>(order, r, dw){
 
     // make the char seq_V
@@ -36,34 +36,34 @@ CPMSDTLROptimizer<dtype>::CPMSDTLROptimizer(int order, int r, World & dw)
     update_indexes(indexes2, left_index2);
 
     num_subiteration = 5;
-    rank = 2;
+    rank = update_rank;
     cached_tensor1 = NULL;
     cached_tensor2 = NULL;
     initialize_low_rank_param();
 }
 
 template<typename dtype>
-void CPMSDTLROptimizer<dtype>::initialize_low_rank_param() {
+void CPDTLROptimizer<dtype>::initialize_low_rank_param() {
     first_subtree = true;
     count_subiteration = 0;
     low_rank_decomp = false;
 }
 
 template<typename dtype>
-CPMSDTLROptimizer<dtype>::~CPMSDTLROptimizer(){
+CPDTLROptimizer<dtype>::~CPDTLROptimizer(){
     // delete S;
     delete cached_tensor1;
     delete cached_tensor2;
 }
 
 template<typename dtype>
-void CPMSDTLROptimizer<dtype>::update_left_index(){
+void CPDTLROptimizer<dtype>::update_left_index(){
   int order = this->order;
   left_index = (left_index + order - 1) % order;
 }
 
 template<typename dtype>
-void CPMSDTLROptimizer<dtype>::update_indexes(vector<int> &indexes, int left_index) {
+void CPDTLROptimizer<dtype>::update_indexes(vector<int> &indexes, int left_index) {
     int order = this->order;
 
     int j = 0;
@@ -78,7 +78,7 @@ void CPMSDTLROptimizer<dtype>::update_indexes(vector<int> &indexes, int left_ind
 }
 
 template<typename dtype>
-void CPMSDTLROptimizer<dtype>::vec2str(vector<int> vec, string & seq_out) {
+void CPDTLROptimizer<dtype>::vec2str(vector<int> vec, string & seq_out) {
     char seq[vec.size()+2];
     seq[vec.size()+1] = '\0';
     seq[vec.size()] = '*';
@@ -89,7 +89,7 @@ void CPMSDTLROptimizer<dtype>::vec2str(vector<int> vec, string & seq_out) {
 }
 
 template<typename dtype>
-void CPMSDTLROptimizer<dtype>::Construct_Dimension_Tree() {
+void CPDTLROptimizer<dtype>::Construct_Dimension_Tree() {
     int order = this->order;
     vector<int> top_node = vector<int>(order-1);
     for (int i=0; i<top_node.size(); i++) {
@@ -100,7 +100,7 @@ void CPMSDTLROptimizer<dtype>::Construct_Dimension_Tree() {
 }
 
 template<typename dtype>
-void CPMSDTLROptimizer<dtype>::Construct_Subtree(vector<int> top_node) {
+void CPDTLROptimizer<dtype>::Construct_Subtree(vector<int> top_node) {
     Right_Subtree(top_node);
 
     vector<int> child_node = vector<int>(top_node.size()-1);
@@ -125,7 +125,7 @@ void CPMSDTLROptimizer<dtype>::Construct_Subtree(vector<int> top_node) {
 }
 
 template<typename dtype>
-void CPMSDTLROptimizer<dtype>::Right_Subtree(vector<int> top_node) {
+void CPDTLROptimizer<dtype>::Right_Subtree(vector<int> top_node) {
     // construct the right tree
     vector<int> child_node = vector<int>(top_node.size()-1);
     for (int i=0; i<child_node.size(); i++) {
@@ -149,7 +149,7 @@ void CPMSDTLROptimizer<dtype>::Right_Subtree(vector<int> top_node) {
 }
 
 template<typename dtype>
-void CPMSDTLROptimizer<dtype>::mttkrp_map_init(int left_index) {
+void CPDTLROptimizer<dtype>::mttkrp_map_init(int left_index) {
     World * dw = this->world;
     int order = this->order;
 
@@ -195,7 +195,7 @@ void CPMSDTLROptimizer<dtype>::mttkrp_map_init(int left_index) {
 }
 
 template<typename dtype>
-void CPMSDTLROptimizer<dtype>::mttkrp_map_DT(string index) {
+void CPDTLROptimizer<dtype>::mttkrp_map_DT(string index) {
     World * dw = this->world;
     char const * index_char = index.c_str();
 
@@ -218,7 +218,7 @@ void CPMSDTLROptimizer<dtype>::mttkrp_map_DT(string index) {
 }
 
 template<typename dtype>
-void CPMSDTLROptimizer<dtype>::update_cached_tensor(int left_index){
+void CPDTLROptimizer<dtype>::update_cached_tensor(int left_index){
     int order = this->order;
     seq_map_init[order] = '\0';
     seq_map_init[order-1] = '*';
@@ -241,7 +241,7 @@ void CPMSDTLROptimizer<dtype>::update_cached_tensor(int left_index){
 }
 
 template<typename dtype>
-void CPMSDTLROptimizer<dtype>::step() {
+void CPDTLROptimizer<dtype>::step() {
 
     World * dw = this->world;
     int order = this->order;

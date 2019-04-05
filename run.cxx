@@ -3,6 +3,7 @@
 #include "src/optimizer/cp_als_optimizer.h"
 #include "src/optimizer/cp_simple_optimizer.h"
 #include "src/optimizer/cp_dt_optimizer.h"
+#include "src/optimizer/cp_dt_lr_optimizer.h"
 #include "src/optimizer/cp_msdt_optimizer.h"
 #include "src/optimizer/cp_msdt_lr_optimizer.h"
 
@@ -41,6 +42,7 @@ int main(int argc, char ** argv){
     int dim;            // number of dimensions
     int s;              // tensor size in each dimension
     int R;              // decomposition rank
+    int update_rank;    // used for optimizers with low rank updates
     int issparse;   // whether use the sparse routine or not
     double tol;     // global convergance tolerance
     double pp_res_tol;  // pp restart tolerance
@@ -114,6 +116,12 @@ int main(int argc, char ** argv){
     } else {
         R = s/2;
     }
+    if (getCmdOption(input_str, input_str+in_num, "-updaterank")) {
+        update_rank = atoi(getCmdOption(input_str, input_str+in_num, "-updaterank"));
+        if (update_rank < 0) update_rank = s/2;
+    } else {
+        update_rank = s/2;
+    }
     if (getCmdOption(input_str, input_str+in_num, "-issparse")) {
         issparse = atoi(getCmdOption(input_str, input_str+in_num, "-issparse"));
         if (issparse < 0 || issparse > 1) issparse = 0;
@@ -184,7 +192,7 @@ int main(int argc, char ** argv){
 
         if (dw.rank==0) {
             cout << "  model=  " << model << "  tensor=  " << tensor << "  pp=  " << pp << endl;
-            cout << "  dim=  " << dim << "  size=  " << s << "  rank=  " << R << endl;
+            cout << "  dim=  " << dim << "  size=  " << s << "  rank=  " << R << "updaterank=  " << update_rank << endl;
             cout << "  issparse=  " << issparse << "  tolerance=  " << tol << "  restarttol=  " << pp_res_tol << endl;
             cout << "  lambda=  " << lambda_ << "  magnitude=  " << magni << "  filename=  " << filename << endl;
             cout << "  col_min=  " << col_min << "  col_max=  " << col_max  << "  rationoise  " << ratio_noise << endl;
@@ -310,20 +318,25 @@ int main(int argc, char ** argv){
 
         if (model[0]=='C') {
             if (pp==0) {
-                CPD<double, CPDTOptimizer<double>> decom(dim,s,R,dw);
-                decom.Init(&V,W);
+                CPD<double, CPDTOptimizer<double>> decom(dim, s, R, dw);
+                decom.Init(&V, W);
                 decom.als(tol*Vnorm, timelimit, maxiter, resprint, Plot_File);
                 // alsCP_DT(V, W, grad_W, F, tol*Vnorm, timelimit, maxiter, lambda_, Plot_File, resprint, false, dw);
             }
             else if (pp==1) {
-                CPD<double, CPMSDTOptimizer<double>> decom(dim,s,R,dw);
-                decom.Init(&V,W);
+                CPD<double, CPMSDTOptimizer<double>> decom(dim, s, R, dw);
+                decom.Init(&V, W);
                 decom.als(tol*Vnorm, timelimit, maxiter, resprint, Plot_File);
             //  alsCP_PP(V, W, grad_W, F, tol*Vnorm, pp_res_tol, timelimit, maxiter, lambda_, magni, Plot_File, resprint, false, dw);
             }
             else if (pp==2){
-                CPD<double, CPMSDTLROptimizer<double>> decom(dim,s,R,dw);
-                decom.Init(&V,W);
+                CPD<double, CPDTLROptimizer<double>> decom(dim, s, R, update_rank, dw);
+                decom.Init(&V, W);
+                decom.als(tol*Vnorm, timelimit, maxiter, resprint, Plot_File);
+            }
+            else if (pp==3){
+                CPD<double, CPMSDTLROptimizer<double>> decom(dim, s, R, update_rank, dw);
+                decom.Init(&V, W);
                 decom.als(tol*Vnorm, timelimit, maxiter, resprint, Plot_File);
             }
             // else if (pp==2) {

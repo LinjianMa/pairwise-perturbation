@@ -9,7 +9,7 @@ template<typename dtype>
 class CPMSDTLROptimizer : public CPOptimizer<dtype> {
 
     public:
-        CPMSDTLROptimizer(int order, int r, World & dw);
+        CPMSDTLROptimizer(int order, int r, int update_rank, World & dw);
 
         ~CPMSDTLROptimizer();
 

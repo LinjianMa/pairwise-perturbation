@@ -1,17 +1,17 @@
-#ifndef __CP_MSDT_LR_OPTIMIZER_H__
-#define __CP_MSDT_LR_OPTIMIZER_H__
+#ifndef __CP_DT_LR_OPTIMIZER_H__
+#define __CP_DT_LR_OPTIMIZER_H__
 
 #include <ctf.hpp>
 #include <fstream>
 using namespace CTF;
 
 template<typename dtype>
-class CPMSDTLROptimizer : public CPOptimizer<dtype> {
+class CPDTLROptimizer : public CPOptimizer<dtype> {
 
     public:
-        CPMSDTLROptimizer(int order, int r, World & dw);
+        CPDTLROptimizer(int order, int r, int update_rank, World & dw);
 
-        ~CPMSDTLROptimizer();
+        ~CPDTLROptimizer();
 
         void step();
 
@@ -71,6 +71,6 @@ class CPMSDTLROptimizer : public CPOptimizer<dtype> {
 };
 
 
-#include "cp_msdt_lr_optimizer.cxx"
+#include "cp_dt_lr_optimizer.cxx"
 
 #endif
