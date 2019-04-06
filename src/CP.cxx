@@ -100,7 +100,7 @@ void CPD<dtype, Optimizer>::update_gradnorm() {
 template<typename dtype, class Optimizer>  
 bool CPD<dtype, Optimizer>::als(double tol, 
                                 double timelimit, 
-                                int maxiter,
+                                int maxsweep,
                                 int resprint,
                                 ofstream & Plot_File, 
                                 bool bench
@@ -110,18 +110,18 @@ bool CPD<dtype, Optimizer>::als(double tol,
 
     World * dw = this->world;
     double st_time = MPI_Wtime();
-    double iters = 0;
-    double iter = 0;  
+    int iters = 0;
+    double sweeps = 0;
     double diffnorm_V = 1000.;
 
     if (bench==false) {
     if (dw->rank==0) Plot_File << "[dim],[iter],[gradnorm],[tol],[pp_update],[diffV],[dtime]" << "\n";          //Headings for file
     }
 
-    while (int(iters) <= maxiter)
+    while (int(sweeps) <= maxsweep)
     {
         // print the gradient norm 
-        if ( (int(iters)%resprint==0 && int(iters-iter)%resprint!=0) || int(iters)>=maxiter || iters==0 ) {
+        if ( iters%resprint==0 || sweeps>=maxsweep || sweeps==0 ) {
             double st_time1 = MPI_Wtime();
             update_gradnorm();
             // residual
@@ -135,10 +135,10 @@ bool CPD<dtype, Optimizer>::als(double tol,
             double dtime = MPI_Wtime() - st_time;
             if (bench==false) {
                 if(dw->rank==0) {
-                    cout << "  [dim]=  " << (this->V)->lens[0] << "  [iter]=  " << int(iters) << "  [gradnorm]  "<< gradnorm << "  [tol]  " << tol << "  [pp_update]  " << 0  << "  [residual]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
-                    Plot_File << (this->V)->lens[0] << "," << int(iters) << "," << gradnorm << "," << tol << "," << 0 << "," << diffnorm_V << "," << dtime << "\n";
+                    cout << "  [dim]=  " << (this->V)->lens[0] << "  [sweeps]=  " << sweeps << "  [gradnorm]  "<< gradnorm << "  [tol]  " << tol << "  [pp_update]  " << 0  << "  [residual]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
+                    Plot_File << (this->V)->lens[0] << "," << sweeps << "," << gradnorm << "," << tol << "," << 0 << "," << diffnorm_V << "," << dtime << "\n";
                     // flush the contents to csv
-                    if(int(iters)%100==0 && int(iters)!=0) { 
+                    if( iters%100==0 && iters!=0) { 
                         Plot_File << endl;
                     }
                 }
@@ -152,21 +152,21 @@ bool CPD<dtype, Optimizer>::als(double tol,
                 break;
         }
 
-        iter = this->optimizer->step();
-        iters += iter;
+        sweeps += this->optimizer->step();
+        iters += 1;
 
         // Normalize(this->W, this->order, *dw);
         // print .
-        if (int(iters)%10==0 && dw->rank==0) printf(".");
+        if (iters%10==0 && dw->rank==0) printf(".");
     }
     if(dw->rank==0) {
-        printf ("\nIters = %d Final proj-grad norm %E \n", int(iters), gradnorm);
+        printf ("\nIters = %d Final proj-grad norm %E \n", iters, gradnorm);
         printf ("tf took %lf seconds\n",MPI_Wtime()-st_time);
     }
     if (bench==false) {
         Plot_File.close();
     }
-    if (int(iters) == maxiter+1) return false;
+    if (sweeps == maxsweep+1) return false;
     else return true;
 }
 
