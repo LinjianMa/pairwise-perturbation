@@ -361,6 +361,11 @@ int main(int argc, char ** argv){
                 decom.Init(&V, W);
                 decom.als(tol*Vnorm, timelimit, maxiter, resprint, Plot_File);
             }
+            else if (pp==4){
+                CPD<double, CPSimpleOptimizer<double>> decom(dim, s, R, dw);
+                decom.Init(&V, W);
+                decom.als(tol*Vnorm, timelimit, maxiter, resprint, Plot_File);
+            }
             // else if (pp==2) {
             //  alsCP_PP_partupdate(V, W, grad_W, F, tol*Vnorm, pp_res_tol, timelimit, maxiter, lambda_, magni, update_percentage_pp, Plot_File, resprint, false, dw);
             // }
@@ -403,8 +408,8 @@ int main(int argc, char ** argv){
             printf ("experiment took %lf seconds\n",MPI_Wtime()-start_time);
         }
 
-        delete[] W;
-        delete[] grad_W;
+        // delete[] W;
+        // delete[] grad_W;
         // delete[] F;
 
         if (tensor[0]=='o') {

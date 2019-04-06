@@ -246,20 +246,24 @@ void CPDTLROptimizer<dtype>::step() {
 
     World * dw = this->world;
     int order = this->order;
-    if (first_subtree) {indexes = indexes1; left_index = left_index1;}
-    else {indexes = indexes2; left_index = left_index2;}
+
+    if (first_subtree) {
+        indexes = indexes1; 
+        left_index = left_index1;
+    }
+    else {
+        indexes = indexes2; 
+        left_index = left_index2;
+    }
     // clear the Hash Table
     mttkrp_map.clear();
     // reinitialize
     //update_indexes();
-    // cout << left_index << endl;
     mttkrp_map_init(left_index);
-    //cout<<"left index is "<<left_index<<endl;
     // iteration on W[i]
     for (int i=0; i<indexes.size(); i++) {
-        if (first_subtree && i<special_index) {continue;}
-        if (!first_subtree && i>special_index) {break;}
-        //cout<<indexes[i]<<endl;
+        if (first_subtree && i<special_index) continue;
+        if (!first_subtree && i>special_index) break;
         /*  construct Matrix M
         *   M["dk"] = V["abcd"]*W1["ak"]*W2["bk"]*W3["ck"]
         */
@@ -287,7 +291,6 @@ void CPDTLROptimizer<dtype>::step() {
         }
     }
     if (!first_subtree) {count_subiteration ++;}
-    //cout<<"count subiteration is "<<count_subiteration<<endl;
     if (count_subiteration==num_subiteration && (!first_subtree)){
       special_index = (special_index + 1)%(order-1);
       initialize_low_rank_param();
@@ -299,8 +302,6 @@ void CPDTLROptimizer<dtype>::step() {
         left_index1 = left_index;
         left_index2 = (left_index + order - 1) % order;
       }
-      //cout<<"left index 1 is "<<left_index1<<endl;
-      //cout<<"left index 2 is "<<left_index2<<endl;
       update_indexes(indexes1, left_index1);
       update_indexes(indexes2, left_index2);
     }
