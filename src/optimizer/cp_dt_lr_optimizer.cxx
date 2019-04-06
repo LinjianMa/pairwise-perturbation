@@ -34,17 +34,18 @@ CPDTLROptimizer<dtype>::CPDTLROptimizer(int order, int r, int update_rank, World
     left_index1 = left_index;
     left_index2 = (left_index + order - 1) % order;
     update_indexes(indexes2, left_index2);
+    special_index = 0;
 
     num_subiteration = 5;
     rank = update_rank;
     cached_tensor1 = NULL;
     cached_tensor2 = NULL;
+    first_subtree = true;
     initialize_low_rank_param();
 }
 
 template<typename dtype>
 void CPDTLROptimizer<dtype>::initialize_low_rank_param() {
-    first_subtree = true;
     count_subiteration = 0;
     low_rank_decomp = false;
 }
@@ -253,9 +254,12 @@ void CPDTLROptimizer<dtype>::step() {
     //update_indexes();
     // cout << left_index << endl;
     mttkrp_map_init(left_index);
-
+    //cout<<"left index is "<<left_index<<endl;
     // iteration on W[i]
     for (int i=0; i<indexes.size(); i++) {
+        if (first_subtree && i<special_index) {continue;}
+        if (!first_subtree && i>special_index) {break;}
+        //cout<<indexes[i]<<endl;
         /*  construct Matrix M
         *   M["dk"] = V["abcd"]*W1["ak"]*W2["bk"]*W3["ck"]
         */
@@ -282,14 +286,23 @@ void CPDTLROptimizer<dtype>::step() {
           SVD_solve(M, this->W[indexes[i]], this->S);
         }
     }
-    first_subtree = !first_subtree;
-    count_subiteration ++;
-    if (count_subiteration==num_subiteration){
+    if (!first_subtree) {count_subiteration ++;}
+    //cout<<"count subiteration is "<<count_subiteration<<endl;
+    if (count_subiteration==num_subiteration && (!first_subtree)){
+      special_index = (special_index + 1)%(order-1);
       initialize_low_rank_param();
-      update_left_index();
-      left_index1 = (left_index1 + order - 1) % order;
-      left_index2 = (left_index2 + order - 1) % order;
+      if (special_index!=0){
+        left_index1 = (left_index1 + order - 1) % order;
+        left_index2 = (left_index2 + order - 1) % order;
+      } else {
+        left_index = order-1;
+        left_index1 = left_index;
+        left_index2 = (left_index + order - 1) % order;
+      }
+      //cout<<"left index 1 is "<<left_index1<<endl;
+      //cout<<"left index 2 is "<<left_index2<<endl;
       update_indexes(indexes1, left_index1);
       update_indexes(indexes2, left_index2);
     }
+    first_subtree = !first_subtree;
 }
