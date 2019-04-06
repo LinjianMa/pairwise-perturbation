@@ -76,7 +76,7 @@ int main(int argc, char ** argv){
     }
     if (getCmdOption(input_str, input_str+in_num, "-pp")) {
         pp = atoi(getCmdOption(input_str, input_str+in_num, "-pp"));
-        if (pp < 0 || pp > 2) pp = 0;
+        if (pp < 0) pp = 0;
     } else {
         pp = 0;
     }
