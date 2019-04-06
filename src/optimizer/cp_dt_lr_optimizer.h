@@ -56,6 +56,7 @@ class CPDTLROptimizer : public CPOptimizer<dtype> {
         int left_index;
         int left_index1;
         int left_index2;
+        int special_index;
 
         int num_subiteration;
         int count_subiteration;
