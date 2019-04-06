@@ -242,7 +242,7 @@ void CPDTLROptimizer<dtype>::update_cached_tensor(int left_index){
 }
 
 template<typename dtype>
-void CPDTLROptimizer<dtype>::step() {
+double CPDTLROptimizer<dtype>::step() {
 
     World * dw = this->world;
     int order = this->order;
@@ -306,4 +306,6 @@ void CPDTLROptimizer<dtype>::step() {
       update_indexes(indexes2, left_index2);
     }
     first_subtree = !first_subtree;
+
+    return 0.5;
 }

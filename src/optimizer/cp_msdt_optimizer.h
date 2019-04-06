@@ -13,7 +13,7 @@ class CPMSDTOptimizer : public CPOptimizer<dtype> {
 
         ~CPMSDTOptimizer();
 
-        void step();
+        double step();
 
         void update_indexes();
 

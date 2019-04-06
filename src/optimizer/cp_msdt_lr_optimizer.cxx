@@ -230,7 +230,7 @@ void CPMSDTLROptimizer<dtype>::update_cached_tensor(int left_index){
 }
 
 template<typename dtype>
-void CPMSDTLROptimizer<dtype>::step() {
+double CPMSDTLROptimizer<dtype>::step() {
 
     World * dw = this->world;
     int order = this->order;
@@ -270,4 +270,5 @@ void CPMSDTLROptimizer<dtype>::step() {
             this->low_rank_decomp = true;
         }
     }
+    return 1.*(this->order-1)/this->order;
 }

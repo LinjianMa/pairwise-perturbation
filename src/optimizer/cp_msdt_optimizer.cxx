@@ -180,7 +180,7 @@ void CPMSDTOptimizer<dtype>::mttkrp_map_DT(string index) {
 }
 
 template<typename dtype>
-void CPMSDTOptimizer<dtype>::step() {
+double CPMSDTOptimizer<dtype>::step() {
 
     World * dw = this->world;
     int order = this->order; 
@@ -213,5 +213,6 @@ void CPMSDTOptimizer<dtype>::step() {
         this->grad_W[indexes[i]]["ij"] = -M["ij"]+this->W[indexes[i]]["ik"]*this->S["kj"]; 
         SVD_solve(M, this->W[indexes[i]], this->S);
     }
+    return 1.*(this->order-1)/this->order;
 }
 

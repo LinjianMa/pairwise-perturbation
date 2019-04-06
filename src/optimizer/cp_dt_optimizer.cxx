@@ -194,7 +194,7 @@ void CPDTOptimizer<dtype>::mttkrp_map_DT(string index) {
 }
 
 template<typename dtype>
-void CPDTOptimizer<dtype>::step() {
+double CPDTOptimizer<dtype>::step() {
 
     World * dw = this->world;
     int order = this->order;
@@ -242,4 +242,6 @@ void CPDTOptimizer<dtype>::step() {
     }
 
     first_subtree = !first_subtree;
+
+    return 0.5;
 }

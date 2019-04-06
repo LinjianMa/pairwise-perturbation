@@ -24,7 +24,7 @@ CPSimpleOptimizer<dtype>::~CPSimpleOptimizer(){
 }
 
 template<typename dtype>
-void CPSimpleOptimizer<dtype>::step() {
+double CPSimpleOptimizer<dtype>::step() {
 
     World * dw = this->world;
     int order = this->order; 
@@ -56,5 +56,6 @@ void CPSimpleOptimizer<dtype>::step() {
         // recover the char
         swap_char(seq_V, i, order-1);
     }
+    return 1.;
 }
 

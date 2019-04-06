@@ -13,7 +13,7 @@ class CPDTLROptimizer : public CPOptimizer<dtype> {
 
         ~CPDTLROptimizer();
 
-        void step();
+        double step();
 
         void initialize_low_rank_param();
 

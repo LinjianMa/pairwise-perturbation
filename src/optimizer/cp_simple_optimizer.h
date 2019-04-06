@@ -13,7 +13,7 @@ class CPSimpleOptimizer : public CPOptimizer<dtype> {
 
         ~CPSimpleOptimizer();
 
-        void step();
+        double step();
 
         char seq_V[100];
 

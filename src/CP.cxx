@@ -101,26 +101,27 @@ template<typename dtype, class Optimizer>
 bool CPD<dtype, Optimizer>::als(double tol, 
                                 double timelimit, 
                                 int maxiter,
-                            int resprint,
+                                int resprint,
                                 ofstream & Plot_File, 
-                            bool bench
+                                bool bench
                                 ) {
 
     cout.precision(13);
 
     World * dw = this->world;
     double st_time = MPI_Wtime();
-    int iter;  
+    double iters = 0;
+    double iter = 0;  
     double diffnorm_V = 1000.;
 
     if (bench==false) {
     if (dw->rank==0) Plot_File << "[dim],[iter],[gradnorm],[tol],[pp_update],[diffV],[dtime]" << "\n";          //Headings for file
     }
 
-    for (iter=0; iter<=maxiter; iter++)
+    while (int(iters) <= maxiter)
     {
         // print the gradient norm 
-        if (iter%resprint==0 || iter==maxiter) {
+        if ( (int(iters)%resprint==0 && int(iters-iter)%resprint!=0) || int(iters)>=maxiter || iters==0 ) {
             double st_time1 = MPI_Wtime();
             update_gradnorm();
             // residual
@@ -134,14 +135,15 @@ bool CPD<dtype, Optimizer>::als(double tol,
             double dtime = MPI_Wtime() - st_time;
             if (bench==false) {
                 if(dw->rank==0) {
-                    cout << "  [dim]=  " << (this->V)->lens[0] << "  [iter]=  " << iter << "  [gradnorm]  "<< gradnorm << "  [tol]  " << tol << "  [pp_update]  " << 0  << "  [diffV]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
-                    Plot_File << (this->V)->lens[0] << "," << iter << "," << gradnorm << "," << tol << "," << 0 << "," << diffnorm_V << "," << dtime << "\n";
-                    if(iter%100==0 && iter!=0) { // flush
+                    cout << "  [dim]=  " << (this->V)->lens[0] << "  [iter]=  " << int(iters) << "  [gradnorm]  "<< gradnorm << "  [tol]  " << tol << "  [pp_update]  " << 0  << "  [residual]  "  << diffnorm_V << "  [dtime]  " << dtime <<  "\n";
+                    Plot_File << (this->V)->lens[0] << "," << int(iters) << "," << gradnorm << "," << tol << "," << 0 << "," << diffnorm_V << "," << dtime << "\n";
+                    // flush the contents to csv
+                    if(int(iters)%100==0 && int(iters)!=0) { 
                         Plot_File << endl;
                     }
                 }
             } else {
-                if(dw->rank==0 && iter!=0) {
+                if(dw->rank==0 && int(iters)!=0) {
                     cout << "  [dimension tree step time]  " << dtime <<  "\n";
                     Plot_File << "[DTtime]" << "," << dtime << "\n";
                 }               
@@ -150,20 +152,21 @@ bool CPD<dtype, Optimizer>::als(double tol,
                 break;
         }
 
-        this->optimizer->step();
+        iter = this->optimizer->step();
+        iters += iter;
 
         // Normalize(this->W, this->order, *dw);
         // print .
-        if (iter%10==0 && dw->rank==0) printf(".");
+        if (int(iters)%10==0 && dw->rank==0) printf(".");
     }
     if(dw->rank==0) {
-        printf ("\nIter = %d Final proj-grad norm %E \n", iter, gradnorm);
+        printf ("\nIters = %d Final proj-grad norm %E \n", int(iters), gradnorm);
         printf ("tf took %lf seconds\n",MPI_Wtime()-st_time);
     }
     if (bench==false) {
         Plot_File.close();
     }
-    if (iter == maxiter+1) return false;
+    if (int(iters) == maxiter+1) return false;
     else return true;
 }
 

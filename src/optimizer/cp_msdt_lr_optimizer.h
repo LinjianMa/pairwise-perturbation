@@ -13,7 +13,7 @@ class CPMSDTLROptimizer : public CPOptimizer<dtype> {
 
         ~CPMSDTLROptimizer();
 
-        void step();
+        double step();
 
         void update_indexes();
 

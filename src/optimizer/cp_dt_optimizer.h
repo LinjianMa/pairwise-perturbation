@@ -13,7 +13,7 @@ class CPDTOptimizer : public CPOptimizer<dtype> {
 
         ~CPDTOptimizer();
 
-        void step();
+        double step();
 
         void update_left_index();
 
