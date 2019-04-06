@@ -248,8 +248,16 @@ int main(int argc, char ** argv){
                 //r2 : random tensor
                 int lens[dim];
                 for (int i=0; i<dim; i++) lens[i]=s;
+                // create subworld tensor 
+                Tensor<> * V_subworld = NULL;
+                if (dw.rank == 0){
+                    World sworld(MPI_COMM_SELF);
+                    V_subworld = new Tensor<>(dim, issparse, lens, sworld);
+                    V_subworld->fill_random(0.5,1.);
+                }
                 V = Tensor<>(dim, issparse, lens, dw);
-                V.fill_random(0.5,1);         // Why?   when V is (-1,1), low rank Tucker has no accurate decomposition
+                V.add_from_subworld(V_subworld);         // Why?   when V is (-1,1), low rank Tucker has no accurate decomposition
+                delete V_subworld;
             }
             else {
                 //r : tensor made by random matrices
@@ -257,8 +265,16 @@ int main(int argc, char ** argv){
                 for (int i=0; i<dim; i++) lens[i]=s;
                 Matrix<>* W = new Matrix<>[dim];                // N matrices V will be decomposed into
                 for (int i=0; i<dim; i++) {
+                    // use subworld matrix to make the matrix deterministic across various processes
+                    Matrix<> * W_subworld = NULL;
+                    if (dw.rank == 0){
+                        World sworld(MPI_COMM_SELF);
+                        W_subworld = new Matrix<>(s,R,sworld);
+                        W_subworld->fill_random(0.,1.);
+                    }
                     W[i] = Matrix<>(s,R,dw);
-                    W[i].fill_random(0,1);
+                    W[i].add_from_subworld(W_subworld);
+                    delete W_subworld;
                 }
                 build_V(V, W, dim, dw);
                 delete[] W;
@@ -305,16 +321,16 @@ int main(int argc, char ** argv){
         Matrix<>* W = new Matrix<>[V.order];                // N matrices V will be decomposed into
         Matrix<>* grad_W = new Matrix<>[V.order];           // gradients in N dimensions
         for (int i=0; i<V.order; i++) {
-            Matrix<> * Wi = NULL;
+            Matrix<> * W_subworld = NULL;
             if (dw.rank == 0){
                 World sworld(MPI_COMM_SELF);
-                Wi = new Matrix<>(V.lens[i],R,sworld);
-                Wi->fill_random(0.,1.);
+                W_subworld = new Matrix<>(V.lens[i],R,sworld);
+                W_subworld->fill_random(0.,1.);
             }
             W[i] = Matrix<>(V.lens[i],R,dw);
             grad_W[i] = Matrix<>(V.lens[i],R,dw);
-            W[i].add_from_subworld(Wi);
-            delete Wi;
+            W[i].add_from_subworld(W_subworld);
+            delete W_subworld;
         }
 
         // V.write_dense_to_file (fh);
@@ -387,8 +403,8 @@ int main(int argc, char ** argv){
             printf ("experiment took %lf seconds\n",MPI_Wtime()-start_time);
         }
 
-        // delete[] W;
-        // delete[] grad_W;
+        delete[] W;
+        delete[] grad_W;
         // delete[] F;
 
         if (tensor[0]=='o') {
