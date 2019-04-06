@@ -305,10 +305,16 @@ int main(int argc, char ** argv){
         Matrix<>* W = new Matrix<>[V.order];                // N matrices V will be decomposed into
         Matrix<>* grad_W = new Matrix<>[V.order];           // gradients in N dimensions
         for (int i=0; i<V.order; i++) {
+            Matrix<> * Wi = NULL;
+            if (dw.rank == 0){
+                World sworld(MPI_COMM_SELF);
+                Wi = new Matrix<>(V.lens[i],R,sworld);
+                Wi->fill_random(0.,1.);
+            }
             W[i] = Matrix<>(V.lens[i],R,dw);
             grad_W[i] = Matrix<>(V.lens[i],R,dw);
-            W[i].fill_random(0,1);
-            grad_W[i].fill_random(0,1);
+            W[i].add_from_subworld(Wi);
+            delete Wi;
         }
 
         // V.write_dense_to_file (fh);
