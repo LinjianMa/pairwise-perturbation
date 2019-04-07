@@ -721,15 +721,32 @@ void matrixDot(Matrix<>& result, Matrix<> &matrix1, Matrix<> &matrix2){
 }
 
 /** Compute the rank 1 update vector on A(n).
+    A*gamma = M
     */
-void get_rankR_update(int R, Matrix<> &U, Vector<> &sigma, Matrix<> &VT, Matrix<> &M, Matrix<> &A, Matrix<> &gamma){
+void get_rankR_update(int R, Matrix<> &xU, Vector<> &xS, Matrix<> &xVT, Matrix<> &M, Matrix<> &A, Matrix<> &gamma){
+
     Matrix<> rhs;
     matrixDot(rhs, A, gamma);
     rhs["ij"] = M["ij"] - rhs["ij"];
-    Matrix<> VT_rhs;
-    rhs.svd(U, sigma, VT_rhs, R);
-    VT = VT_rhs;
-    SVD_solve(VT_rhs, VT, gamma);
+
+    Matrix<> U, VT;
+    Vector<> S;
+    gamma.svd(U, S, VT, gamma.ncol);
+    //S = 1./S**.5
+    Transform<> sqrtinv([](double & d){ 
+        d=1./sqrt(d); 
+    });
+    sqrtinv(S["i"]);
+    //X = RHS @ U
+    //0.*X.i("ij") << S.i("j") * X.i("ij")
+    Matrix<> X(rhs.nrow, rhs.ncol);
+    X["ik"] = S["k"] * rhs["ij"] * U["jk"];
+
+    //[xU,xS,xVT]=ctf.svd(X,r)
+    X.svd(xU, xS, xVT, R);
+
+    xVT["ik"] = xVT["ij"] * S["j"] * VT["jk"];
+
 }
 
 /** Perform rank R update on V and A
