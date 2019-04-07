@@ -7,6 +7,16 @@
 #include "common.h"
 //#define ERR_REPORT
 
+void vec2str(vector<int> vec, string & seq_out) {
+    char seq[vec.size()+2];
+    seq[vec.size()+1] = '\0';
+    seq[vec.size()] = '*';
+    for (int i=0; i<vec.size(); i++) {
+        seq[i] = 'a' + vec[i];
+    }
+    seq_out = seq;
+}
+
 void mttkrp_map_DT(map<string,Tensor<>>& mttkrp_map,
                    map<string,string>& parent,
                    map<string,string>& sibling,
