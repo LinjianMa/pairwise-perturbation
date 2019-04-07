@@ -58,23 +58,33 @@ void CPDTLROptimizer<dtype>::mttkrp_map_init(int left_index) {
     seq_matrix[0] = 'a'+left_index;
     // store that into the mttkrp_map
     int lens[strlen(seq_map_init)];
-    for (int ii=0; ii<strlen(seq_map_init); ii++){
-        if (seq_map_init[ii] == '*') lens[ii] = this->W[0].ncol;
-        else lens[ii] = this->V->lens[int(seq_map_init[ii]-'a')];
+    for (int ii=0; ii<strlen(seq_map_init); ii++) {
+        if (seq_map_init[ii] == '*') {
+            lens[ii] = this->W[0].ncol;
+        } else { 
+            lens[ii] = this->V->lens[int(seq_map_init[ii]-'a')];
+        }
     }
     this->mttkrp_map[seq_tree_top] = Tensor<dtype>(strlen(seq_map_init), lens, *dw);
-    if (this->low_rank_decomp && count_subiteration>1){
+    if (this->low_rank_decomp && count_subiteration>1) {
         update_cached_tensor(left_index);
-        if (this->first_subtree) this->mttkrp_map[seq_tree_top] = *cached_tensor1;
-        else this->mttkrp_map[seq_tree_top] = *cached_tensor2;
+        if (this->first_subtree) {
+            this->mttkrp_map[seq_tree_top] = *cached_tensor1;
+        } else { 
+            this->mttkrp_map[seq_tree_top] = *cached_tensor2;
+        }
     } else {
         this->mttkrp_map[seq_tree_top][seq_map_init] = (*this->V)[seq_V] * this->W[left_index][seq_matrix];
-        if (this->first_subtree){
-            if (cached_tensor1==NULL) cached_tensor1 = new Tensor<dtype>(strlen(seq_map_init), lens, *dw);
+        if (this->first_subtree) {
+            if (cached_tensor1==NULL) {
+                cached_tensor1 = new Tensor<dtype>(strlen(seq_map_init), lens, *dw);
+            }
             *cached_tensor1 = this->mttkrp_map[seq_tree_top];
         }
         else {
-            if (cached_tensor2==NULL) cached_tensor2 = new Tensor<dtype>(strlen(seq_map_init), lens, *dw);
+            if (cached_tensor2==NULL) { 
+                cached_tensor2 = new Tensor<dtype>(strlen(seq_map_init), lens, *dw); 
+            }
             *cached_tensor2 = this->mttkrp_map[seq_tree_top];
         }
     }
@@ -94,9 +104,12 @@ void CPDTLROptimizer<dtype>::mttkrp_map_DT(string index) {
     int W_index = int(mat_index[0] - 'a');
     int lens[strlen(index_char)];
 
-    for (int ii=0; ii<strlen(index_char); ii++){
-        if (index[ii] == '*') lens[ii] = this->W[0].ncol;
-        else lens[ii] = this->V->lens[int(this->indexes[index[ii]-'a'])];
+    for (int ii=0; ii<strlen(index_char); ii++) {
+        if (index[ii] == '*') {
+            lens[ii] = this->W[0].ncol;
+        } else { 
+            lens[ii] = this->V->lens[int(this->indexes[index[ii]-'a'])];
+        }
     }
     this->mttkrp_map[index] = Tensor<dtype>(strlen(index_char), lens, *dw);
 
@@ -126,9 +139,13 @@ void CPDTLROptimizer<dtype>::update_cached_tensor(int left_index){
     char seq_U[] = {char('a'+left_index), '&', '\0'};
     char seq_VT[] = {'&', '*','\0'};
     char seq_matrix[] = {char('a'+left_index), '*', '\0'};
-    //cached_tensors[left_index][seq_map_init] = this->W[left_index][seq_matrix] * (*this->V)[seq_V];
-    if (this->first_subtree) (*cached_tensor1)[seq_map_init] += (*this->V)[seq_V] * this->U[seq_U] * this->VT[seq_VT];
-    else (*cached_tensor2)[seq_map_init] += (*this->V)[seq_V] * this->U[seq_U] * this->VT[seq_VT];
+
+    if (this->first_subtree) {
+        (*cached_tensor1)[seq_map_init] += (*this->V)[seq_V] * this->U[seq_U] * this->VT[seq_VT];
+    }
+    else {
+        (*cached_tensor2)[seq_map_init] += (*this->V)[seq_V] * this->U[seq_U] * this->VT[seq_VT];
+    }
 }
 
 template<typename dtype>
@@ -152,8 +169,11 @@ double CPDTLROptimizer<dtype>::step() {
     mttkrp_map_init(this->left_index);
     // iteration on W[i]
     for (int i=0; i<this->indexes.size(); i++) {
-        if (this->first_subtree && i<this->special_index) continue;
-        if (!this->first_subtree && i>this->special_index) break;
+
+        if (this->first_subtree && i<this->special_index) 
+            continue;
+        if (!this->first_subtree && i>this->special_index) 
+            break;
         /*  construct Matrix M
         *   M["dk"] = V["abcd"]*W1["ak"]*W2["bk"]*W3["ck"]
         */
@@ -171,7 +191,7 @@ double CPDTLROptimizer<dtype>::step() {
         CPOptimizer<dtype>::update_S(this->indexes[i]);
         // calculate gradient
         this->grad_W[this->indexes[i]]["ij"] = -M["ij"]+this->W[this->indexes[i]]["ik"]*this->S["kj"];
-        if (((this->first_subtree && i==this->indexes.size()-1) || (!this->first_subtree && i==0)) && count_subiteration>=1){
+        if (((this->first_subtree && i==this->indexes.size()-1) || (!this->first_subtree && i==0)) && count_subiteration>=1) {
             get_rankR_update(this->rank, this->U, this->s, this->VT, M, this->W[this->indexes[i]], this->S);
             this->W[this->indexes[i]]["ij"] += this->U["ik"]*this->s["k"]*this->VT["kj"];
             //update_cached_tensor(indexes[i]);

@@ -27,6 +27,7 @@ CPDTOptimizer<dtype>::CPDTOptimizer(int order, int r, World & dw)
     for (int i=0; i<indexes.size(); i++) {
         indexes[i] = i;
     }
+    
     indexes1 = indexes;
     indexes2 = indexes1;
 
