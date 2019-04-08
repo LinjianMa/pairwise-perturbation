@@ -678,7 +678,7 @@ void randomized_svd(Matrix<> &A, Matrix<> &U, Vector<> &s, Matrix<> &VT2, int r,
   Matrix<> Q, R;
   X.qr(Q, R);
   for (int i=0; i<iter; i++){
-    X["jr"] = A["ji"] * A["il"] * Q["lr"];
+    X["jr"] = A["ij"] * A["il"] * Q["lr"];
     X.qr(Q,R);
   }
   Matrix<> VT;
