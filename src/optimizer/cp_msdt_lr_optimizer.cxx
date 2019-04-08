@@ -7,8 +7,14 @@
 using namespace CTF;
 
 template<typename dtype>
-CPMSDTLROptimizer<dtype>::CPMSDTLROptimizer(int order, int r, int update_rank, World & dw)
+CPMSDTLROptimizer<dtype>::CPMSDTLROptimizer(int order, int r, int update_rank, int randomsvd, World & dw)
     : CPMSDTOptimizer<dtype>(order, r, dw) {
+
+    if (randomsvd > 0) {
+        this->randomsvd = true;
+    } else {
+        this->randomsvd = false;
+    }
 
     rank = update_rank;
     low_rank_decomp = false;
@@ -177,7 +183,7 @@ double CPMSDTLROptimizer<dtype>::step() {
         if (!is_cached[this->indexes[i]] || (i!=(this->indexes.size()-1))){
             SVD_solve(M, this->W[this->indexes[i]], this->S);
         } else {
-            get_rankR_update(this->rank, this->U, this->s, this->VT, M, this->old_W[this->indexes[i]], this->S);
+            get_rankR_update(this->rank, this->U, this->s, this->VT, M, this->old_W[this->indexes[i]], this->S, this->randomsvd);
             this->W[this->indexes[i]]["ij"] = this->old_W[this->indexes[i]]["ij"] + this->U["ik"]*this->s["k"]*this->VT["kj"];
             //update_cached_tensor(indexes[i]);
             this->low_rank_decomp = true;

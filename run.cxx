@@ -55,6 +55,7 @@ int main(int argc, char ** argv){
     double timelimit = 5e3;  // time limits
     int maxiter = 5e3;      // maximum iterations
     int resprint = 1;
+    int randomsvd = 0;
     char * tensorfile;
 
     MPI_Init(&argc, &argv);
@@ -134,6 +135,12 @@ int main(int argc, char ** argv){
     } else {
         resprint = 10;
     }
+    if (getCmdOption(input_str, input_str+in_num, "-randomsvd")) {
+        randomsvd = atoi(getCmdOption(input_str, input_str+in_num, "-randomsvd"));
+        if (randomsvd < 0 || randomsvd > 1) randomsvd = 0;
+    } else {
+        randomsvd = 0;
+    }
     if (getCmdOption(input_str, input_str+in_num, "-tol")) {
         tol = atof(getCmdOption(input_str, input_str+in_num, "-tol"));
         if (tol < 0 || tol > 1) tol = 1e-10;
@@ -198,6 +205,7 @@ int main(int argc, char ** argv){
             cout << "  col_min=  " << col_min << "  col_max=  " << col_max  << "  rationoise  " << ratio_noise << endl;
             cout << "  timelimit=  " << timelimit << "  maxiter=  " << maxiter << "  resprint=  " << resprint  << endl;
             cout << "  tensorfile=  " << tensorfile << "  update_percentage_pp=  " << update_percentage_pp << endl;
+            cout << "  randomsvd=  " << randomsvd << endl;
         }
 
         // initialization of tensor
@@ -352,12 +360,12 @@ int main(int argc, char ** argv){
             //  alsCP_PP(V, W, grad_W, F, tol*Vnorm, pp_res_tol, timelimit, maxiter, lambda_, magni, Plot_File, resprint, false, dw);
             }
             else if (pp==2){
-                CPD<double, CPDTLROptimizer<double>> decom(dim, s, R, update_rank, dw);
+                CPD<double, CPDTLROptimizer<double>> decom(dim, s, R, update_rank, randomsvd, dw);
                 decom.Init(&V, W);
                 decom.als(tol*Vnorm, timelimit, maxiter, resprint, Plot_File);
             }
             else if (pp==3){
-                CPD<double, CPMSDTLROptimizer<double>> decom(dim, s, R, update_rank, dw);
+                CPD<double, CPMSDTLROptimizer<double>> decom(dim, s, R, update_rank, randomsvd, dw);
                 decom.Init(&V, W);
                 decom.als(tol*Vnorm, timelimit, maxiter, resprint, Plot_File);
             }

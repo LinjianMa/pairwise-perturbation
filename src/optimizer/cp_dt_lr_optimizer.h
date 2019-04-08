@@ -9,7 +9,7 @@ template<typename dtype>
 class CPDTLROptimizer : public CPDTOptimizer<dtype> {
 
     public:
-        CPDTLROptimizer(int order, int r, int update_rank, World & dw);
+        CPDTLROptimizer(int order, int r, int update_rank, int randomsvd, World & dw);
 
         ~CPDTLROptimizer();
 
@@ -36,6 +36,7 @@ class CPDTLROptimizer : public CPDTOptimizer<dtype> {
         Matrix<> U;
         Vector<> s;
         Matrix<> VT;
+        bool randomsvd;
 };
 
 

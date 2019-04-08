@@ -30,6 +30,19 @@ CPD<dtype, Optimizer>::CPD(int order, int size_, int r, int update_rank, World &
 }
 
 template<typename dtype, class Optimizer>  
+CPD<dtype, Optimizer>::CPD(int order, int size_, int r, int update_rank, int randomsvd, World & dw)
+    : Decomposition<dtype>(order, size_, r, dw) {
+    // NOTE: this constructor is only for the optimizer with low rank updates
+    optimizer = new Optimizer(order, r, update_rank, randomsvd, dw); 
+
+    // make the char seq_V
+    seq_V[order] = '\0'; 
+    for (int j=0; j<order; j++) {
+        seq_V[j] = 'a'+j;
+    }
+}
+
+template<typename dtype, class Optimizer>  
 CPD<dtype, Optimizer>::CPD(int order, int* size_, int* r, World & dw)
     : Decomposition<dtype>(order, size_, r, dw) {
 

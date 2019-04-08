@@ -95,7 +95,7 @@ void SVD_solve_mod(Matrix<>& M,
 
 void matrixDot(Matrix<>& result, Matrix<> &matrix1, Matrix<> &matrix2);
 
-void get_rankR_update(int R, Matrix<> &U, Vector<> &sigma, Matrix<> &VT, Matrix<> &M, Matrix<> &A, Matrix<> &gamma);
+void get_rankR_update(int R, Matrix<> &U, Vector<> &sigma, Matrix<> &VT, Matrix<> &M, Matrix<> &A, Matrix<> &gamma, bool random);
 
 void apply_rankR_update(Matrix<> &U, Vector<> &sigma, Matrix<> &VT, Matrix<> &A, Tensor<> &V, Tensor<> *cached_tensor, int mode, World &dw);
 

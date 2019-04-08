@@ -7,8 +7,14 @@
 using namespace CTF;
 
 template<typename dtype>
-CPDTLROptimizer<dtype>::CPDTLROptimizer(int order, int r, int update_rank, World & dw)
+CPDTLROptimizer<dtype>::CPDTLROptimizer(int order, int r, int update_rank, int randomsvd, World & dw)
     : CPDTOptimizer<dtype>(order, r, dw){
+
+    if (randomsvd>0) {
+        this->randomsvd = true;
+    } else {
+        this->randomsvd = false;
+    }
 
     num_subiteration = 5;
     rank = update_rank;
@@ -192,7 +198,7 @@ double CPDTLROptimizer<dtype>::step() {
         // calculate gradient
         this->grad_W[this->indexes[i]]["ij"] = -M["ij"]+this->W[this->indexes[i]]["ik"]*this->S["kj"];
         if (((this->first_subtree && i==this->indexes.size()-1) || (!this->first_subtree && i==0)) && count_subiteration>=1) {
-            get_rankR_update(this->rank, this->U, this->s, this->VT, M, this->W[this->indexes[i]], this->S);
+            get_rankR_update(this->rank, this->U, this->s, this->VT, M, this->W[this->indexes[i]], this->S, this->randomsvd);
             this->W[this->indexes[i]]["ij"] += this->U["ik"]*this->s["k"]*this->VT["kj"];
             //update_cached_tensor(indexes[i]);
             this->low_rank_decomp = true;

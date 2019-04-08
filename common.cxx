@@ -672,40 +672,45 @@ void Normalize(Matrix<>* W,
 }
 
 void randomized_svd(Matrix<> &A, Matrix<> &U, Vector<> &s, Matrix<> &VT2, int r, int iter){
-  int n = A.ncol;
-  Matrix<> X = Matrix<>(n, r);
-  X.fill_random(0,1);
-  Matrix<> Q, R;
-  X.qr(Q, R);
-  for (int i=0; i<iter; i++){
-    X["jr"] = A["ij"] * A["il"] * Q["lr"];
-    X.qr(Q,R);
-  }
-  Matrix<> VT;
-  Matrix<> B = Matrix<>(A.nrow, r);
-  B["ij"] = A["ik"]*Q["kj"];
-  B.svd(U,s,VT, r);
-  VT2 = Matrix<>(r, n);
-  VT2["ij"] = VT["ik"] * Q["jk"];
+    int n = A.ncol;
+    Matrix<> X = Matrix<>(n, r);
+    X.fill_random(0,1);
+    Matrix<> Q, R;
+    X.qr(Q, R);
+    for (int i=0; i<iter; i++){
+        X["jr"] = A["ij"] * A["il"] * Q["lr"];
+        X.qr(Q,R);
+    }
+    Matrix<> VT;
+    Matrix<> B = Matrix<>(A.nrow, r);
+    B["ij"] = A["ik"]*Q["kj"];
+    B.svd(U,s,VT, r);
+    VT2 = Matrix<>(r, n);
+    VT2["ij"] = VT["ik"] * Q["jk"];
 }
 
 void SVD_solve(Matrix<>& M,
                Matrix<>& W,
-               Matrix<>& S) {
-  Timer tSVD_solve("SVD_solve");
-  tSVD_solve.start();
+               Matrix<>& S ) {
+
+    Timer tSVD_solve("SVD_solve");
+    tSVD_solve.start();
     // Perform SVD
     Matrix<> U,VT;
     Vector<> s;
-    S.svd(U,s,VT,S.ncol);
-    //randomized_svd(S, U, s, VT, S.ncol, 1);
+    // if (random) {
+    //     randomized_svd(S, U, s, VT, S.ncol, 1);
+    // } else {
+    S.svd(U,s,VT,S.ncol);        
+    // }
     Matrix<> S_reverse(S);
     // reverse
     Transform<> inv([](double & d){ d=1./d; });
     inv(s["i"]);
     S_reverse["ij"] = VT["ki"]*s["k"]*U["jk"];
     W["ij"] = M["ik"]*S_reverse["kj"];
-  tSVD_solve.stop();
+    tSVD_solve.stop();
+
 }
 
 void SVD_solve_mod(Matrix<>& M,
@@ -742,7 +747,14 @@ void matrixDot(Matrix<>& result, Matrix<> &matrix1, Matrix<> &matrix2){
 /** Compute the rank 1 update vector on A(n).
     A*gamma = M
     */
-void get_rankR_update(int R, Matrix<> &xU, Vector<> &xS, Matrix<> &xVT, Matrix<> &M, Matrix<> &A, Matrix<> &gamma){
+void get_rankR_update(int R, 
+                      Matrix<> &xU, 
+                      Vector<> &xS, 
+                      Matrix<> &xVT, 
+                      Matrix<> &M, 
+                      Matrix<> &A, 
+                      Matrix<> &gamma, 
+                      bool random){
 
     Matrix<> rhs;
     matrixDot(rhs, A, gamma);
@@ -762,8 +774,11 @@ void get_rankR_update(int R, Matrix<> &xU, Vector<> &xS, Matrix<> &xVT, Matrix<>
     X["ik"] = S["k"] * rhs["ij"] * U["jk"];
 
     //[xU,xS,xVT]=ctf.svd(X,r)
-    X.svd(xU, xS, xVT, R);
-    //randomized_svd(X, xU, xS, xVT, R, 1);
+    if (random) {
+        randomized_svd(X, xU, xS, xVT, R, 1);
+    } else {
+        X.svd(xU, xS, xVT, R);
+    }
     xVT["ik"] = xVT["ij"] * S["j"] * VT["jk"];
 
 }
