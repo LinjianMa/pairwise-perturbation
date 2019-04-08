@@ -671,6 +671,24 @@ void Normalize(Matrix<>* W,
     }
 }
 
+void randomized_svd(Matrix<> &A, Matrix<> &U, Vector<> &s, Matrix<> &VT2, int r, int iter){
+  int n = A.ncol;
+  Matrix<> X = Matrix<>(n, r);
+  X.fill_random(0,1);
+  Matrix<> Q, R;
+  X.qr(Q, R);
+  for (int i=0; i<iter; i++){
+    X["jr"] = A["ji"] * A["ij"] * Q["jr"];
+    X.qr(Q,R);
+  }
+  Matrix<> VT;
+  Matrix<> B = Matrix<>(A.nrow, r);
+  B["ij"] = A["ik"]*Q["kj"];
+  B.svd(U,s,VT, r);
+  VT2 = Matrix<>(r, n);
+  VT2["ij"] = VT["ik"] * Q["jk"];
+}
+
 void SVD_solve(Matrix<>& M,
                Matrix<>& W,
                Matrix<>& S) {
@@ -680,6 +698,7 @@ void SVD_solve(Matrix<>& M,
     Matrix<> U,VT;
     Vector<> s;
     S.svd(U,s,VT,S.ncol);
+    //randomized_svd(S, U, s, VT, S.ncol, 1);
     Matrix<> S_reverse(S);
     // reverse
     Transform<> inv([](double & d){ d=1./d; });
@@ -733,8 +752,8 @@ void get_rankR_update(int R, Matrix<> &xU, Vector<> &xS, Matrix<> &xVT, Matrix<>
     Vector<> S;
     gamma.svd(U, S, VT, gamma.ncol);
     //S = 1./S**.5
-    Transform<> sqrtinv([](double & d){ 
-        d=1./sqrt(d); 
+    Transform<> sqrtinv([](double & d){
+        d=1./sqrt(d);
     });
     sqrtinv(S["i"]);
     //X = RHS @ U
