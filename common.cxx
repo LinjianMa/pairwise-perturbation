@@ -678,7 +678,7 @@ void randomized_svd(Matrix<> &A, Matrix<> &U, Vector<> &s, Matrix<> &VT2, int r,
   Matrix<> Q, R;
   X.qr(Q, R);
   for (int i=0; i<iter; i++){
-    X["jr"] = A["ji"] * A["ij"] * Q["jr"];
+    X["jr"] = A["ji"] * A["il"] * Q["lr"];
     X.qr(Q,R);
   }
   Matrix<> VT;
@@ -763,7 +763,7 @@ void get_rankR_update(int R, Matrix<> &xU, Vector<> &xS, Matrix<> &xVT, Matrix<>
 
     //[xU,xS,xVT]=ctf.svd(X,r)
     X.svd(xU, xS, xVT, R);
-
+    //randomized_svd(X, xU, xS, xVT, R, 1);
     xVT["ik"] = xVT["ij"] * S["j"] * VT["jk"];
 
 }
