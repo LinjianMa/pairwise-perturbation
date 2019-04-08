@@ -53,17 +53,6 @@ void CPMSDTOptimizer<dtype>::update_indexes() {
 }
 
 template<typename dtype>
-void CPMSDTOptimizer<dtype>::vec2str(vector<int> vec, string & seq_out) {
-    char seq[vec.size()+2];
-    seq[vec.size()+1] = '\0';
-    seq[vec.size()] = '*';
-    for (int i=0; i<vec.size(); i++) {
-        seq[i] = 'a' + vec[i]; 
-    }
-    seq_out = seq;
-}
-
-template<typename dtype>
 void CPMSDTOptimizer<dtype>::Construct_Dimension_Tree() {
     int order = this->order;
     vector<int> top_node = vector<int>(order-1);
@@ -147,9 +136,12 @@ void CPMSDTOptimizer<dtype>::mttkrp_map_init(int left_index) {
     seq_matrix[0] = 'a'+left_index; 
     // store that into the mttkrp_map
     int lens[strlen(seq_map_init)];
-    for (int ii=0; ii<strlen(seq_map_init); ii++){
-        if (seq_map_init[ii] == '*') lens[ii] = this->W[0].ncol;
-        else lens[ii] = this->V->lens[int(seq_map_init[ii]-'a')];
+    for (int ii=0; ii<strlen(seq_map_init); ii++) {
+        if (seq_map_init[ii] == '*') { 
+            lens[ii] = this->W[0].ncol;
+        } else { 
+            lens[ii] = this->V->lens[int(seq_map_init[ii]-'a')];
+        }
     }
     mttkrp_map[seq_tree_top] = Tensor<dtype>(strlen(seq_map_init), lens, *dw);
     mttkrp_map[seq_tree_top][seq_map_init] = (*this->V)[seq_V] * this->W[left_index][seq_matrix];
@@ -171,8 +163,11 @@ void CPMSDTOptimizer<dtype>::mttkrp_map_DT(string index) {
     int lens[strlen(index_char)];
 
     for (int ii=0; ii<strlen(index_char); ii++){
-        if (index[ii] == '*') lens[ii] = this->W[0].ncol;
-        else lens[ii] = this->V->lens[int(indexes[index[ii]-'a'])];
+        if (index[ii] == '*') { 
+            lens[ii] = this->W[0].ncol;
+        } else {
+            lens[ii] = this->V->lens[int(indexes[index[ii]-'a'])];
+        }
     }
     mttkrp_map[index] = Tensor<dtype>(strlen(index_char), lens, *dw);   
 

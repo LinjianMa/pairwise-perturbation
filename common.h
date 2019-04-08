@@ -4,6 +4,9 @@
 #include <ctf.hpp>
 using namespace CTF;
 
+void vec2str(vector<int> vec, 
+             string & seq_out) ;
+
 void build_V(Tensor<> & V,
        Matrix<> * W,
        int order,

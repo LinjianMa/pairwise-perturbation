@@ -27,6 +27,7 @@ CPDTOptimizer<dtype>::CPDTOptimizer(int order, int r, World & dw)
     for (int i=0; i<indexes.size(); i++) {
         indexes[i] = i;
     }
+    
     indexes1 = indexes;
     indexes2 = indexes1;
 
@@ -63,17 +64,6 @@ void CPDTOptimizer<dtype>::update_indexes(vector<int> &indexes, int left_index) 
         indexes[j] = i;
         j++;
     }
-}
-
-template<typename dtype>
-void CPDTOptimizer<dtype>::vec2str(vector<int> vec, string & seq_out) {
-    char seq[vec.size()+2];
-    seq[vec.size()+1] = '\0';
-    seq[vec.size()] = '*';
-    for (int i=0; i<vec.size(); i++) {
-        seq[i] = 'a' + vec[i];
-    }
-    seq_out = seq;
 }
 
 template<typename dtype>
