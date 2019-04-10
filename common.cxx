@@ -696,19 +696,24 @@ void SVD_solve(Matrix<>& M,
     Timer tSVD_solve("SVD_solve");
     tSVD_solve.start();
     // Perform SVD
-    Matrix<> U,VT;
+    /**Matrix<> U,VT;
     Vector<> s;
-    // if (random) {
-    //     randomized_svd(S, U, s, VT, S.ncol, 1);
-    // } else {
-    S.svd(U,s,VT,S.ncol);        
-    // }
+    S.svd(U,s,VT,S.ncol);
     Matrix<> S_reverse(S);
     // reverse
     Transform<> inv([](double & d){ d=1./d; });
     inv(s["i"]);
     S_reverse["ij"] = VT["ki"]*s["k"]*U["jk"];
     W["ij"] = M["ik"]*S_reverse["kj"];
+    W.print();
+    **/
+    //S.print();
+    Matrix<> L, T;
+    S.cholesky(L);
+    T = L;
+    T["ik"] = L["ij"]*L["kj"];
+    M.solve_tri(L, T, true, false, true);
+    T.solve_tri(L, W, true, false, false);
     tSVD_solve.stop();
 
 }
@@ -747,19 +752,34 @@ void matrixDot(Matrix<>& result, Matrix<> &matrix1, Matrix<> &matrix2){
 /** Compute the rank 1 update vector on A(n).
     A*gamma = M
     */
-void get_rankR_update(int R, 
-                      Matrix<> &xU, 
-                      Vector<> &xS, 
-                      Matrix<> &xVT, 
-                      Matrix<> &M, 
-                      Matrix<> &A, 
-                      Matrix<> &gamma, 
+void get_rankR_update(int R,
+                      Matrix<> &xU,
+                      Vector<> &xS,
+                      Matrix<> &xVT,
+                      Matrix<> &M,
+                      Matrix<> &A,
+                      Matrix<> &gamma,
                       bool random){
 
+    Matrix<> L, X;
+    gamma.cholesky(L);
     Matrix<> rhs;
     matrixDot(rhs, A, gamma);
     rhs["ij"] = M["ij"] - rhs["ij"];
+    rhs.solve_tri(L, X, true, false, true);
 
+    if (random) {
+        randomized_svd(X, xU, xS, xVT, R, 1);
+    } else {
+        X.svd(xU, xS, xVT, R);
+    }
+
+    xVT.solve_tri(L, xVT, true, false, false);
+
+/**
+    Matrix<> rhs;
+    matrixDot(rhs, A, gamma);
+    rhs["ij"] = M["ij"] - rhs["ij"];
     Matrix<> U, VT;
     Vector<> S;
     gamma.svd(U, S, VT, gamma.ncol);
@@ -780,7 +800,7 @@ void get_rankR_update(int R,
         X.svd(xU, xS, xVT, R);
     }
     xVT["ik"] = xVT["ij"] * S["j"] * VT["jk"];
-
+**/
 }
 
 /** Perform rank R update on V and A
