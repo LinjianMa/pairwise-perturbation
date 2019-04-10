@@ -195,6 +195,7 @@ int main(int argc, char ** argv){
     {
         double start_time = MPI_Wtime();
         World dw(argc, argv);
+        World sworld(MPI_COMM_SELF);
         srand48(dw.rank*1);
 
         if (dw.rank==0) {
@@ -259,7 +260,6 @@ int main(int argc, char ** argv){
                 // create subworld tensor 
                 Tensor<> * V_subworld = NULL;
                 if (dw.rank == 0){
-                    World sworld(MPI_COMM_SELF);
                     V_subworld = new Tensor<>(dim, issparse, lens, sworld);
                     V_subworld->fill_random(0.5,1.);
                 }
@@ -276,7 +276,6 @@ int main(int argc, char ** argv){
                     // use subworld matrix to make the matrix deterministic across various processes
                     Matrix<> * W_subworld = NULL;
                     if (dw.rank == 0){
-                        World sworld(MPI_COMM_SELF);
                         W_subworld = new Matrix<>(s,R,sworld);
                         W_subworld->fill_random(0.,1.);
                     }
@@ -331,7 +330,6 @@ int main(int argc, char ** argv){
         for (int i=0; i<V.order; i++) {
             Matrix<> * W_subworld = NULL;
             if (dw.rank == 0){
-                World sworld(MPI_COMM_SELF);
                 W_subworld = new Matrix<>(V.lens[i],R,sworld);
                 W_subworld->fill_random(0.,1.);
             }
