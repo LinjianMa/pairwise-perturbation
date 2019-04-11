@@ -4,7 +4,7 @@
 #include <ctf.hpp>
 using namespace CTF;
 
-void vec2str(vector<int> vec, 
+void vec2str(vector<int> vec,
              string & seq_out) ;
 
 void build_V(Tensor<> & V,
@@ -85,6 +85,11 @@ void SVD_solve(Matrix<>& M,
          Matrix<>& W,
          Matrix<>& S);
 
+
+void cholesky_solve(Matrix<>& M,
+        Matrix<>& W,
+        Matrix<>& S);
+
 void SVD_solve_mod(Matrix<>& M,
            Matrix<>& W,
            Matrix<>& W_init,
@@ -95,7 +100,9 @@ void SVD_solve_mod(Matrix<>& M,
 
 void matrixDot(Matrix<>& result, Matrix<> &matrix1, Matrix<> &matrix2);
 
-void get_rankR_update(int R, Matrix<> &U, Vector<> &sigma, Matrix<> &VT, Matrix<> &M, Matrix<> &A, Matrix<> &gamma, bool random);
+void get_rankR_update_svd(int R, Matrix<> &U, Vector<> &sigma, Matrix<> &VT, Matrix<> &M, Matrix<> &A, Matrix<> &gamma, bool random);
+
+void get_rankR_update_cholesky(int R, Matrix<> &U, Vector<> &sigma, Matrix<> &VT, Matrix<> &M, Matrix<> &A, Matrix<> &gamma, bool random);
 
 void apply_rankR_update(Matrix<> &U, Vector<> &sigma, Matrix<> &VT, Matrix<> &A, Tensor<> &V, Tensor<> *cached_tensor, int mode, World &dw);
 
