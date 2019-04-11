@@ -67,7 +67,7 @@ void CPDTLROptimizer<dtype>::mttkrp_map_init(int left_index) {
     for (int ii=0; ii<strlen(seq_map_init); ii++) {
         if (seq_map_init[ii] == '*') {
             lens[ii] = this->W[0].ncol;
-        } else { 
+        } else {
             lens[ii] = this->V->lens[int(seq_map_init[ii]-'a')];
         }
     }
@@ -76,7 +76,7 @@ void CPDTLROptimizer<dtype>::mttkrp_map_init(int left_index) {
         update_cached_tensor(left_index);
         if (this->first_subtree) {
             this->mttkrp_map[seq_tree_top] = *cached_tensor1;
-        } else { 
+        } else {
             this->mttkrp_map[seq_tree_top] = *cached_tensor2;
         }
     } else {
@@ -88,8 +88,8 @@ void CPDTLROptimizer<dtype>::mttkrp_map_init(int left_index) {
             *cached_tensor1 = this->mttkrp_map[seq_tree_top];
         }
         else {
-            if (cached_tensor2==NULL) { 
-                cached_tensor2 = new Tensor<dtype>(strlen(seq_map_init), lens, *dw); 
+            if (cached_tensor2==NULL) {
+                cached_tensor2 = new Tensor<dtype>(strlen(seq_map_init), lens, *dw);
             }
             *cached_tensor2 = this->mttkrp_map[seq_tree_top];
         }
@@ -113,7 +113,7 @@ void CPDTLROptimizer<dtype>::mttkrp_map_DT(string index) {
     for (int ii=0; ii<strlen(index_char); ii++) {
         if (index[ii] == '*') {
             lens[ii] = this->W[0].ncol;
-        } else { 
+        } else {
             lens[ii] = this->V->lens[int(this->indexes[index[ii]-'a'])];
         }
     }
@@ -127,7 +127,7 @@ void CPDTLROptimizer<dtype>::update_cached_tensor(int left_index){
 
     char * seq_map_init = this->seq_map_init;
     char * seq_tree_top = this->seq_tree_top;
-    char * seq_V = this->seq_V;    
+    char * seq_V = this->seq_V;
 
     int order = this->order;
     seq_map_init[order] = '\0';
@@ -161,11 +161,11 @@ double CPDTLROptimizer<dtype>::step() {
     int order = this->order;
 
     if (this->first_subtree) {
-        this->indexes = this->indexes1; 
+        this->indexes = this->indexes1;
         this->left_index = this->left_index1;
     }
     else {
-        this->indexes = this->indexes2; 
+        this->indexes = this->indexes2;
         this->left_index = this->left_index2;
     }
     // clear the Hash Table
@@ -176,9 +176,9 @@ double CPDTLROptimizer<dtype>::step() {
     // iteration on W[i]
     for (int i=0; i<this->indexes.size(); i++) {
 
-        if (this->first_subtree && i<this->special_index) 
+        if (this->first_subtree && i<this->special_index)
             continue;
-        if (!this->first_subtree && i>this->special_index) 
+        if (!this->first_subtree && i>this->special_index)
             break;
         /*  construct Matrix M
         *   M["dk"] = V["abcd"]*W1["ak"]*W2["bk"]*W3["ck"]
@@ -198,12 +198,12 @@ double CPDTLROptimizer<dtype>::step() {
         // calculate gradient
         this->grad_W[this->indexes[i]]["ij"] = -M["ij"]+this->W[this->indexes[i]]["ik"]*this->S["kj"];
         if (((this->first_subtree && i==this->indexes.size()-1) || (!this->first_subtree && i==0)) && count_subiteration>=1) {
-            get_rankR_update(this->rank, this->U, this->s, this->VT, M, this->W[this->indexes[i]], this->S, this->randomsvd);
+            get_rankR_update_cholesky(this->rank, this->U, this->s, this->VT, M, this->W[this->indexes[i]], this->S, this->randomsvd);
             this->W[this->indexes[i]]["ij"] += this->U["ik"]*this->s["k"]*this->VT["kj"];
             //update_cached_tensor(indexes[i]);
             this->low_rank_decomp = true;
         } else {
-            SVD_solve(M, this->W[this->indexes[i]], this->S);
+            cholesky_solve(M, this->W[this->indexes[i]], this->S);
         }
     }
     if (!this->first_subtree) {

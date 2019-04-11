@@ -6,19 +6,19 @@
 
 using namespace CTF;
 
-template<typename dtype>  
+template<typename dtype>
 CPSimpleOptimizer<dtype>::CPSimpleOptimizer(int order, int r, World & dw)
     : CPOptimizer<dtype>(order, r, dw){
 
     // make the char seq_V
-    seq_V[order] = '\0'; 
+    seq_V[order] = '\0';
     for (int j=0; j<order; j++) {
         seq_V[j] = 'a'+j;
     }
 
 }
 
-template<typename dtype>  
+template<typename dtype>
 CPSimpleOptimizer<dtype>::~CPSimpleOptimizer(){
     // delete S;
 }
@@ -27,9 +27,9 @@ template<typename dtype>
 double CPSimpleOptimizer<dtype>::step() {
 
     World * dw = this->world;
-    int order = this->order; 
+    int order = this->order;
 
-    for (int i=0; i<order; i++) { 
+    for (int i=0; i<order; i++) {
         //make the char
         swap_char(seq_V, i, order-1);
         /*  construct Matrix M
@@ -50,12 +50,11 @@ double CPSimpleOptimizer<dtype>::step() {
         // calculating S
         CPOptimizer<dtype>::update_S(i);
         // calculate gradient
-        this->grad_W[i]["ij"] = -M["ij"]+this->W[i]["ik"]*this->S["kj"]; 
+        this->grad_W[i]["ij"] = -M["ij"]+this->W[i]["ik"]*this->S["kj"];
         // subproblem M=W*S
-        SVD_solve(M, this->W[i], this->S);
+        cholesky_solve(M, this->W[i], this->S);
         // recover the char
         swap_char(seq_V, i, order-1);
     }
     return 1.;
 }
-

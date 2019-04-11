@@ -696,7 +696,7 @@ void SVD_solve(Matrix<>& M,
     Timer tSVD_solve("SVD_solve");
     tSVD_solve.start();
     // Perform SVD
-    /**Matrix<> U,VT;
+    Matrix<> U,VT;
     Vector<> s;
     S.svd(U,s,VT,S.ncol);
     Matrix<> S_reverse(S);
@@ -705,17 +705,19 @@ void SVD_solve(Matrix<>& M,
     inv(s["i"]);
     S_reverse["ij"] = VT["ki"]*s["k"]*U["jk"];
     W["ij"] = M["ik"]*S_reverse["kj"];
-    W.print();
-    **/
-    //S.print();
-    Matrix<> L, T;
-    S.cholesky(L);
-    T = L;
-    T["ik"] = L["ij"]*L["kj"];
-    M.solve_tri(L, T, true, false, true);
-    T.solve_tri(L, W, true, false, false);
     tSVD_solve.stop();
+}
 
+void cholesky_solve(Matrix<>& M, Matrix<>& W, Matrix<>& S){
+  Timer tCholesky_solve("Cholesky_solve");
+  tCholesky_solve.start();
+  Matrix<> L, T;
+  S.cholesky(L);
+  T = L;
+  T["ik"] = L["ij"]*L["kj"];
+  M.solve_tri(L, T, true, false, true);
+  T.solve_tri(L, W, true, false, false);
+  tCholesky_solve.stop();
 }
 
 void SVD_solve_mod(Matrix<>& M,
@@ -752,7 +754,7 @@ void matrixDot(Matrix<>& result, Matrix<> &matrix1, Matrix<> &matrix2){
 /** Compute the rank 1 update vector on A(n).
     A*gamma = M
     */
-void get_rankR_update(int R,
+void get_rankR_update_cholesky(int R,
                       Matrix<> &xU,
                       Vector<> &xS,
                       Matrix<> &xVT,
@@ -776,7 +778,17 @@ void get_rankR_update(int R,
 
     xVT.solve_tri(L, xVT, true, false, false);
 
-/**
+}
+
+void get_rankR_update_svd(int R,
+                      Matrix<> &xU,
+                      Vector<> &xS,
+                      Matrix<> &xVT,
+                      Matrix<> &M,
+                      Matrix<> &A,
+                      Matrix<> &gamma,
+                      bool random){
+
     Matrix<> rhs;
     matrixDot(rhs, A, gamma);
     rhs["ij"] = M["ij"] - rhs["ij"];
@@ -800,8 +812,9 @@ void get_rankR_update(int R,
         X.svd(xU, xS, xVT, R);
     }
     xVT["ik"] = xVT["ij"] * S["j"] * VT["jk"];
-**/
+
 }
+
 
 /** Perform rank R update on V and A
     */

@@ -60,10 +60,10 @@ void CPMSDTLROptimizer<dtype>::mttkrp_map_init(int left_index) {
     // store that into the mttkrp_map
     int lens[strlen(seq_map_init)];
     for (int ii=0; ii<strlen(seq_map_init); ii++){
-        if (seq_map_init[ii] == '*') { 
+        if (seq_map_init[ii] == '*') {
             lens[ii] = this->W[0].ncol;
-        } else { 
-            lens[ii] = this->V->lens[int(seq_map_init[ii]-'a')]; 
+        } else {
+            lens[ii] = this->V->lens[int(seq_map_init[ii]-'a')];
         }
     }
     this->mttkrp_map[seq_tree_top] = Tensor<dtype>(strlen(seq_map_init), lens, *dw);
@@ -93,7 +93,7 @@ void CPMSDTLROptimizer<dtype>::mttkrp_map_DT(string index) {
     int lens[strlen(index_char)];
 
     for (int ii=0; ii<strlen(index_char); ii++){
-        if (index[ii] == '*') { 
+        if (index[ii] == '*') {
             lens[ii] = this->W[0].ncol;
         } else {
             lens[ii] = this->V->lens[int(this->indexes[index[ii]-'a'])];
@@ -105,7 +105,7 @@ void CPMSDTLROptimizer<dtype>::mttkrp_map_DT(string index) {
 }
 
 template<typename dtype>
-void CPMSDTLROptimizer<dtype>::update_cached_tensor(int left_index) { 
+void CPMSDTLROptimizer<dtype>::update_cached_tensor(int left_index) {
 
     char * seq_V = this->seq_V;
     char * seq_map_init = this->seq_map_init;
@@ -131,7 +131,7 @@ void CPMSDTLROptimizer<dtype>::update_cached_tensor(int left_index) {
     char seq_temp[order];
     int i = 0;
     while (seq_V[i]!='\0') {
-        seq_temp[i] = seq_V[i]; 
+        seq_temp[i] = seq_V[i];
         i++;
     }
     seq_temp[left_index] = '&';
@@ -143,7 +143,7 @@ void CPMSDTLROptimizer<dtype>::update_cached_tensor(int left_index) {
     Tensor<dtype> temp = Tensor<dtype>(order, lens, *this->world);
     temp[seq_temp] = (*this->V)[seq_V] * this->U[seq_U];
     cached_tensors[left_index][seq_map_init] = cached_tensors[left_index][seq_map_init] + this->VT[seq_VT]*temp[seq_temp];
-    
+
     old_W[left_index] = this->W[left_index];
     this->is_cached[left_index] = true;
 }
@@ -181,9 +181,9 @@ double CPMSDTLROptimizer<dtype>::step() {
         // calculate gradient
         this->grad_W[this->indexes[i]]["ij"] = -M["ij"]+this->W[this->indexes[i]]["ik"]*this->S["kj"];
         if (!is_cached[this->indexes[i]] || (i!=(this->indexes.size()-1))){
-            SVD_solve(M, this->W[this->indexes[i]], this->S);
+            cholesky_solve(M, this->W[this->indexes[i]], this->S);
         } else {
-            get_rankR_update(this->rank, this->U, this->s, this->VT, M, this->old_W[this->indexes[i]], this->S, this->randomsvd);
+            get_rankR_update_cholesky(this->rank, this->U, this->s, this->VT, M, this->old_W[this->indexes[i]], this->S, this->randomsvd);
             this->W[this->indexes[i]]["ij"] = this->old_W[this->indexes[i]]["ij"] + this->U["ik"]*this->s["k"]*this->VT["kj"];
             //update_cached_tensor(indexes[i]);
             this->low_rank_decomp = true;

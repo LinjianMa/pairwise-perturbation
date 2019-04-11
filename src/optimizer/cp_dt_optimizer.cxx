@@ -27,7 +27,7 @@ CPDTOptimizer<dtype>::CPDTOptimizer(int order, int r, World & dw)
     for (int i=0; i<indexes.size(); i++) {
         indexes[i] = i;
     }
-    
+
     indexes1 = indexes;
     indexes2 = indexes1;
 
@@ -190,11 +190,11 @@ double CPDTOptimizer<dtype>::step() {
     int order = this->order;
 
     if (first_subtree) {
-        indexes = indexes1; 
+        indexes = indexes1;
         left_index = left_index1;
     }
     else {
-        indexes = indexes2; 
+        indexes = indexes2;
         left_index = left_index2;
     }
     // clear the Hash Table
@@ -206,9 +206,9 @@ double CPDTOptimizer<dtype>::step() {
     // iteration on W[i]
     for (int i=0; i<indexes.size(); i++) {
 
-        if (first_subtree && i<special_index) 
+        if (first_subtree && i<special_index)
             continue;
-        if (!first_subtree && i>special_index) 
+        if (!first_subtree && i>special_index)
             break;
         /*  construct Matrix M
         *   M["dk"] = V["abcd"]*W1["ak"]*W2["bk"]*W3["ck"]
@@ -228,7 +228,7 @@ double CPDTOptimizer<dtype>::step() {
         // calculate gradient
         this->grad_W[indexes[i]]["ij"] = -M["ij"]+this->W[indexes[i]]["ik"]*this->S["kj"];
 
-        SVD_solve(M, this->W[indexes[i]], this->S);
+        cholesky_solve(M, this->W[indexes[i]], this->S);
     }
 
     first_subtree = !first_subtree;
