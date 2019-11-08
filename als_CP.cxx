@@ -350,7 +350,14 @@ void Build_mttkrp_map(map<string, Tensor<>> & mttkrp_map,
 			if (seq1_contract[ii] == '*') lens[ii] = W[0].ncol;
 			else lens[ii] = V.lens[int(seq1_contract[ii]-'a')];
 		}
-		mttkrp_map[seq] = Tensor<>(strlen(seq1_contract), lens, dw);
+    int np = dw.np;
+    if (strlen(seq1_contract) == 3 && np >= lens[2]){
+      int syms[3] = {NS, NS, NS};
+      CTF::Partition p(1, &np);
+  		mttkrp_map[seq] = Tensor<>(strlen(seq1_contract), lens, syms, dw, "ijk", p["k"]);
+    } else {
+  		mttkrp_map[seq] = Tensor<>(strlen(seq1_contract), lens, dw);
+    }
 		mttkrp_map[seq][seq1_contract] = V[seq2_contract] * W[int(seq3[0]-'a')][seq3];
 		return;
 	}
@@ -376,7 +383,13 @@ void Build_mttkrp_map(map<string, Tensor<>> & mttkrp_map,
 		if (seq1_contract[ii] == '*') lens[ii] = W[0].ncol;
 		else lens[ii] = V.lens[int(seq1_contract[ii]-'a')];
 	}
-	mttkrp_map[seq] = Tensor<>(strlen(seq1_contract), lens, dw);
+  if (strlen(seq1_contract) == 3 && np >= lens[2]){
+    int syms[3] = {NS, NS, NS};
+    CTF::Partition p(1, &np);
+  	mttkrp_map[seq] = Tensor<>(strlen(seq1_contract), lens, syms, dw, "ijk", p["k"]);
+  } else {
+	  mttkrp_map[seq] = Tensor<>(strlen(seq1_contract), lens, dw);
+  }
 	mttkrp_map[seq][seq1_contract] = mttkrp_map[seq2][seq2_contract] * W[int(seq3[0]-'a')][seq3];
 
 }
