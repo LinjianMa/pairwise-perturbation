@@ -5,22 +5,18 @@
 #include <fstream>
 using namespace CTF;
 
-template<typename dtype>  
-class CPSimpleOptimizer : public CPOptimizer<dtype> {
+template <typename dtype> class CPSimpleOptimizer : public CPOptimizer<dtype> {
 
-    public:
-        CPSimpleOptimizer(int order, int r, World & dw);
+public:
+  CPSimpleOptimizer(int order, int r, World &dw);
 
-        ~CPSimpleOptimizer();
+  ~CPSimpleOptimizer();
 
-        double step();
+  double step();
 
-        char seq_V[100];
-
+  char seq_V[100];
 };
-
 
 #include "cp_simple_optimizer.cxx"
 
 #endif
-
