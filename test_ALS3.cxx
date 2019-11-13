@@ -1,123 +1,8 @@
+#include "alscp3.h"
+#include "bench.h"
 #include "common.h"
 
 #ifndef TEST_SUITE
-
-int bench_contraction(int          n,
-                      int          niter,
-                      char const * iA,
-                      char const * iB,
-                      char const * iC,
-                      CTF_World   &dw){
-
-  int rank, i, num_pes;
-  
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &num_pes);
-
-  int order_A, order_B, order_C;
-  order_A = strlen(iA);
-  order_B = strlen(iB);
-  order_C = strlen(iC);
-
-  // int NS_A[order_A];
-  // int NS_B[order_B];
-  // int NS_C[order_C];
-  int n_A[order_A];
-  int n_B[order_B];
-  int n_C[order_C];
-
-  for (i=0; i<order_A; i++){
-    n_A[i] = n;
-    // NS_A[i] = NS;
-  }
-  for (i=0; i<order_B; i++){
-    n_B[i] = n;
-    // NS_B[i] = NS;
-  }
-  for (i=0; i<order_C; i++){
-    n_C[i] = n;
-    // NS_C[i] = NS;
-  }
-
-
-  //* Creates distributed tensors initialized with zeros
-  // CTF_Tensor A(order_A, n_A, NS_A, dw, "A", 1);
-  // CTF_Tensor B(order_B, n_B, NS_B, dw, "B", 1);
-  // CTF_Tensor C(order_C, n_C, NS_C, dw, "C", 1);
-
-  Tensor<> A(order_A, n_A, dw);
-  Tensor<> B(order_B, n_B, dw);
-  Tensor<> C(order_C, n_C, dw);
-
-  double st_time = MPI_Wtime();
-
-  for (i=0; i<niter; i++){
-    C[iC] += A[iA]*B[iB];
-  }
-
-  double end_time = MPI_Wtime();
-
-  if (rank == 0)
-    printf("Performed %d iterations of C[\"%s\"] += A[\"%s\"]*B[\"%s\"] in %lf sec/iter\n", 
-           niter, iC, iA, iB, (end_time-st_time)/niter);
-
-  return 1;
-} 
-
-int bench_contraction_no_dist(int          n,
-                      int          niter,
-                      char const * iA,
-                      char const * iB,
-                      char const * iC,
-                      CTF_World   &dw){
-
-  int rank, i, num_pes;
-  
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &num_pes);
-
-  int order_A, order_B, order_C;
-  order_A = strlen(iA);
-  order_B = strlen(iB);
-  order_C = strlen(iC);
-
-  int n_A[order_A];
-  int n_B[order_B];
-  int n_C[order_C];
-
-  for (i=0; i<order_A; i++){
-    n_A[i] = n;
-  }
-  for (i=0; i<order_B; i++){
-    n_B[i] = n;
-  }
-  for (i=0; i<order_C; i++){
-    n_C[i] = n;
-  }
-
-  Tensor<> A;
-  Tensor<> B(order_B, n_B, dw);
-  Tensor<> C(order_C, n_C, dw);
-
-  int np = dw.np;
-  int syms[3] = {NS, NS, NS};
-  CTF::Partition p(1, &np);
-  A = Tensor<>(order_A, n_A, syms, dw, "ija", p["a"]);
-
-  double st_time = MPI_Wtime();
-
-  for (i=0; i<niter; i++){
-    C[iC] += A[iA]*B[iB];
-  }
-
-  double end_time = MPI_Wtime();
-
-  if (rank == 0)
-    printf("Performed %d iterations of C[\"%s\"] += A[\"%s\"]*B[\"%s\"] in %lf sec/iter\n", 
-           niter, iC, iA, iB, (end_time-st_time)/niter);
-
-  return 1;
-} 
 
 char *getCmdOption(char **begin, char **end, const std::string &option) {
   char **itr = std::find(begin, end, option);
@@ -182,9 +67,9 @@ int main(int argc, char **argv) {
   if (getCmdOption(input_str, input_str + in_num, "-dim")) {
     dim = atoi(getCmdOption(input_str, input_str + in_num, "-dim"));
     if (dim < 0)
-      dim = 8;
+      dim = 3;
   } else {
-    dim = 8;
+    dim = 3;
   }
   if (getCmdOption(input_str, input_str + in_num, "-maxiter")) {
     maxiter = atoi(getCmdOption(input_str, input_str + in_num, "-maxiter"));
@@ -209,8 +94,6 @@ int main(int argc, char **argv) {
   }
   if (getCmdOption(input_str, input_str + in_num, "-rank")) {
     R = atoi(getCmdOption(input_str, input_str + in_num, "-rank"));
-    if (R < 0 || R > s)
-      R = s / 2;
   } else {
     R = s / 2;
   }
@@ -267,11 +150,10 @@ int main(int argc, char **argv) {
     srand48(dw.rank * 1);
 
     if (dw.rank == 0) {
-      cout << "  tensor=  " << tensor
-           << "  pp=  " << pp << endl;
+      cout << "  tensor=  " << tensor << "  pp=  " << pp << endl;
       cout << "  dim=  " << dim << "  size=  " << s << "  rank=  " << R << endl;
-      cout << "  tolerance=  " << tol
-           << "  restarttol=  " << pp_res_tol << endl;
+      cout << "  tolerance=  " << tol << "  restarttol=  " << pp_res_tol
+           << endl;
       cout << "  lambda=  " << lambda_ << "  magnitude=  " << magni
            << "  filename=  " << filename << endl;
       cout << "  timelimit=  " << timelimit << "  maxiter=  " << maxiter
@@ -284,18 +166,53 @@ int main(int argc, char **argv) {
     Tensor<> V;
 
     if (tensor[0] == 'r') {
-        // r : tensor made by random matrices
-        int lens[dim];
-        for (int i = 0; i < dim; i++)
-          lens[i] = s;
-        Matrix<> *W = new Matrix<>[dim]; // N matrices V will be decomposed into
-        for (int i = 0; i < dim; i++) {
-          W[i] = Matrix<>(s, R, dw);
-          W[i].fill_random(0, 1);
-        }
-        build_V(V, W, dim, dw);
-        delete[] W;
+      // r : tensor made by random matrices
+      int lens[dim];
+      for (int i = 0; i < dim; i++)
+        lens[i] = s;
+      Matrix<> *W = new Matrix<>[dim]; // N matrices V will be decomposed into
+      for (int i = 0; i < dim; i++) {
+        W[i] = Matrix<>(s, R, dw);
+        W[i].fill_random(0, 1);
       }
+      build_V(V, W, dim, dw);
+      delete[] W;
+    } else if (tensor[0] == 's') {
+      // s1 : 3 water molecules, 339 x 21 x 21
+      if (strlen(tensor) > 1 && tensor[1] == '1') {
+        tensorfile = "bin/scf-3.bin";
+        MPI_File_open(MPI_COMM_WORLD, tensorfile,
+                      MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh);
+        int lens[dim];
+        lens[0] = 339;
+        lens[1] = 21;
+        lens[2] = 21;
+        V = Tensor<>(dim, lens, dw);
+        if (dw.rank == 0)
+          cout << "Read the tensor from file scf-3.bin ...... " << endl;
+        V.read_dense_from_file(fh);
+        if (dw.rank == 0)
+          cout << "Read scf-3.bin dataset finished " << endl;
+        // V.print();
+      }
+      // s1 : 3 water molecules, 339 x 21 x 21
+      else if (strlen(tensor) > 1 && tensor[1] == '2') {
+        tensorfile = "bin/scf-40.bin";
+        MPI_File_open(MPI_COMM_WORLD, tensorfile,
+                      MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh);
+        int lens[dim];
+        lens[0] = 4520;
+        lens[1] = 280;
+        lens[2] = 280;
+        V = Tensor<>(dim, lens, dw);
+        if (dw.rank == 0)
+          cout << "Read the tensor from file scf-40.bin ...... " << endl;
+        V.read_dense_from_file(fh);
+        if (dw.rank == 0)
+          cout << "Read scf-40.bin dataset finished " << endl;
+        // V.print();
+      }
+    }
 
     double Vnorm = V.norm2();
     if (dw.rank == 0)
@@ -321,12 +238,12 @@ int main(int argc, char **argv) {
     Timer_epoch tALS("ALS");
     tALS.begin();
 
-    bench_contraction(s, 5, "ijk", "ia", "ajk", dw);
-    bench_contraction(s, 5, "ijk", "ia", "jka", dw);
-    bench_contraction(s, 5, "ijk", "ja", "aik", dw);
-    bench_contraction(s, 5, "ijk", "ja", "ika", dw);
-    bench_contraction(s, 5, "ijk", "ka", "aij", dw);
-    bench_contraction(s, 5, "ijk", "ka", "ija", dw);
+    // bench_contraction(s, 5, "ijk", "ia", "ajk", dw);
+    // bench_contraction(s, 5, "ijk", "ia", "jka", dw);
+    // bench_contraction(s, 5, "ijk", "ja", "aik", dw);
+    // bench_contraction(s, 5, "ijk", "ja", "ika", dw);
+    // bench_contraction(s, 5, "ijk", "ka", "aij", dw);
+    // bench_contraction(s, 5, "ijk", "ka", "ija", dw);
 
     // bench_contraction(s, 5, "ajk", "aj", "ak", dw);
     // bench_contraction_no_dist(s, 5, "ajk", "aj", "ak", dw);
@@ -335,37 +252,26 @@ int main(int argc, char **argv) {
     // bench_contraction(s, 5, "aij", "ai", "aj", dw);
     // bench_contraction_no_dist(s, 5, "aij", "ai", "aj", dw);
 
-    bench_contraction(s, 5, "jka", "ja", "ka", dw);
-    bench_contraction_no_dist(s, 5, "jka", "ja", "ka", dw);
-    bench_contraction(s, 5, "ika", "ka", "ia", dw);
-    bench_contraction_no_dist(s, 5, "ika", "ka", "ia", dw);
-    bench_contraction(s, 5, "ija", "ia", "ja", dw);
-    bench_contraction_no_dist(s, 5, "ija", "ia", "ja", dw);
+    // bench_contraction(s, 5, "jka", "ja", "ka", dw);
+    // bench_contraction_no_dist(s, 5, "jka", "ja", "ka", dw);
+    // bench_contraction(s, 5, "ika", "ka", "ia", dw);
+    // bench_contraction_no_dist(s, 5, "ika", "ka", "ia", dw);
+    // bench_contraction(s, 5, "ija", "ia", "ja", dw);
+    // bench_contraction_no_dist(s, 5, "ija", "ia", "ja", dw);
 
-    // int lens_V[3];
-    // lens_V[0] = V.lens[0];
-    // lens_
-    // lens_V[i + 1] = W[0].ncol;
-    // Tensor<> V_temp = Tensor<>(i + 2, lens_V, dw);
-
-    // // benchmark MTTKRP
-    // double mttkrp_start_time = MPI_Wtime();
-    // if (dw.rank == 0) {
-    //   printf("experiment took %lf seconds\n", MPI_Wtime() - mttkrp_start_time);
+    if (pp == 0) {
+      alscp_dt3(V, W, grad_W, tol * Vnorm, timelimit, maxiter, lambda_,
+                Plot_File, resprint, false, dw);
+    } // else if (pp == 1) {
+    //   alsCP_PP(V, W, grad_W, F, tol * Vnorm, pp_res_tol, timelimit,
+    //   maxiter,
+    //            lambda_, magni, Plot_File, resprint, false, dw);
+    // } else if (pp == 2) {
+    //   alsCP_PP_partupdate(V, W, grad_W, F, tol * Vnorm, pp_res_tol,
+    //   timelimit,
+    //                       maxiter, lambda_, magni, update_percentage_pp,
+    //                       Plot_File, resprint, false, dw);
     // }
-
-
-      // if (pp == 0) {
-      //   alsCP_DT(V, W, grad_W, F, tol * Vnorm, timelimit, maxiter, lambda_,
-      //            Plot_File, resprint, false, dw);
-      // } else if (pp == 1) {
-      //   alsCP_PP(V, W, grad_W, F, tol * Vnorm, pp_res_tol, timelimit, maxiter,
-      //            lambda_, magni, Plot_File, resprint, false, dw);
-      // } else if (pp == 2) {
-      //   alsCP_PP_partupdate(V, W, grad_W, F, tol * Vnorm, pp_res_tol, timelimit,
-      //                       maxiter, lambda_, magni, update_percentage_pp,
-      //                       Plot_File, resprint, false, dw);
-      // }
 
     tALS.end();
 

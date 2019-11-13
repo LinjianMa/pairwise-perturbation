@@ -9,8 +9,8 @@ FCXX=$(CXX) $(CXXFLAGS)
 
 all: test_ALS pp_bench test run #tool
 
-als3: test_ALS3.cxx $(ODIR)/common.o Makefile config.mk
-	$(FCXX) $< $(ODIR)/common.o  -o $@ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+als3: test_ALS3.cxx $(ODIR)/alscp3.o $(ODIR)/bench.o $(ODIR)/common.o Makefile config.mk
+	$(FCXX) $< $(ODIR)/alscp3.o $(ODIR)/bench.o $(ODIR)/common.o  -o $@ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
 # tool: $(ODIR)/decomposition.o #$(ODIR)/CP.o $(ODIR)/Tucker.o
 
@@ -44,7 +44,13 @@ $(ODIR)/als_CP.o: als_CP.cxx als_CP.h config.mk
 $(ODIR)/als_Tucker.o: als_Tucker.cxx als_Tucker.h config.mk
 	$(FCXX) -c $< -o $@ $(INCLUDE_PATH) 
 
+$(ODIR)/alscp3.o: alscp3.cxx alscp3.h config.mk
+	$(FCXX) -c $< -o $@ $(INCLUDE_PATH) 
+
 $(ODIR)/common.o: common.cxx common.h config.mk
+	$(FCXX) -c $< -o $@ $(INCLUDE_PATH) 
+
+$(ODIR)/bench.o: bench.cxx bench.h config.mk
 	$(FCXX) -c $< -o $@ $(INCLUDE_PATH) 
 
 clean:
