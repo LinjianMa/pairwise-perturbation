@@ -19,22 +19,16 @@ int main(int argc, char **argv) {
 
   char *tensor; // which tensor    p / p2 / c / r / r2 / o /
   int pp;       // 0 Dimention tree 1 pairwise perturbation 2 pp with <1
-                // update_percentage_pp
-  double update_percentage_pp; // pp update ratio. For each sweep only update
-                               // update_percentage_pp*N matrices.
   /*
   r : decomposition of tensor made by random matrices
   */
-  int dim;                // number of dimensions
-  int s;                  // tensor size in each dimension
-  int R;                  // decomposition rank
-  double tol;             // global convergance tolerance
-  double pp_res_tol;      // pp restart tolerance
-  double lambda_;         // regularization param
-  double magni;           // pp update magnitude
-  char *filename;         // output csv filename
-  double timelimit = 5e3; // time limits
-  int maxiter = 5e3;      // maximum iterations
+  int dim;           // number of dimensions
+  int s;             // tensor size in each dimension
+  int R;             // decomposition rank
+  double pp_res_tol; // pp restart tolerance
+  double lambda_;    // regularization param
+  char *filename;    // output csv filename
+  int maxiter = 5e3; // maximum iterations
   int resprint = 1;
   char *tensorfile;
 
@@ -56,14 +50,6 @@ int main(int argc, char **argv) {
   } else {
     pp = 0;
   }
-  if (getCmdOption(input_str, input_str + in_num, "-update_percentage_pp")) {
-    update_percentage_pp = atof(
-        getCmdOption(input_str, input_str + in_num, "-update_percentage_pp"));
-    if (update_percentage_pp < 0 || update_percentage_pp > 1)
-      update_percentage_pp = 1.0;
-  } else {
-    update_percentage_pp = 1.0;
-  }
   if (getCmdOption(input_str, input_str + in_num, "-dim")) {
     dim = atoi(getCmdOption(input_str, input_str + in_num, "-dim"));
     if (dim < 0)
@@ -74,16 +60,9 @@ int main(int argc, char **argv) {
   if (getCmdOption(input_str, input_str + in_num, "-maxiter")) {
     maxiter = atoi(getCmdOption(input_str, input_str + in_num, "-maxiter"));
     if (maxiter < 0)
-      maxiter = 5e3;
+      maxiter = 2000;
   } else {
-    maxiter = 5e3;
-  }
-  if (getCmdOption(input_str, input_str + in_num, "-timelimit")) {
-    timelimit = atof(getCmdOption(input_str, input_str + in_num, "-timelimit"));
-    if (timelimit < 0)
-      timelimit = 5e3;
-  } else {
-    timelimit = 5e3;
+    maxiter = 2000;
   }
   if (getCmdOption(input_str, input_str + in_num, "-size")) {
     s = atoi(getCmdOption(input_str, input_str + in_num, "-size"));
@@ -104,13 +83,6 @@ int main(int argc, char **argv) {
   } else {
     resprint = 10;
   }
-  if (getCmdOption(input_str, input_str + in_num, "-tol")) {
-    tol = atof(getCmdOption(input_str, input_str + in_num, "-tol"));
-    if (tol < 0 || tol > 1)
-      tol = 1e-10;
-  } else {
-    tol = 1e-10;
-  }
   if (getCmdOption(input_str, input_str + in_num, "-pp_res_tol")) {
     pp_res_tol =
         atof(getCmdOption(input_str, input_str + in_num, "-pp_res_tol"));
@@ -125,13 +97,6 @@ int main(int argc, char **argv) {
       lambda_ = 0.;
   } else {
     lambda_ = 0.;
-  }
-  if (getCmdOption(input_str, input_str + in_num, "-magni")) {
-    magni = atof(getCmdOption(input_str, input_str + in_num, "-magni"));
-    if (magni < 0)
-      magni = 1.;
-  } else {
-    magni = 1.;
   }
   if (getCmdOption(input_str, input_str + in_num, "-filename")) {
     filename = getCmdOption(input_str, input_str + in_num, "-filename");
@@ -152,14 +117,10 @@ int main(int argc, char **argv) {
     if (dw.rank == 0) {
       cout << "  tensor=  " << tensor << "  pp=  " << pp << endl;
       cout << "  dim=  " << dim << "  size=  " << s << "  rank=  " << R << endl;
-      cout << "  tolerance=  " << tol << "  restarttol=  " << pp_res_tol
-           << endl;
-      cout << "  lambda=  " << lambda_ << "  magnitude=  " << magni
-           << "  filename=  " << filename << endl;
-      cout << "  timelimit=  " << timelimit << "  maxiter=  " << maxiter
-           << "  resprint=  " << resprint << endl;
-      cout << "  tensorfile=  " << tensorfile
-           << "  update_percentage_pp=  " << update_percentage_pp << endl;
+      cout << "  restarttol=  " << pp_res_tol << endl;
+      cout << "  lambda=  " << lambda_ << "  filename=  " << filename << endl;
+      cout << "  maxiter=  " << maxiter << "  resprint=  " << resprint << endl;
+      cout << "  tensorfile=  " << tensorfile << endl;
     }
 
     // initialization of tensor
@@ -219,18 +180,9 @@ int main(int argc, char **argv) {
       cout << "Vnorm= " << Vnorm << endl;
     ofstream Plot_File(filename);
     Matrix<> *W = new Matrix<>[V.order]; // N matrices V will be decomposed into
-    Matrix<> *grad_W = new Matrix<>[V.order]; // gradients in N dimensions
     for (int i = 0; i < V.order; i++) {
       W[i] = Matrix<>(V.lens[i], R, dw);
-      grad_W[i] = Matrix<>(V.lens[i], R, dw);
       W[i].fill_random(0, 1);
-      grad_W[i].fill_random(0, 1);
-    }
-    // construct F matrices (correction terms, F[]=0 initially)
-    Matrix<> *F = new Matrix<>[V.order];
-    for (int i = 0; i < V.order; i++) {
-      F[i] = Matrix<>(V.lens[i], R, dw);
-      F[i]["ij"] = 0.;
     }
 
     // V.write_dense_to_file (fh);
@@ -259,19 +211,17 @@ int main(int argc, char **argv) {
     // bench_contraction(s, 5, "ija", "ia", "ja", dw);
     // bench_contraction_no_dist(s, 5, "ija", "ia", "ja", dw);
 
+    cout.precision(13);
+    if (dw.rank == 0) {
+      Plot_File << "[dim],[iter],[fitness],[pp_update],[diffV],[dtime]"
+                << "\n"; // Headings for file
+    }
+
     if (pp == 0) {
-      alscp_dt3(V, W, grad_W, tol * Vnorm, timelimit, maxiter, lambda_,
-                Plot_File, resprint, false, dw);
-    } // else if (pp == 1) {
-    //   alsCP_PP(V, W, grad_W, F, tol * Vnorm, pp_res_tol, timelimit,
-    //   maxiter,
-    //            lambda_, magni, Plot_File, resprint, false, dw);
-    // } else if (pp == 2) {
-    //   alsCP_PP_partupdate(V, W, grad_W, F, tol * Vnorm, pp_res_tol,
-    //   timelimit,
-    //                       maxiter, lambda_, magni, update_percentage_pp,
-    //                       Plot_File, resprint, false, dw);
-    // }
+      alscp_dt3(V, W, maxiter, lambda_, Plot_File, resprint, dw);
+    } else if (pp == 1) {
+      alscp_pp3(V, W, maxiter, pp_res_tol, lambda_, Plot_File, resprint, dw);
+    }
 
     tALS.end();
 
@@ -280,8 +230,6 @@ int main(int argc, char **argv) {
     }
 
     delete[] W;
-    delete[] grad_W;
-    delete[] F;
 
     if (tensor[0] == 'o') {
       MPI_File_close(&fh);
