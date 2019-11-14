@@ -144,10 +144,7 @@ int main(int argc, char **argv) {
         tensorfile = "bin/scf-3.bin";
         MPI_File_open(MPI_COMM_WORLD, tensorfile,
                       MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh);
-        int lens[dim];
-        lens[0] = 339;
-        lens[1] = 21;
-        lens[2] = 21;
+        int lens[3] = {21, 21, 339};
         V = Tensor<>(dim, lens, dw);
         if (dw.rank == 0)
           cout << "Read the tensor from file scf-3.bin ...... " << endl;
@@ -161,10 +158,7 @@ int main(int argc, char **argv) {
         tensorfile = "bin/scf-40.bin";
         MPI_File_open(MPI_COMM_WORLD, tensorfile,
                       MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh);
-        int lens[dim];
-        lens[0] = 4520;
-        lens[1] = 280;
-        lens[2] = 280;
+        int lens[3] = {280, 280, 4520};
         V = Tensor<>(dim, lens, dw);
         if (dw.rank == 0)
           cout << "Read the tensor from file scf-40.bin ...... " << endl;
