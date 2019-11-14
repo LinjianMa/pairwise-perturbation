@@ -71,7 +71,7 @@ bool alscp_dt3(Tensor<> &V, Matrix<> *W, int maxiter, double lambda,
 
     S["ij"] = BB["ij"] * CC["ij"];
     S["ij"] += regul["ij"];
-    SVD_solve(T_BC, W[0], S);
+    cholesky_solve(T_BC, W[0], S);
 
     // W[1]
     T_AC["j*"] = T_C["ij*"] * W[0]["i*"];
@@ -80,7 +80,7 @@ bool alscp_dt3(Tensor<> &V, Matrix<> *W, int maxiter, double lambda,
     S["ij"] = AA["ij"] * CC["ij"];
     S["ij"] += regul["ij"];
 
-    SVD_solve(T_AC, W[1], S);
+    cholesky_solve(T_AC, W[1], S);
 
     // W[2]
     T_A["jk*"] = V["ijk"] * W[0]["i*"];
@@ -90,7 +90,7 @@ bool alscp_dt3(Tensor<> &V, Matrix<> *W, int maxiter, double lambda,
 
     S["ij"] = AA["ij"] * BB["ij"];
     S["ij"] += regul["ij"];
-    SVD_solve(T_AB, W[2], S);
+    cholesky_solve(T_AB, W[2], S);
     // print .
     if (iter % 10 == 0 && dw.rank == 0)
       printf(".");
@@ -180,7 +180,7 @@ void alscp_dt3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, double tol_init,
 
     S["ij"] = BB["ij"] * CC["ij"];
     S["ij"] += regul["ij"];
-    SVD_solve(T_BC, W[0], S);
+    cholesky_solve(T_BC, W[0], S);
 
     // W[1]
     T_AC["j*"] = T_C["ij*"] * W[0]["i*"];
@@ -189,7 +189,7 @@ void alscp_dt3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, double tol_init,
     S["ij"] = AA["ij"] * CC["ij"];
     S["ij"] += regul["ij"];
 
-    SVD_solve(T_AC, W[1], S);
+    cholesky_solve(T_AC, W[1], S);
 
     // W[2]
     T_A["jk*"] = V["ijk"] * W[0]["i*"];
@@ -199,7 +199,7 @@ void alscp_dt3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, double tol_init,
 
     S["ij"] = AA["ij"] * BB["ij"];
     S["ij"] += regul["ij"];
-    SVD_solve(T_AB, W[2], S);
+    cholesky_solve(T_AB, W[2], S);
     double t2 = MPI_Wtime();
     if (dw.rank == 0) {
       printf("dt iteration took %lf seconds\n", t2 - t1);
@@ -328,7 +328,7 @@ void alscp_pp3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, double tol_init,
 
     S["ij"] = BB["ij"] * CC["ij"];
     S["ij"] += regul["ij"];
-    SVD_solve(T_BC, W[0], S);
+    cholesky_solve(T_BC, W[0], S);
 
     // W[1]
     T_AC["j*"] =
@@ -338,7 +338,7 @@ void alscp_pp3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, double tol_init,
     S["ij"] = AA["ij"] * CC["ij"];
     S["ij"] += regul["ij"];
 
-    SVD_solve(T_AC, W[1], S);
+    cholesky_solve(T_AC, W[1], S);
 
     // W[2]
     T_AB["k*"] =
@@ -347,7 +347,7 @@ void alscp_pp3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, double tol_init,
 
     S["ij"] = AA["ij"] * BB["ij"];
     S["ij"] += regul["ij"];
-    SVD_solve(T_AB, W[2], S);
+    cholesky_solve(T_AB, W[2], S);
 
     double t2 = MPI_Wtime();
 
