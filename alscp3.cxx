@@ -329,6 +329,7 @@ void alscp_pp3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, double tol_init,
     S["ij"] = BB["ij"] * CC["ij"];
     S["ij"] += regul["ij"];
     cholesky_solve(T_BC, W[0], S);
+    dW[0]["ij"] = W[0]["ij"] - W_prev[0]["ij"];
 
     // W[1]
     T_AC["j*"] =
@@ -337,8 +338,8 @@ void alscp_pp3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, double tol_init,
 
     S["ij"] = AA["ij"] * CC["ij"];
     S["ij"] += regul["ij"];
-
     cholesky_solve(T_AC, W[1], S);
+    dW[1]["ij"] = W[1]["ij"] - W_prev[1]["ij"];
 
     // W[2]
     T_AB["k*"] =
@@ -348,6 +349,7 @@ void alscp_pp3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, double tol_init,
     S["ij"] = AA["ij"] * BB["ij"];
     S["ij"] += regul["ij"];
     cholesky_solve(T_AB, W[2], S);
+    dW[2]["ij"] = W[2]["ij"] - W_prev[2]["ij"];
 
     // double t2 = MPI_Wtime();
 
@@ -358,7 +360,6 @@ void alscp_pp3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, double tol_init,
     // work as the preconditioning of pairwise perturbation
     int num_dw_break = 0;
     for (int i = 0; i < V.order; i++) {
-      dW[i]["ij"] = W[i]["ij"] - W_prev[i]["ij"];
       double norm_dW = dW[i].norm2();
       double norm_W = W[i].norm2();
       if (abs(norm_dW / norm_W) > tol_init) {
