@@ -20,6 +20,7 @@ int main(int argc, char **argv) {
   char *tensor; // which tensor    p / p2 / c / r / r2 / o /
   int pp;       // 0 Dimention tree 1 pairwise perturbation 2 pp with <1
   int partition;
+  int bench;
   /*
   r : decomposition of tensor made by random matrices
   */
@@ -50,6 +51,13 @@ int main(int argc, char **argv) {
       partition = 1;
   } else {
     partition = 0;
+  }
+  if (getCmdOption(input_str, input_str + in_num, "-bench")) {
+    bench = atoi(getCmdOption(input_str, input_str + in_num, "-bench"));
+    if (bench != 0)
+      bench = 1;
+  } else {
+    bench = 0;
   }
   if (getCmdOption(input_str, input_str + in_num, "-pp")) {
     pp = atoi(getCmdOption(input_str, input_str + in_num, "-pp"));
@@ -218,11 +226,14 @@ int main(int argc, char **argv) {
       Plot_File << "[dim],[iter],[fitness],[pp_update],[diffV],[dtime]"
                 << "\n"; // Headings for file
     }
-
-    if (pp == 0) {
-      alscp_dt3(V, W, maxiter, lambda_, Plot_File, resprint, partition, dw);
-    } else if (pp == 1) {
-      alscp_pp3(V, W, maxiter, pp_res_tol, lambda_, Plot_File, resprint, partition, dw);
+    if (bench == 1) {
+        alscp_pp3_bench(V, W, maxiter, pp_res_tol, lambda_, Plot_File, resprint, partition, dw);
+    } else {
+      if (pp == 0) {
+        alscp_dt3(V, W, maxiter, lambda_, Plot_File, resprint, partition, dw);
+      } else if (pp == 1) {
+        alscp_pp3(V, W, maxiter, pp_res_tol, lambda_, Plot_File, resprint, partition, dw);
+      }
     }
 
     tALS.end();

@@ -19,4 +19,7 @@ void alscp_pp3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, double tol_init,
                    int maxiter, double &st_time, double lambda,
                    ofstream &Plot_File, int &iter, int resprint, int partition, World &dw);
 
+bool alscp_pp3_bench(Tensor<> &V, Matrix<> *W, int maxiter, double pp_res_tol,
+               double lambda, ofstream &Plot_File, int resprint, int partition, World &dw);
+
 #endif
