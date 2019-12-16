@@ -2,7 +2,7 @@
 #include "common.h"
 
 bool alscp_dt3(Tensor<> &V, Matrix<> *W, int maxiter, double lambda,
-               ofstream &Plot_File, int resprint, World &dw) {
+               ofstream &Plot_File, int resprint, int partition, World &dw) {
 
   double Vnorm = V.norm2();
   int rank = W[0].ncol;
@@ -21,13 +21,16 @@ bool alscp_dt3(Tensor<> &V, Matrix<> *W, int maxiter, double lambda,
 
   int order_Tc[3] = {dim1, dim2, rank};
   int order_Ta[3] = {dim2, dim3, rank};
+
   Tensor<> T_C = Tensor<>(3, order_Tc, dw);
   Tensor<> T_A = Tensor<>(3, order_Ta, dw);
-  //int np = dw.np;
-  //int syms[3] = {NS, NS, NS};
-  //CTF::Partition p(1, &np);
-  //Tensor<> T_C = Tensor<>(3, order_Tc, syms, dw, "ija", p["a"]);
-  //Tensor<> T_A = Tensor<>(3, order_Ta, syms, dw, "ija", p["a"]);
+  if (partition != 0) {
+    int np = dw.np;
+    int syms[3] = {NS, NS, NS};
+    CTF::Partition p(1, &np);
+    T_C = Tensor<>(3, order_Tc, syms, dw, "ija", p["a"]);
+    T_A = Tensor<>(3, order_Ta, syms, dw, "ija", p["a"]);
+  }
 
   Matrix<> T_BC = Matrix<>(V.lens[0], rank);
   Matrix<> T_AC = Matrix<>(V.lens[1], rank);
@@ -247,7 +250,7 @@ void initialize_tree(Tensor<> &V, Matrix<> *W, Tensor<> &T_A0, Tensor<> &T_B0,
 
 void alscp_pp3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, double tol_init,
                    int maxiter, double &st_time, double lambda,
-                   ofstream &Plot_File, int &iter, int resprint, World &dw) {
+                   ofstream &Plot_File, int &iter, int resprint, int partition, World &dw) {
   Matrix<> *W_prev = new Matrix<>[V.order];
   for (int i = 0; i < V.order; i++) {
     W_prev[i] = Matrix<>(W[i].nrow, W[i].ncol);
@@ -277,14 +280,18 @@ void alscp_pp3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, double tol_init,
   int order_Tc[3] = {dim1, dim2, rank};
   int order_Ta[3] = {dim2, dim3, rank};
   int order_Tb[3] = {dim1, dim3, rank};
-  // Tensor<> T_C = Tensor<>(3, order_Tc, dw);
-  // Tensor<> T_A = Tensor<>(3, order_Ta, dw);
-  int np = dw.np;
-  int syms[3] = {NS, NS, NS};
-  CTF::Partition p(1, &np);
-  Tensor<> T_A0 = Tensor<>(3, order_Ta, syms, dw, "ija", p["a"]);
-  Tensor<> T_B0 = Tensor<>(3, order_Tb, syms, dw, "ija", p["a"]);
-  Tensor<> T_C0 = Tensor<>(3, order_Tc, syms, dw, "ija", p["a"]);
+
+  Tensor<> T_A0 = Tensor<>(3, order_Ta, dw);
+  Tensor<> T_B0 = Tensor<>(3, order_Tb, dw);
+  Tensor<> T_C0 = Tensor<>(3, order_Tc, dw);
+  if (partition != 0) {
+    int np = dw.np;
+    int syms[3] = {NS, NS, NS};
+    CTF::Partition p(1, &np);
+    T_A0 = Tensor<>(3, order_Ta, syms, dw, "ija", p["a"]);
+    T_B0 = Tensor<>(3, order_Tb, syms, dw, "ija", p["a"]);
+    T_C0 = Tensor<>(3, order_Tc, syms, dw, "ija", p["a"]);
+  }
 
   Matrix<> T_B0C0 = Matrix<>(dim1, rank);
   Matrix<> T_A0C0 = Matrix<>(dim2, rank);
@@ -379,7 +386,7 @@ void alscp_pp3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, double tol_init,
 }
 
 bool alscp_pp3(Tensor<> &V, Matrix<> *W, int maxiter, double pp_res_tol,
-               double lambda, ofstream &Plot_File, int resprint, World &dw) {
+               double lambda, ofstream &Plot_File, int resprint, int partition, World &dw) {
 
   double st_time = MPI_Wtime();
   int iter = 0;
@@ -405,7 +412,7 @@ bool alscp_pp3(Tensor<> &V, Matrix<> *W, int maxiter, double pp_res_tol,
     }
 
     alscp_pp3_sub(V, W, dW, pp_res_tol, maxiter, st_time, lambda, Plot_File,
-                  iter, resprint, dw);
+                  iter, resprint, partition, dw);
   }
   if (dw.rank == 0) {
     printf("tf took %lf seconds\n", MPI_Wtime() - st_time);
