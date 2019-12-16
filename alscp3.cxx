@@ -21,13 +21,13 @@ bool alscp_dt3(Tensor<> &V, Matrix<> *W, int maxiter, double lambda,
 
   int order_Tc[3] = {dim1, dim2, rank};
   int order_Ta[3] = {dim2, dim3, rank};
-  // Tensor<> T_C = Tensor<>(3, order_Tc, dw);
-  // Tensor<> T_A = Tensor<>(3, order_Ta, dw);
-  int np = dw.np;
-  int syms[3] = {NS, NS, NS};
-  CTF::Partition p(1, &np);
-  Tensor<> T_C = Tensor<>(3, order_Tc, syms, dw, "ija", p["a"]);
-  Tensor<> T_A = Tensor<>(3, order_Ta, syms, dw, "ija", p["a"]);
+  Tensor<> T_C = Tensor<>(3, order_Tc, dw);
+  Tensor<> T_A = Tensor<>(3, order_Ta, dw);
+  //int np = dw.np;
+  //int syms[3] = {NS, NS, NS};
+  //CTF::Partition p(1, &np);
+  //Tensor<> T_C = Tensor<>(3, order_Tc, syms, dw, "ija", p["a"]);
+  //Tensor<> T_A = Tensor<>(3, order_Ta, syms, dw, "ija", p["a"]);
 
   Matrix<> T_BC = Matrix<>(V.lens[0], rank);
   Matrix<> T_AC = Matrix<>(V.lens[1], rank);
@@ -108,7 +108,7 @@ bool alscp_dt3(Tensor<> &V, Matrix<> *W, int maxiter, double lambda,
 void alscp_dt3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, double tol_init,
                    int maxiter, double &st_time, double lambda,
                    ofstream &Plot_File, int &iter, int resprint, World &dw) {
-  Matrix<> W_prev[V.order];
+  Matrix<> *W_prev = new Matrix<>[V.order];
   for (int i = 0; i < V.order; i++) {
     W_prev[i] = Matrix<>(W[i].nrow, W[i].ncol);
     W_prev[i]["ij"] = W[i]["ij"];
@@ -131,13 +131,13 @@ void alscp_dt3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, double tol_init,
 
   int order_Tc[3] = {dim1, dim2, rank};
   int order_Ta[3] = {dim2, dim3, rank};
-  // Tensor<> T_C = Tensor<>(3, order_Tc, dw);
-  // Tensor<> T_A = Tensor<>(3, order_Ta, dw);
-  int np = dw.np;
-  int syms[3] = {NS, NS, NS};
-  CTF::Partition p(1, &np);
-  Tensor<> T_C = Tensor<>(3, order_Tc, syms, dw, "ija", p["a"]);
-  Tensor<> T_A = Tensor<>(3, order_Ta, syms, dw, "ija", p["a"]);
+  Tensor<> T_C = Tensor<>(3, order_Tc, dw);
+  Tensor<> T_A = Tensor<>(3, order_Ta, dw);
+  //int np = dw.np;
+  //int syms[3] = {NS, NS, NS};
+  //CTF::Partition p(1, &np);
+  //Tensor<> T_C = Tensor<>(3, order_Tc, syms, dw, "ija", p["a"]);
+  //Tensor<> T_A = Tensor<>(3, order_Ta, syms, dw, "ija", p["a"]);
 
   Matrix<> T_BC = Matrix<>(V.lens[0], rank);
   Matrix<> T_AC = Matrix<>(V.lens[1], rank);
@@ -217,6 +217,7 @@ void alscp_dt3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, double tol_init,
     }
     if (num_dw_break == V.order) {
       iter++;
+      delete []W_prev;
       return;
     }
     // print .
@@ -247,7 +248,7 @@ void initialize_tree(Tensor<> &V, Matrix<> *W, Tensor<> &T_A0, Tensor<> &T_B0,
 void alscp_pp3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, double tol_init,
                    int maxiter, double &st_time, double lambda,
                    ofstream &Plot_File, int &iter, int resprint, World &dw) {
-  Matrix<> W_prev[V.order];
+  Matrix<> *W_prev = new Matrix<>[V.order];
   for (int i = 0; i < V.order; i++) {
     W_prev[i] = Matrix<>(W[i].nrow, W[i].ncol);
     W_prev[i]["ij"] = W[i]["ij"];
@@ -368,6 +369,7 @@ void alscp_pp3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, double tol_init,
     }
     if (num_dw_break > 0) {
       iter++;
+      delete []W_prev;
       return;
     }
     // print .

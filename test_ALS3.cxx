@@ -141,7 +141,7 @@ int main(int argc, char **argv) {
     } else if (tensor[0] == 's') {
       // s1 : 3 water molecules, 339 x 21 x 21
       if (strlen(tensor) > 1 && tensor[1] == '1') {
-        tensorfile = "bin/scf-3.bin";
+        tensorfile = "../bin/scf-3.bin";
         MPI_File_open(MPI_COMM_WORLD, tensorfile,
                       MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh);
         int lens[3] = {21, 21, 339};
@@ -155,7 +155,7 @@ int main(int argc, char **argv) {
       }
       // s1 : 3 water molecules, 339 x 21 x 21
       else if (strlen(tensor) > 1 && tensor[1] == '2') {
-        tensorfile = "bin/scf-40.bin";
+        tensorfile = "../bin/scf-40.bin";
         MPI_File_open(MPI_COMM_WORLD, tensorfile,
                       MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh);
         int lens[3] = {280, 280, 4520};
