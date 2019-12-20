@@ -159,7 +159,7 @@ void alscp_dt3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, double tol_init,
 
   for (; iter <= maxiter; iter++) {
     // print the gradient norm
-    if (iter % resprint == 0 || iter == maxiter) {
+    if ((iter % resprint == 0 || iter == maxiter) && (maxiter != 0)) {
       double st_time1 = MPI_Wtime();
       // diffnorm
       Tensor<> V_build;
@@ -503,14 +503,14 @@ bool alscp_pp3_bench(Tensor<> &V, Matrix<> *W, int maxiter, double pp_res_tol,
       printf("DT starts from %d\n", iter);
     }
 
-    alscp_dt3_sub(V, W, dW, pp_res_tol, 1, st_time, lambda, Plot_File, iter,
+    alscp_dt3_sub(V, W, dW, pp_res_tol, 0, st_time, lambda, Plot_File, iter,
                   resprint, dw);
 
     if (dw.rank == 0) {
       printf("pairwise perturbation starts from %d\n", iter);
     }
-
-    alscp_pp3_sub(V, W, dW, pp_res_tol, 1, st_time, lambda, Plot_File, iter,
+    iter = 0;
+    alscp_pp3_sub(V, W, dW, pp_res_tol, 0, st_time, lambda, Plot_File, iter,
                   resprint, partition, dw);
   }
   if (dw.rank == 0) {
