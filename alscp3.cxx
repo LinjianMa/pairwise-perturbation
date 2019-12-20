@@ -248,23 +248,50 @@ void initialize_tree(Tensor<> &V, Matrix<> *W, Tensor<> &T_A0, Tensor<> &T_B0,
   inittree.begin();
   // double t1 = MPI_Wtime();
 
-  if (partition == 2) {
-    if (dw.rank == 0) {
-      cout << "partition is 2" << endl;
-    }
-    Tensor<> T_A0_copy = Tensor<>(3, order_Ta, dw);
-    Tensor<> T_B0_copy = Tensor<>(3, order_Tb, dw);
-    Tensor<> T_C0_copy = Tensor<>(3, order_Tc, dw);
-    T_A0_copy["jka"] = V["ijk"] * W[0]["ia"];
-    T_B0_copy["ika"] = V["ijk"] * W[1]["ja"];
-    T_C0_copy["ija"] = V["ijk"] * W[2]["ka"];
-    T_A0["jka"] = T_A0_copy["jka"];
-    T_B0["ika"] = T_B0_copy["ika"];
-    T_C0["ija"] = T_C0_copy["ija"];
-  } else {
+  if (partition == 0) {
+    T_A0 = Tensor<>(3, order_Ta, dw);
+    T_B0 = Tensor<>(3, order_Tb, dw);
+    T_C0 = Tensor<>(3, order_Tc, dw);
     T_A0["jka"] = V["ijk"] * W[0]["ia"];
     T_B0["ika"] = V["ijk"] * W[1]["ja"];
     T_C0["ija"] = V["ijk"] * W[2]["ka"];
+  }
+  else if (partition == 1) {
+    if (dw.rank == 0) {
+      cout << "partition is 1" << endl;
+    }
+    int np = dw.np;
+    int syms[3] = {NS, NS, NS};
+    CTF::Partition p(1, &np);
+    T_A0 = Tensor<>(3, order_Ta, syms, dw, "ija", p["a"]);
+    T_B0 = Tensor<>(3, order_Tb, syms, dw, "ija", p["a"]);
+    T_C0 = Tensor<>(3, order_Tc, syms, dw, "ija", p["a"]);
+    T_A0["jka"] = V["ijk"] * W[0]["ia"];
+    T_B0["ika"] = V["ijk"] * W[1]["ja"];
+    T_C0["ija"] = V["ijk"] * W[2]["ka"];
+  }
+  else if (partition == 2) {
+    if (dw.rank == 0) {
+      cout << "partition is 2" << endl;
+    }
+    int np = dw.np;
+    int syms[3] = {NS, NS, NS};
+    CTF::Partition p(1, &np);
+    T_A0 = Tensor<>(3, order_Ta, syms, dw, "ija", p["a"]);
+    T_B0 = Tensor<>(3, order_Tb, syms, dw, "ija", p["a"]);
+    T_C0 = Tensor<>(3, order_Tc, syms, dw, "ija", p["a"]);
+    Tensor<> T_copy = Tensor<>(3, order_Ta, dw);
+
+    T_copy["jka"] = V["ijk"] * W[0]["ia"];
+    T_A0["jka"] = T_copy["jka"];
+
+    T_copy = Tensor<>(3, order_Tb, dw);
+    T_copy["ika"] = V["ijk"] * W[1]["ja"];
+    T_B0["ika"] = T_copy["ika"];
+
+    T_copy = Tensor<>(3, order_Tc, dw);
+    T_copy["ija"] = V["ijk"] * W[2]["ka"];
+    T_C0["ija"] = T_copy["ija"];
   }
 
   T_A0B0["ka"] = T_A0["jka"] * W[1]["ja"];
@@ -315,20 +342,9 @@ void alscp_pp3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, double tol_init,
   int order_Ta[3] = {dim2, dim3, rank};
   int order_Tb[3] = {dim1, dim3, rank};
 
-  Tensor<> T_A0 = Tensor<>(3, order_Ta, dw);
-  Tensor<> T_B0 = Tensor<>(3, order_Tb, dw);
-  Tensor<> T_C0 = Tensor<>(3, order_Tc, dw);
-  if (partition != 0) {
-    if (dw.rank == 0) {
-      cout << "partition is 1" << endl;
-    }
-    int np = dw.np;
-    int syms[3] = {NS, NS, NS};
-    CTF::Partition p(1, &np);
-    T_A0 = Tensor<>(3, order_Ta, syms, dw, "ija", p["a"]);
-    T_B0 = Tensor<>(3, order_Tb, syms, dw, "ija", p["a"]);
-    T_C0 = Tensor<>(3, order_Tc, syms, dw, "ija", p["a"]);
-  }
+  Tensor<> T_A0;
+  Tensor<> T_B0;
+  Tensor<> T_C0;
 
   Matrix<> T_B0C0 = Matrix<>(dim1, rank);
   Matrix<> T_A0C0 = Matrix<>(dim2, rank);
