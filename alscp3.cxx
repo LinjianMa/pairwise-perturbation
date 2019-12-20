@@ -280,9 +280,19 @@ void initialize_tree(Tensor<> &V, Matrix<> *W, Tensor<> &T_A0, Tensor<> &T_B0,
     T_A0 = Tensor<>(3, order_Ta, syms, dw, "ija", p["a"]);
     T_B0 = Tensor<>(3, order_Tb, syms, dw, "ija", p["a"]);
     T_C0 = Tensor<>(3, order_Tc, syms, dw, "ija", p["a"]);
+
     Tensor<> T_copy = Tensor<>(3, order_Ta, dw);
 
+    double t1 = MPI_Wtime();
+
     T_copy["jka"] = V["ijk"] * W[0]["ia"];
+
+    double t2 = MPI_Wtime();
+
+    if (dw.rank == 0) {
+      printf("pp initialization first step took %lf seconds\n", t2 - t1);
+    }
+
     T_A0["jka"] = T_copy["jka"];
 
     T_copy = Tensor<>(3, order_Tb, dw);
@@ -503,7 +513,7 @@ bool alscp_pp3_bench(Tensor<> &V, Matrix<> *W, int maxiter, double pp_res_tol,
       printf("DT starts from %d\n", iter);
     }
 
-    alscp_dt3_sub(V, W, dW, pp_res_tol, 0, st_time, lambda, Plot_File, iter,
+    alscp_dt3_sub(V, W, dW, pp_res_tol, 3, st_time, lambda, Plot_File, iter,
                   resprint, dw);
 
     if (dw.rank == 0) {
