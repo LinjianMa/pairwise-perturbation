@@ -114,7 +114,7 @@ bool alscp_dt3(Tensor<> &V, Matrix<> *W, int maxiter, double lambda,
     return true;
 }
 
-void alscp_dt3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, double tol_init,
+void alscp_dt3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, Tensor<> &T_A, double tol_init,
                    int maxiter, double &st_time, double lambda,
                    ofstream &Plot_File, int &iter, int resprint, World &dw) {
   Timer_epoch tALS("alscp_dt3");
@@ -144,7 +144,7 @@ void alscp_dt3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, double tol_init,
   int order_Tc[3] = {dim1, dim2, rank};
   int order_Ta[3] = {dim2, dim3, rank};
   Tensor<> T_C = Tensor<>(3, order_Tc, dw);
-  Tensor<> T_A = Tensor<>(3, order_Ta, dw);
+  T_A = Tensor<>(3, order_Ta, dw);
   // int np = dw.np;
   // int syms[3] = {NS, NS, NS};
   // CTF::Partition p(1, &np);
@@ -240,7 +240,7 @@ void alscp_dt3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, double tol_init,
   tALS.end();
 }
 
-void initialize_tree(Tensor<> &V, Matrix<> *W, Tensor<> &T_A0, Tensor<> &T_B0,
+void initialize_tree(Tensor<> &V, Matrix<> *W, Tensor<> &T_copy, Tensor<> &T_A0, Tensor<> &T_B0,
                      Tensor<> &T_C0, Matrix<> &T_A0B0, Matrix<> &T_B0C0,
                      Matrix<> &T_A0C0, int *order_Ta, int *order_Tb,
                      int *order_Tc, int partition, World &dw) {
@@ -281,17 +281,17 @@ void initialize_tree(Tensor<> &V, Matrix<> *W, Tensor<> &T_A0, Tensor<> &T_B0,
     T_B0 = Tensor<>(3, order_Tb, syms, dw, "ija", p["a"]);
     T_C0 = Tensor<>(3, order_Tc, syms, dw, "ija", p["a"]);
 
-    Tensor<> T_copy = Tensor<>(3, order_Ta, dw);
+    // Tensor<> T_copy = Tensor<>(3, order_Ta, dw);
 
-    double t1 = MPI_Wtime();
+    // double t1 = MPI_Wtime();
 
-    T_copy["jka"] = V["ijk"] * W[0]["ia"];
+    // T_copy["jka"] = V["ijk"] * W[0]["ia"];
 
-    double t2 = MPI_Wtime();
+    // double t2 = MPI_Wtime();
 
-    if (dw.rank == 0) {
-      printf("pp initialization first step took %lf seconds\n", t2 - t1);
-    }
+    // if (dw.rank == 0) {
+    //   printf("pp initialization first step took %lf seconds\n", t2 - t1);
+    // }
 
     T_A0["jka"] = T_copy["jka"];
 
@@ -315,7 +315,7 @@ void initialize_tree(Tensor<> &V, Matrix<> *W, Tensor<> &T_A0, Tensor<> &T_B0,
   inittree.end();
 }
 
-void alscp_pp3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, double tol_init,
+void alscp_pp3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, Tensor<> &T_copy, double tol_init,
                    int maxiter, double &st_time, double lambda,
                    ofstream &Plot_File, int &iter, int resprint, int partition,
                    World &dw) {
@@ -360,7 +360,7 @@ void alscp_pp3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, double tol_init,
   Matrix<> T_A0C0 = Matrix<>(dim2, rank);
   Matrix<> T_A0B0 = Matrix<>(dim3, rank);
 
-  initialize_tree(V, W, T_A0, T_B0, T_C0, T_A0B0, T_B0C0, T_A0C0, order_Ta,
+  initialize_tree(V, W, T_copy, T_A0, T_B0, T_C0, T_A0B0, T_B0C0, T_A0C0, order_Ta,
                   order_Tb, order_Tc, partition, dw);
 
   double diffnorm_V = 1000;
@@ -458,6 +458,7 @@ bool alscp_pp3(Tensor<> &V, Matrix<> *W, int maxiter, double pp_res_tol,
   double st_time = MPI_Wtime();
   int iter = 0;
   double diffnorm_V = 1.;
+  Tensor<> T_A0;
   // initialize dW
   Matrix<> *dW = new Matrix<>[V.order];
   for (int j = 0; j < V.order; j++) {
@@ -471,14 +472,14 @@ bool alscp_pp3(Tensor<> &V, Matrix<> *W, int maxiter, double pp_res_tol,
       printf("DT starts from %d\n", iter);
     }
 
-    alscp_dt3_sub(V, W, dW, pp_res_tol, maxiter, st_time, lambda, Plot_File,
+    alscp_dt3_sub(V, W, dW, T_A0, pp_res_tol, maxiter, st_time, lambda, Plot_File,
                   iter, resprint, dw);
 
     if (dw.rank == 0) {
       printf("pairwise perturbation starts from %d\n", iter);
     }
 
-    alscp_pp3_sub(V, W, dW, pp_res_tol, maxiter, st_time, lambda, Plot_File,
+    alscp_pp3_sub(V, W, dW, T_A0, pp_res_tol, maxiter, st_time, lambda, Plot_File,
                   iter, resprint, partition, dw);
   }
   if (dw.rank == 0) {
@@ -499,6 +500,7 @@ bool alscp_pp3_bench(Tensor<> &V, Matrix<> *W, int maxiter, double pp_res_tol,
 
   double st_time = MPI_Wtime();
   double diffnorm_V = 1.;
+  Tensor<> T_A0;
   // initialize dW
   Matrix<> *dW = new Matrix<>[V.order];
   for (int j = 0; j < V.order; j++) {
@@ -513,14 +515,14 @@ bool alscp_pp3_bench(Tensor<> &V, Matrix<> *W, int maxiter, double pp_res_tol,
       printf("DT starts from %d\n", iter);
     }
 
-    alscp_dt3_sub(V, W, dW, pp_res_tol, 3, st_time, lambda, Plot_File, iter,
+    alscp_dt3_sub(V, W, dW, T_A0, pp_res_tol, 3, st_time, lambda, Plot_File, iter,
                   resprint, dw);
 
     if (dw.rank == 0) {
       printf("pairwise perturbation starts from %d\n", iter);
     }
     iter = 0;
-    alscp_pp3_sub(V, W, dW, pp_res_tol, 0, st_time, lambda, Plot_File, iter,
+    alscp_pp3_sub(V, W, dW, T_A0, pp_res_tol, 0, st_time, lambda, Plot_File, iter,
                   resprint, partition, dw);
   }
   if (dw.rank == 0) {
