@@ -182,7 +182,7 @@ void alscp_dt3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, Tensor<> &T_A, double
         }
       }
     }
-    double t1 = MPI_Wtime();
+    //double t1 = MPI_Wtime();
     // W[0]
     T_C["ij*"] = V["ijk"] * W[2]["k*"];
     T_BC["i*"] = T_C["ij*"] * W[1]["j*"];
@@ -212,10 +212,10 @@ void alscp_dt3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, Tensor<> &T_A, double
     S["ij"] = AA["ij"] * BB["ij"];
     S["ij"] += regul["ij"];
     cholesky_solve(T_AB, W[2], S);
-    double t2 = MPI_Wtime();
-    if (dw.rank == 0) {
-      printf("dt iteration took %lf seconds\n", t2 - t1);
-    }
+    //double t2 = MPI_Wtime();
+    //if (dw.rank == 0) {
+    //  printf("dt iteration took %lf seconds\n", t2 - t1);
+    //}
 
     // work as the preconditioning of pairwise perturbation
     int num_dw_break = 0;
@@ -391,7 +391,7 @@ void alscp_pp3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, Tensor<> &T_copy, dou
         }
       }
     }
-    double t1 = MPI_Wtime();
+    //double t1 = MPI_Wtime();
     // W[0]
     T_BC["i*"] =
         T_B0C0["i*"] + T_C0["ij*"] * dW[1]["j*"] + T_B0["ik*"] * dW[2]["k*"];
@@ -423,11 +423,11 @@ void alscp_pp3_sub(Tensor<> &V, Matrix<> *W, Matrix<> *dW, Tensor<> &T_copy, dou
     cholesky_solve(T_AB, W[2], S);
     dW[2]["ij"] = W[2]["ij"] - W_prev[2]["ij"];
 
-    double t2 = MPI_Wtime();
+    //double t2 = MPI_Wtime();
 
-    if (dw.rank == 0) {
-      printf("pp middle step took %lf seconds\n", t2 - t1);
-    }
+    //if (dw.rank == 0) {
+    //  printf("pp middle step took %lf seconds\n", t2 - t1);
+   // }
 
     // work as the preconditioning of pairwise perturbation
     int num_dw_break = 0;
