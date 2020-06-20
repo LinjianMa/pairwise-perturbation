@@ -54,4 +54,4 @@ $(ODIR)/bench.o: bench.cxx bench.h config.mk
 	$(FCXX) -c $< -o $@ $(INCLUDE_PATH) 
 
 clean:
-	rm -f $(ODIR)/*.o  test_ALS pp_bench test run
+	rm -f $(ODIR)/*.o  als3 test_ALS pp_bench test run

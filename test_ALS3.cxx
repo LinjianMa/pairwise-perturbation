@@ -226,13 +226,13 @@ int main(int argc, char **argv) {
     }
     if (bench == 1) {
       alscp_pp3_bench(V, W, maxiter, pp_res_tol, lambda_, Plot_File, resprint,
-                      partition, dw);
+                      partition, dw, Vnorm);
     } else {
       if (pp == 0) {
-        alscp_dt3(V, W, maxiter, lambda_, Plot_File, resprint, partition, dw);
+        alscp_dt3(V, W, maxiter, lambda_, Plot_File, resprint, partition, dw, Vnorm);
       } else if (pp == 1) {
         alscp_pp3(V, W, maxiter, pp_res_tol, lambda_, Plot_File, resprint,
-                  partition, dw);
+                  partition, dw, Vnorm);
       }
     }
 
